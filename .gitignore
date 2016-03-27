@@ -1,0 +1,21 @@
+# sbt specific
+dist/*
+target/
+boot/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# Scala-IDE specific
+.scala_dependencies
+
+# data folders
+data/in/
+data/out/
+
+.tags*
+.sublime*
+.atom*
+.ensime*
+.idea*
