@@ -115,9 +115,14 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
         // This is the fasta corresponding to `row`
         val fasta = nextFastas.next()
 
-        // If the row coplies to the predicate, we write it
+        // If the row satisfies the predicate, we write both it and the corresponding fasta
         if (db.predicate(row)) {
-          tableWriter.writeRow(row)
+          // We want only ID to Taxa mapping
+          tableWriter.writeRow(List(
+            row(HashID),
+            row(TaxID)
+          ))
+
           fastasOutFile.append(
             fasta.update(
               // TODO: build NCBI header stuff with lcl
