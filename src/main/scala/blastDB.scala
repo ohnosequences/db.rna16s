@@ -21,7 +21,7 @@ import rnaCentralTable._
 trait AnyBlastDB {
   val dbType: BlastDBType
 
-  lazy val name: String = getClass.getName
+  val name: String
 
   private[db] val sourceFasta: S3Object
   private[db] val sourceTable: S3Object
@@ -46,8 +46,8 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
   lazy val sourceFasta: File = sources / "source.fasta"
   lazy val sourceTable: File = sources / "source.table.tsv"
 
-  lazy val outputFasta: File = (outputs / "output.fasta").createIfNotExists()
-  lazy val outputTable: File = (outputs / "id2taxa.tsv").createIfNotExists()
+  lazy val outputFasta: File = outputs / "output.fasta"
+  lazy val outputTable: File = outputs / "id2taxa.tsv"
 
 
   def instructions: AnyInstructions = {
@@ -64,18 +64,12 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
       transferManager.download(db.sourceTable.bucket, db.sourceTable.key, sourceTable.toJava).waitForCompletion
     } -&-
     LazyTry {
-      val tableReader = CSVReader.open(sourceTable.toJava)(tableFormat)
-      val tableWriter = CSVWriter.open(outputTable.toJava, append = true)(tableFormat)
-
       processSources(
-        tableWriter,
+        sourceTable,
+        outputTable
+      )(sourceFasta,
         outputFasta
-      )(tableReader.iterator,
-        fasta.parseFastaDropErrors(sourceFasta.lines)
       )
-
-      tableReader.close()
-      tableWriter.close()
     } -&-
     seqToInstructions(
       makeblastdb(
@@ -91,46 +85,74 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
     )
   }
 
-  @scala.annotation.tailrec
+  // This is the main processing part, that is separate to facilitate local testing
   final def processSources(
-    tableWriter: CSVWriter,
-    fastasOutFile: File
-  )(rows: Iterator[Row],
-    fastas: Iterator[FASTA.Value]
-  ): (Iterator[Row], Iterator[FASTA.Value]) = {
+    tableInFile: File,
+    tableOutFile: File
+  )(fastaInFile: File,
+    fastaOutFile: File
+  ) {
+    tableOutFile.createIfNotExists()
+    fastaOutFile.createIfNotExists()
 
-    if (!rows.hasNext || !fastas.hasNext) (Iterator(), Iterator())
-    else {
-      val row: Row = rows.next()
-      val id = row(HashID)
+    val tableReader = CSVReader.open(tableInFile.toJava)(tableFormat)
+    val tableWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
 
-      // Dropping all next rows with the same HashID
-      val nextRows = rows.dropWhile{ r => r(HashID) == id }
-      // Dropping until we ecnounter a sequence with this HashID
-      val nextFastas = fastas.dropWhile{ f => f.getV(header).id != id }
+    processIterators(
+      tableReader.iterator,
+      fasta.parseFastaDropErrors(fastaInFile.lines)
+    )
 
-      if(!nextFastas.hasNext) (Iterator(), Iterator())
+    tableReader.close()
+    tableWriter.close()
+
+
+    @scala.annotation.tailrec
+    def processIterators(
+      rows: Iterator[Row],
+      fastas: Iterator[FASTA.Value]
+    ): (Iterator[Row], Iterator[FASTA.Value]) = {
+
+      // This is the end... my friend
+      if (!rows.hasNext) (Iterator(), Iterator())
       else {
-        // This is the fasta corresponding to `row`
-        val fasta = nextFastas.next()
+        val row: Row = rows.next()
+        val id = row(HashID)
 
-        // If the row satisfies the predicate, we write both it and the corresponding fasta
-        if (db.predicate(row)) {
-          // We want only ID to Taxa mapping
-          tableWriter.writeRow(List(
-            row(HashID),
-            row(TaxID)
-          ))
+        // Dropping all next rows with the same HashID
+        val nextRows = rows.dropWhile{ r => r(HashID) == id }
+        // Dropping until we ecnounter a sequence with this HashID
+        val nextFastas = fastas.dropWhile{ f => f.getV(header).id != id }
 
-          fastasOutFile.append(
-            fasta.update(
-              header := FastaHeader(s"${fasta.getV(header).id}|lcl|${db.name}")
-            ).asString
-          )
+        if(!nextFastas.hasNext) {
+          // println("No more fastas \"(")
+          (Iterator(), Iterator())
         }
+        else {
+          // This is the fasta corresponding to `row`
+          val fasta = nextFastas.next()
 
-        // And anyway continue the cycle
-        processSources(tableWriter, fastasOutFile)(nextRows, nextFastas)
+          // If the row satisfies the predicate, we write both it and the corresponding fasta
+          if (db.predicate(row)) {
+            // We want only ID to Taxa mapping
+            tableWriter.writeRow(List(
+              row(HashID),
+              row(TaxID)
+            ))
+
+            fastaOutFile.appendLine(
+              fasta.update(
+                header := FastaHeader(s"${fasta.getV(header).id}|lcl|${db.name}")
+              ).asString
+            )
+          }
+          // else {
+          //   println(s"Skipping [${id}], because it doesn't satisfy the predicate")
+          // }
+
+          // And anyway continue the cycle
+          processIterators(nextRows, nextFastas)
+        }
       }
     }
   }

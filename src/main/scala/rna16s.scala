@@ -10,6 +10,7 @@ import rnaCentralTable._
 
 
 case object rna16sDB extends AnyBlastDB {
+  val name = "era7bio.db.rna16s"
 
   val dbType = BlastDBType.nucl
   /* The name identifying an RNA corresponding to 16S */
@@ -49,7 +50,9 @@ case object rna16sDB extends AnyBlastDB {
     2. their taxonomy association is *not* one of those in `uninformativeTaxIDs`
   */
   val predicate: Row => Boolean = { row =>
-    (row(GeneName) == geneNameFor16S) && !(uninformativeTaxIDs contains row(TaxID))
+     (row(GeneName) == geneNameFor16S) &&
+    !(uninformativeTaxIDs contains row(TaxID))
+    // filter by length > 1000
   }
 }
 
