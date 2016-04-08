@@ -44,6 +44,7 @@ case object rna16sDB extends AnyBlastDB {
   private[db] val sourceFasta: S3Object = s3folder / s"rnacentral.${ver}.fasta"
   private[db] val sourceTable: S3Object = s3folder / s"id2taxa.active.${ver}.tsv"
 
+  val s3location: S3Folder = S3Folder("resources.ohnosequences.com", "db/rna16S/")
 
   /* Here we want to keep sequences which */
   val predicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>

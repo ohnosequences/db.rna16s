@@ -17,16 +17,35 @@ import better.files._
 
 import rnaCentralTable._
 
+// TODO: move all this code to the era7bio/rnacentral repo
 
 trait AnyBlastDB {
   val dbType: BlastDBType
 
   val name: String
 
+  val predicate: (Row, FASTA.Value) => Boolean
+
   private[db] val sourceFasta: S3Object
   private[db] val sourceTable: S3Object
 
-  val predicate: (Row, FASTA.Value) => Boolean
+  val s3location: S3Folder
+
+  // case object release extends Bundle() {
+  //
+  //   // This is where the DB will be downloaded
+  //   val dbLocation: File = File(s3location.key)
+  //   // This is what you pass to BLAST
+  //   val dbName: File = dbLocation / s"${name}.fasta"
+  //
+  //   def instructions: AnyInstructions = {
+  //     LazyTry {
+  //       val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+  //       transferManager.download(s3location, file".")
+  //     } -&-
+  //     say(s"Reference database ${name} was dowloaded to ${dbLocation.path}")
+  //   }
+  // }
 }
 
 
@@ -37,6 +56,8 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
 
   val tableFormat = new TSVFormat {
     override val lineTerminator = "\n"
+    // NOTE: this tsv has '\' inside fields
+    override val escapeChar = '†'
   }
 
   // Files
@@ -60,10 +81,19 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
         |table: ${db.sourceTable}
         |""".stripMargin)
 
-      transferManager.download(db.sourceFasta.bucket, db.sourceFasta.key, sourceFasta.toJava).waitForCompletion
-      transferManager.download(db.sourceTable.bucket, db.sourceTable.key, sourceTable.toJava).waitForCompletion
+      transferManager.download(
+        db.sourceFasta.bucket, db.sourceFasta.key,
+        sourceFasta.toJava
+      ).waitForCompletion
+
+      transferManager.download(
+        db.sourceTable.bucket, db.sourceTable.key,
+        sourceTable.toJava
+      ).waitForCompletion
     } -&-
     LazyTry {
+      println("Processing sources...")
+
       processSources(
         sourceTable,
         outputTable
@@ -82,7 +112,14 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
           title(db.name) ::
           *[AnyDenotation]
       ).toSeq
-    )
+    ) -&-
+    LazyTry {
+      val tableDestination = db.s3location / outputTable.name
+      transferManager.upload(
+        tableDestination.bucket, tableDestination.key,
+        outputTable.toJava
+      ).waitForCompletion
+    }
   }
 
   // This is the main processing part, that is separate to facilitate local testing
@@ -114,8 +151,10 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
     ): (Iterator[Row], Iterator[FASTA.Value]) = {
 
       // This is the end... my friend
-      if (!rows.hasNext) (Iterator(), Iterator())
-      else {
+      if (!rows.hasNext) {
+        println("Finished processing.")
+        (Iterator(), Iterator())
+      } else {
         val row: Row = rows.next()
         val id = row(HashID)
         val extID = s"${id}|lcl|${db.name}"
@@ -126,7 +165,7 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
         val nextFastas = fastas.dropWhile{ f => f.getV(header).id != id }
 
         if(!nextFastas.hasNext) {
-          // println("No more fastas \"(")
+          println("No more fastas \"(")
           (Iterator(), Iterator())
         }
         else {
@@ -147,9 +186,9 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
               ).asString
             )
           }
-          // else {
-          //   println(s"Skipping [${id}], because it doesn't satisfy the predicate")
-          // }
+          else {
+            println(s"Skipping [${id}], because it doesn't satisfy the predicate")
+          }
 
           // And anyway continue the cycle
           processIterators(nextRows, nextFastas)

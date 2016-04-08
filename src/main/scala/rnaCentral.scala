@@ -13,6 +13,8 @@ import com.amazonaws.services.s3.transfer._
 
 import com.github.tototoshi.csv._
 
+// TODO: move all this code to the era7bio/rnacentral repo (and use cosas/records)
+
 case object rnaCentralTable {
 
   // TODO: use a better representation for the table row
