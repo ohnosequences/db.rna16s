@@ -135,66 +135,30 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
     val tableReader = CSVReader.open(tableInFile.toJava)(tableFormat)
     val tableWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
 
-    processIterators(
-      tableReader.iterator,
-      parseFastaDropErrors(fastaInFile.lines)
-    )
+    val rows: Iterator[Row] = tableReader.iterator
+    val fastas: Iterator[FASTA.Value] = parseFastaDropErrors(fastaInFile.lines)
+
+    // NOTE: here we rely on that the sources are prefileterd and don't have duplicate ID
+    (rows zip fastas)
+      .filter { case (row, fasta) => db.predicate(row, fasta) }
+      .foreach { case (row, fasta) =>
+
+        val extID = s"${row(HashID)}|lcl|${db.name}"
+
+        tableWriter.writeRow(List(
+          extID,
+          row(TaxID)
+        ))
+
+        fastaOutFile.appendLine(
+          fasta.update(
+            header := FastaHeader(s"${extID} ${fasta.getV(header).description}")
+          ).asString
+        )
+      }
 
     tableReader.close()
     tableWriter.close()
-
-
-    @scala.annotation.tailrec
-    def processIterators(
-      rows: Iterator[Row],
-      fastas: Iterator[FASTA.Value]
-    ): (Iterator[Row], Iterator[FASTA.Value]) = {
-
-      // This is the end... my friend
-      if (!rows.hasNext) {
-        println("Finished processing.")
-        (Iterator(), Iterator())
-      } else {
-        val row: Row = rows.next()
-        val id = row(HashID)
-        val extID = s"${id}|lcl|${db.name}"
-
-        // Dropping all next rows with the same HashID
-        val nextRows = rows.dropWhile{ r => r(HashID) == id }
-        // Dropping until we ecnounter a sequence with this HashID
-        val nextFastas = fastas.dropWhile{ f => f.getV(header).id != id }
-
-        if(!nextFastas.hasNext) {
-          println("No more fastas \"(")
-          (Iterator(), Iterator())
-        }
-        else {
-          // This is the fasta corresponding to `row`
-          val fasta = nextFastas.next()
-
-          // If the row satisfies the predicate, we write both it and the corresponding fasta
-          if (db.predicate(row, fasta)) {
-            // We want only ID to Taxa mapping
-            tableWriter.writeRow(List(
-              extID,
-              row(TaxID)
-            ))
-
-            fastaOutFile.appendLine(
-              fasta.update(
-                header := FastaHeader(extID)
-              ).asString
-            )
-          }
-          else {
-            println(s"Skipping [${id}], because it doesn't satisfy the predicate")
-          }
-
-          // And anyway continue the cycle
-          processIterators(nextRows, nextFastas)
-        }
-      }
-    }
   }
 
 }
