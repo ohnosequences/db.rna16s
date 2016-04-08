@@ -118,6 +118,7 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
       else {
         val row: Row = rows.next()
         val id = row(HashID)
+        val extID = s"${id}|lcl|${db.name}"
 
         // Dropping all next rows with the same HashID
         val nextRows = rows.dropWhile{ r => r(HashID) == id }
@@ -136,13 +137,13 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
           if (db.predicate(row)) {
             // We want only ID to Taxa mapping
             tableWriter.writeRow(List(
-              row(HashID),
+              extID,
               row(TaxID)
             ))
 
             fastaOutFile.appendLine(
               fasta.update(
-                header := FastaHeader(s"${fasta.getV(header).id}|lcl|${db.name}")
+                header := FastaHeader(extID)
               ).asString
             )
           }
