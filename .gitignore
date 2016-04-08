@@ -19,3 +19,6 @@ data/out/
 .atom*
 .ensime*
 .idea*
+
+*.fasta
+*.tsv

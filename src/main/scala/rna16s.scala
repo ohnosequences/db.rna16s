@@ -1,6 +1,7 @@
 package era7bio.db
 
 import ohnosequences.blast.api._
+import ohnosequences.fastarious.fasta._
 import ohnosequences.awstools._, ec2._, InstanceType._, s3._, regions._
 import ohnosequences.statika._, aws._
 
@@ -43,16 +44,15 @@ case object rna16sDB extends AnyBlastDB {
   private[db] val sourceFasta: S3Object = s3folder / s"rnacentral.${ver}.fasta"
   private[db] val sourceTable: S3Object = s3folder / s"id2taxa.active.${ver}.tsv"
 
-  /*
-    Here we want to keep sequences which
 
-    1. are annotated as encoding 16S
-    2. their taxonomy association is *not* one of those in `uninformativeTaxIDs`
-  */
-  val predicate: Row => Boolean = { row =>
+  /* Here we want to keep sequences which */
+  val predicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>
+     /* - are annotated as encoding 16S */
      (row(GeneName) == geneNameFor16S) &&
-    !(uninformativeTaxIDs contains row(TaxID))
-    // filter by length > 1000
+     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
+    !(uninformativeTaxIDs contains row(TaxID)) &&
+     /* - and the corresponding sequence is not shorter than 1000 BP */
+     (fasta.getV(sequence).value.length >= 1000)
   }
 }
 

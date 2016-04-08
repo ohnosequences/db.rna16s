@@ -2,7 +2,7 @@ package era7bio.db
 
 import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
-import ohnosequences.fastarious._, fasta._, ncbiHeaders._
+import ohnosequences.fastarious.fasta._
 import ohnosequences.blast.api._
 import ohnosequences.awstools.s3._
 
@@ -26,7 +26,7 @@ trait AnyBlastDB {
   private[db] val sourceFasta: S3Object
   private[db] val sourceTable: S3Object
 
-  val predicate: Row => Boolean
+  val predicate: (Row, FASTA.Value) => Boolean
 }
 
 
@@ -100,7 +100,7 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
 
     processIterators(
       tableReader.iterator,
-      fasta.parseFastaDropErrors(fastaInFile.lines)
+      parseFastaDropErrors(fastaInFile.lines)
     )
 
     tableReader.close()
@@ -134,7 +134,7 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
           val fasta = nextFastas.next()
 
           // If the row satisfies the predicate, we write both it and the corresponding fasta
-          if (db.predicate(row)) {
+          if (db.predicate(row, fasta)) {
             // We want only ID to Taxa mapping
             tableWriter.writeRow(List(
               extID,
