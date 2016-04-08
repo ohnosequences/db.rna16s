@@ -23,10 +23,6 @@ trait AnyBlastDB {
 
   lazy val name: String = getClass.getName
 
-  // TODO sequence header stuff; this should be lcl()
-  // this is what will be added to the fasta headers
-  lazy val ncbiID = ncbiHeaders.name(name)
-
   private[rna16s] val sourceFasta: S3Object
   private[rna16s] val sourceTable: S3Object
 
@@ -125,8 +121,7 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
 
           fastasOutFile.append(
             fasta.update(
-              // TODO: build NCBI header stuff with lcl
-              header := FastaHeader(s"${fasta.getV(header).id}|${toHeader(db.ncbiID)}")
+              header := FastaHeader(s"${fasta.getV(header).id}|lcl|${db.name}")
             ).asString
           )
         }
