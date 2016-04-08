@@ -31,21 +31,28 @@ trait AnyBlastDB {
 
   val s3location: S3Folder
 
-  // case object release extends Bundle() {
-  //
-  //   // This is where the DB will be downloaded
-  //   val dbLocation: File = File(s3location.key)
-  //   // This is what you pass to BLAST
-  //   val dbName: File = dbLocation / s"${name}.fasta"
-  //
-  //   def instructions: AnyInstructions = {
-  //     LazyTry {
-  //       val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
-  //       transferManager.download(s3location, file".")
-  //     } -&-
-  //     say(s"Reference database ${name} was dowloaded to ${dbLocation.path}")
-  //   }
-  // }
+  case object release extends Bundle() {
+    val destination: File = File(s3location.key)
+
+    val id2taxa: File = destination / "id2taxa.tsv"
+
+    // This is where the DB will be downloaded
+    val dbLocation: File = destination / "blastdb/"
+    // This is what you pass to BLAST
+    val dbName: File = dbLocation / s"${name}.fasta"
+
+    def instructions: AnyInstructions = {
+      LazyTry {
+        val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+
+        transferManager.downloadDirectory(
+          s3location.bucket, s3location.key,
+          file".".toJava
+        ).waitForCompletion
+      } -&-
+      say(s"Reference database ${name} was dowloaded to ${dbLocation.path}")
+    }
+  }
 }
 
 
@@ -61,8 +68,8 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
   }
 
   // Files
-  lazy val sources = file"sources"
-  lazy val outputs = file"outputs"
+  lazy val sources = file"sources/"
+  lazy val outputs = file"outputs/"
 
   lazy val sourceFasta: File = sources / "source.fasta"
   lazy val sourceTable: File = sources / "source.table.tsv"
@@ -117,14 +124,15 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
       println("Uploading the DB...")
 
       // Moving blast DB files to a separate folder
+      val blastdbDir = (outputs / "blastdb").createDirectory()
       outputs.list
         .filter{ _.name.startsWith(s"${outputFasta.name}.") }
-        .foreach { _.moveTo( (outputs / "blastdb").createDirectories() ) }
+        .foreach { _.moveTo(blastdbDir) }
 
       // Uploading all together
       transferManager.uploadDirectory(
         db.s3location.bucket, db.s3location.key,
-        outputTable.toJava,
+        outputs.toJava,
         true // includeSubdirectories
       ).waitForCompletion
     } -&-
