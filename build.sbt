@@ -7,7 +7,7 @@ description   := "db.rna16s project"
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
-  "ohnosequences" %% "fastarious"      % "0.5.1",
+  "ohnosequences" %% "fastarious"      % "0.5.2",
   "ohnosequences" %% "blast-api"       % "0.6.2",
   "ohnosequences" %% "statika"         % "2.0.0-M5",
   "ohnosequences" %% "aws-scala-tools" % "0.16.0",
