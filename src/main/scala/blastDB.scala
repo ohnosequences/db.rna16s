@@ -35,6 +35,8 @@ case object blastBundle extends Blast("2.2.31")
 
 class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) {
 
+  val tableFormat = new TSVFormat {}
+
   // Files
   lazy val sources = file"sources"
   lazy val outputs = file"outputs"
@@ -60,9 +62,8 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
       transferManager.download(db.sourceTable.bucket, db.sourceTable.key, sourceTable.toJava).waitForCompletion
     } -&-
     LazyTry {
-      // FIXME: what is the line separator here?
-      val tableReader = CSVReader.open(sourceTable.toJava)(new DefaultCSVFormat {})
-      val tableWriter = CSVWriter.open(outputTable.toJava, append = true)(new DefaultCSVFormat {})
+      val tableReader = CSVReader.open(sourceTable.toJava)(tableFormat)
+      val tableWriter = CSVWriter.open(outputTable.toJava, append = true)(tableFormat)
 
       processSources(
         tableWriter,
