@@ -114,12 +114,21 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
       ).toSeq
     ) -&-
     LazyTry {
-      val tableDestination = db.s3location / outputTable.name
-      transferManager.upload(
-        tableDestination.bucket, tableDestination.key,
-        outputTable.toJava
+      println("Uploading the DB...")
+
+      // Moving blast DB files to a separate folder
+      outputs.list
+        .filter{ _.name.startsWith(s"${outputFasta.name}.") }
+        .foreach { _.moveTo( (outputs / "blastdb").createDirectories() ) }
+
+      // Uploading all together
+      transferManager.uploadDirectory(
+        db.s3location.bucket, db.s3location.key,
+        outputTable.toJava,
+        true // includeSubdirectories
       ).waitForCompletion
-    }
+    } -&-
+    say(s"The database is uploaded to [${db.s3location}]")
   }
 
   // This is the main processing part, that is separate to facilitate local testing
