@@ -1,4 +1,4 @@
-package era7bio.db.rna16s
+package era7bio.db
 
 import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
@@ -23,8 +23,8 @@ trait AnyBlastDB {
 
   lazy val name: String = getClass.getName
 
-  private[rna16s] val sourceFasta: S3Object
-  private[rna16s] val sourceTable: S3Object
+  private[db] val sourceFasta: S3Object
+  private[db] val sourceTable: S3Object
 
   val predicate: Row => Boolean
 }
@@ -35,7 +35,9 @@ case object blastBundle extends Blast("2.2.31")
 
 class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) {
 
-  val tableFormat = new TSVFormat {}
+  val tableFormat = new TSVFormat {
+    override val lineTerminator = "\n"
+  }
 
   // Files
   lazy val sources = file"sources"
@@ -44,8 +46,8 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
   lazy val sourceFasta: File = sources / "source.fasta"
   lazy val sourceTable: File = sources / "source.table.tsv"
 
-  lazy val outputFasta: File = outputs / "output.fasta"
-  lazy val outputTable: File = outputs / "id2taxa.tsv"
+  lazy val outputFasta: File = (outputs / "output.fasta").createIfNotExists()
+  lazy val outputTable: File = (outputs / "id2taxa.tsv").createIfNotExists()
 
 
   def instructions: AnyInstructions = {

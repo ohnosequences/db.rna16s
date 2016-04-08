@@ -1,4 +1,4 @@
-package era7bio.db.rna16s
+package era7bio.db
 
 import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
