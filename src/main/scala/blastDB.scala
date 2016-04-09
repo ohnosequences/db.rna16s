@@ -74,8 +74,8 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
   lazy val sourceFasta: File = sources / "source.fasta"
   lazy val sourceTable: File = sources / "source.table.tsv"
 
-  lazy val outputFasta: File = outputs / "output.fasta"
-  lazy val outputTable: File = outputs / "id2taxa.tsv"
+  lazy val outputFasta: File = outputs / s"${db.name}.fasta"
+  lazy val outputTable: File = outputs / db.release.id2taxa.name
 
 
   def instructions: AnyInstructions = {
@@ -127,7 +127,7 @@ class GenerateBlastDB[DB <: AnyBlastDB](val db: DB) extends Bundle(blastBundle) 
       val blastdbDir = (outputs / "blastdb").createDirectory()
       outputs.list
         .filter{ _.name.startsWith(s"${outputFasta.name}.") }
-        .foreach { _.moveTo(blastdbDir) }
+        .foreach { f => f.moveTo(blastdbDir / f.name) }
 
       // Uploading all together
       transferManager.uploadDirectory(
