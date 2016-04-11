@@ -1,16 +1,19 @@
-package era7bio.dbrna16s.test
+package era7bio.db.test
 
+import era7bio.db.rna16sDBRelease._
 import org.scalatest.FunSuite
+import better.files._
 
-import era7bio.dbrna16s._
 
 class Dbrna16sTest extends FunSuite {
 
-  test("Dummy test coming from the template") {
+  test("Process some sample files") {
 
-    assert(
-
-      12 === 12
+    generateRna16sDB.processSources(
+      file"source.table.sample.tsv",
+      file"output.table.sample.tsv".clear()
+    )(file"source.sample.fasta",
+      file"output.sample.fasta".clear()
     )
   }
 }

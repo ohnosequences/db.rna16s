@@ -1,49 +1,91 @@
-package era7bio.db.rna16s
+package era7bio.db
 
-import ohnosequences.cosas._, types._, klists._
-import ohnosequences.statika._
-import ohnosequences.fastarious._, fasta._, ncbiHeaders._
 import ohnosequences.blast.api._
-import better.files._
+import ohnosequences.fastarious.fasta._
+import ohnosequences.awstools._, ec2._, InstanceType._, s3._, regions._
+import ohnosequences.statika._, aws._
 
-trait AnyBlastDB {
+import era7.defaults._, loquats._
 
-  lazy val name: String = getClass.getName
-  // TODO sequence header stuff; this should be lcl()
-  // this is what will be added to the fasta headers
-  lazy val ncbiID = ncbiHeaders.name(name)
+import rnaCentralTable._
 
-  // TODO S3 Object address; AnyData?
-  val sourceFasta: String
-  val dbType: BlastDBType
+
+case object rna16sDB extends AnyBlastDB {
+  
+  val name = "era7bio.db.rna16s.fasta"
+
+  val dbType = BlastDBType.nucl
+  /* The name identifying an RNA corresponding to 16S */
+  val geneNameFor16S = "16S rRNA"
+  /* These are NCBI taxonomy IDs corresponding to taxa which is at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes. */
+  val uninformativeTaxIDsMap = Map(
+    32644   -> "unclassified",
+    358574  -> "uncultured microorganism",
+    155900  -> "uncultured organism",
+    415540  -> "uncultured marine microorganism",
+    198431  -> "uncultured prokaryote",
+    77133   -> "uncultured bacterium",
+    115547  -> "uncultured archaeon",
+    56763   -> "uncultured marine archaeon",
+    152507  -> "uncultured actinobacterium",
+    1211    -> "uncultured cyanobacterium",
+    153809  -> "uncultured proteobacterium",
+    86027   -> "uncultured beta proteobacterium",
+    86473   -> "uncultured gamma proteobacterium",
+    34034   -> "uncultured delta proteobacterium",
+    56765   -> "uncultured marine bacterium",
+    115414  -> "uncultured marine alpha proteobacterium"
+  )
+
+  val uninformativeTaxIDs = uninformativeTaxIDsMap.keys.map(_.toString).toSet
+
+  private val ver = "5.0"
+  private val s3folder = S3Folder("resources.ohnosequences.com", s"rnacentral/${ver}")
+
+  private[db] val sourceFasta: S3Object = s3folder / s"rnacentral.${ver}.fasta"
+  private[db] val sourceTable: S3Object = s3folder / s"id2taxa.active.${ver}.tsv"
+
+  val s3location: S3Folder = S3Folder("resources.ohnosequences.com", "db/rna16S/")
+
+  /* Here we want to keep sequences which */
+  val predicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>
+     /* - are annotated as encoding 16S */
+     (row(GeneName) == geneNameFor16S) &&
+     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
+    !(uninformativeTaxIDs contains row(TaxID)) &&
+     /* - and the corresponding sequence is not shorter than 1000 BP */
+     (fasta.getV(sequence).value.length >= 1000)
+  }
 }
 
-// TODO this should get the input fasta from somewhere, download it and run makeblastdb etc
-// blast should be a dependency
-trait GenerateBlastDB[DB <: AnyBlastDB] extends Bundle() {
+case object rna16sDBRelease {
 
-  val db: DB
+  case object generateRna16sDB extends GenerateBlastDB(rna16sDB)
 
-  // TODO build NCBI header stuff with lcl
-  def processInput(inputFasta: File, drop: FASTA.Value => Boolean, outputFasta: File): File = {
+  case object compat extends Compatible(
+    amznAMIEnv(
+      AmazonLinuxAMI(Region.Ireland, HVM, InstanceStore),
+      javaHeap = 20 // in G
+    ),
+    generateRna16sDB,
+    generated.metadata.DbRna16s
+  )
 
-    fasta
-      .parseFastaDropErrors(inputFasta.lines)
-      .filterNot(drop)
-      .map(fa => fa.update(header := FastaHeader(s"${fa.getV(header).id}|${toHeader(db.ncbiID)}")))
-      .appendTo(outputFasta)
+  def launch(user: AWSUser): List[String] = {
+    EC2.create(user.profile)
+      .runInstances(
+        amount = 1,
+        compat.instanceSpecs(
+          c3.x2large,
+          user.keypair.name,
+          Some(ec2Roles.projects.name)
+        )
+      ).map { inst =>
 
-    outputFasta
+        val id = inst.getInstanceId
+        println(s"Launched [${id}]")
+        id
+      }
   }
 
-  def makeDB(inputFasta: File) =
-    makeblastdb(
-      argumentValues =
-        in(inputFasta)                ::
-        input_type(DBInputType.fasta) ::
-        dbtype(db.dbType)             ::
-        *[AnyDenotation],
-      optionValues =
-        makeblastdb.defaults.update( title(db.name) ).value
-    )
 }
