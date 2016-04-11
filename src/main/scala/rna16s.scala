@@ -11,6 +11,7 @@ import rnaCentralTable._
 
 
 case object rna16sDB extends AnyBlastDB {
+  
   val name = "era7bio.db.rna16s.fasta"
 
   val dbType = BlastDBType.nucl
