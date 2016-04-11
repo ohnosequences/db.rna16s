@@ -4,6 +4,11 @@ name          := "db.rna16s"
 organization  := "era7bio"
 description   := "db.rna16s project"
 
+resolvers := Seq(
+  "Era7 private maven releases"  at s3("private.releases.era7.com").toHttps(s3region.value.toString),
+  "Era7 private maven snapshots" at s3("private.snapshots.era7.com").toHttps(s3region.value.toString)
+) ++ resolvers.value
+
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
@@ -12,7 +17,7 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "statika"         % "2.0.0-M5",
   "ohnosequences" %% "aws-scala-tools" % "0.16.0",
 
-  "era7"          %% "defaults"   % "0.1.0",
+  "era7"          %% "defaults"   % "0.2.0-SNAPSHOT",
 
   "ohnosequences-bundles" %% "blast" % "0.3.0",
 
