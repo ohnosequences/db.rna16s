@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "fastarious"      % "0.6.0",
   "ohnosequences" %% "blast-api"       % "0.7.0",
   "ohnosequences" %% "statika"         % "2.0.0-M5",
-  "era7bio"       %% "rnacentraldb"    % "0.2.0-SNAPSHOT",
+  "era7bio"       %% "rnacentraldb"    % "0.2.0",
   "era7"          %% "defaults"  % "0.1.0" % Test,
   "org.scalatest" %% "scalatest" % "2.2.6" % Test
 )
