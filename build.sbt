@@ -4,6 +4,8 @@ name          := "db-rna16s"
 organization  := "era7bio"
 description   := "db-rna16s project"
 
+scalaVersion := "2.11.8"
+
 resolvers := Seq(
   "Era7 private maven releases"  at s3("private.releases.era7.com").toHttps(s3region.value.toString),
   "Era7 private maven snapshots" at s3("private.snapshots.era7.com").toHttps(s3region.value.toString)
