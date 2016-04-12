@@ -10,7 +10,7 @@ case object rna16sCompats {
       AmazonLinuxAMI(Ireland, HVM, InstanceStore),
       javaHeap = 20 // in G
     ),
-    rna16sDB.generateBundle,
+    rna16s.generate,
     generated.metadata.DbRna16s
   )
 }
