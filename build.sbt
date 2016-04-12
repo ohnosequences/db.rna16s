@@ -4,6 +4,9 @@ name          := "db-rna16s"
 organization  := "era7bio"
 description   := "db-rna16s project"
 
+// the repo name differs on github:
+GithubRelease.repo := s"${organization.value}/db.rna16S"
+
 scalaVersion := "2.11.8"
 
 resolvers := Seq(
