@@ -5,16 +5,20 @@ import ohnosequences.fastarious.fasta._
 import ohnosequences.awstools._, ec2._, InstanceType._, s3._, regions._
 import ohnosequences.statika._, aws._
 
-import era7.defaults._, loquats._
-
-import rnaCentralTable._
+import era7bio.db.RNACentral5._
+import era7bio.db.csvUtils._
 
 
 case object rna16sDB extends AnyBlastDB {
-  
-  val name = "era7bio.db.rna16s.fasta"
+
+  val name = "era7bio.db.rna16s"
 
   val dbType = BlastDBType.nucl
+
+  val rnaCentralRelease: RNACentral5.type = RNACentral5
+
+  val s3location: S3Folder = S3Folder("resources.ohnosequences.com", "db/rna16s/")
+
   /* The name identifying an RNA corresponding to 16S */
   val geneNameFor16S = "16S rRNA"
   /* These are NCBI taxonomy IDs corresponding to taxa which is at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes. */
@@ -37,55 +41,22 @@ case object rna16sDB extends AnyBlastDB {
     115414  -> "uncultured marine alpha proteobacterium"
   )
 
-  val uninformativeTaxIDs = uninformativeTaxIDsMap.keys.map(_.toString).toSet
-
-  private val ver = "5.0"
-  private val s3folder = S3Folder("resources.ohnosequences.com", s"rnacentral/${ver}")
-
-  private[db] val sourceFasta: S3Object = s3folder / s"rnacentral.${ver}.fasta"
-  private[db] val sourceTable: S3Object = s3folder / s"id2taxa.active.${ver}.tsv"
-
-  val s3location: S3Folder = S3Folder("resources.ohnosequences.com", "db/rna16S/")
+  val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keys.map(_.toString).toSet
 
   /* Here we want to keep sequences which */
   val predicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>
      /* - are annotated as encoding 16S */
-     (row(GeneName) == geneNameFor16S) &&
+     (row.select(gene_name) == geneNameFor16S) &&
      /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
-    !(uninformativeTaxIDs contains row(TaxID)) &&
+    !(uninformativeTaxIDs contains row.select(tax_id)) &&
      /* - and the corresponding sequence is not shorter than 1000 BP */
      (fasta.getV(sequence).value.length >= 1000)
   }
-}
 
-case object rna16sDBRelease {
 
-  case object generateRna16sDB extends GenerateBlastDB(rna16sDB)
+  // bundle to generate the DB (see the runBundles file in tests)
+  case object generateBundle extends GenerateBlastDB(this)
 
-  case object compat extends Compatible(
-    amznAMIEnv(
-      AmazonLinuxAMI(Region.Ireland, HVM, InstanceStore),
-      javaHeap = 20 // in G
-    ),
-    generateRna16sDB,
-    generated.metadata.DbRna16s
-  )
-
-  def launch(user: AWSUser): List[String] = {
-    EC2.create(user.profile)
-      .runInstances(
-        amount = 1,
-        compat.instanceSpecs(
-          c3.x2large,
-          user.keypair.name,
-          Some(ec2Roles.projects.name)
-        )
-      ).map { inst =>
-
-        val id = inst.getInstanceId
-        println(s"Launched [${id}]")
-        id
-      }
-  }
-
+  // bundle to obtain and use the generated release
+  case object releaseBundle  extends BlastDBRelease(generateBundle)
 }

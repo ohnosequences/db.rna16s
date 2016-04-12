@@ -12,17 +12,11 @@ resolvers := Seq(
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
-  "ohnosequences" %% "fastarious"      % "0.5.2",
+  "ohnosequences" %% "fastarious"      % "0.6.0",
   "ohnosequences" %% "blast-api"       % "0.7.0",
   "ohnosequences" %% "statika"         % "2.0.0-M5",
-  "ohnosequences" %% "aws-scala-tools" % "0.16.0",
-
-  "era7"          %% "defaults"   % "0.2.0-SNAPSHOT",
-
-  "ohnosequences-bundles" %% "blast" % "0.3.0",
-
-  "com.github.tototoshi" %% "scala-csv" % "1.2.2",
-
+  "era7bio"       %% "rnacentraldb"    % "0.2.0-SNAPSHOT",
+  "era7"          %% "defaults"  % "0.1.0" % Test,
   "org.scalatest" %% "scalatest" % "2.2.6" % Test
 )
 
@@ -39,3 +33,6 @@ buildInfoKeys    := Seq[BuildInfoKey](
   "artifact" -> name.value.toLowerCase,
   "artifactUrl" -> fatArtifactUrl.value
 )
+
+// For including test code in the fat artifact:
+unmanagedSourceDirectories in Compile += (scalaSource in Test).value / "compats.scala"
