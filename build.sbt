@@ -1,8 +1,8 @@
 Nice.scalaProject
 
-name          := "db.rna16s"
+name          := "db-rna16s"
 organization  := "era7bio"
-description   := "db.rna16s project"
+description   := "db-rna16s project"
 
 resolvers := Seq(
   "Era7 private maven releases"  at s3("private.releases.era7.com").toHttps(s3region.value.toString),
