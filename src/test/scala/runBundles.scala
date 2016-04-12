@@ -9,20 +9,11 @@ import era7.defaults._
 
 case object rna16sDBRelease {
 
-  case object compat extends Compatible(
-    amznAMIEnv(
-      AmazonLinuxAMI(Ireland, HVM, InstanceStore),
-      javaHeap = 20 // in G
-    ),
-    rna16sDB.generateBundle,
-    generated.metadata.DbRna16s
-  )
-
   def launch(user: AWSUser): List[String] = {
     EC2.create(user.profile)
       .runInstances(
         amount = 1,
-        compat.instanceSpecs(
+        rna16sCompats.generateRna16sDB.instanceSpecs(
           c3.x2large,
           user.keypair.name,
           Some(ec2Roles.projects.name)
