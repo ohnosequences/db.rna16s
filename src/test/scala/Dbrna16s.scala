@@ -9,7 +9,7 @@ class Dbrna16sTest extends FunSuite {
 
   test("Process some sample files") {
 
-    rna16sDB.generateBundle.processSources(
+    rna16s.generate.processSources(
       file"source.table.sample.tsv",
       file"output.table.sample.tsv".clear()
     )(file"source.sample.fasta",
