@@ -11,7 +11,7 @@ import era7bio.db.RNACentral5._
 import era7bio.db.csvUtils._
 
 
-case object rna16sDB extends AnyBlastDB {
+case object rna16s extends AnyBlastDB {
 
   val name = "era7bio.db.rna16s"
 
@@ -79,10 +79,10 @@ Here we want to keep sequences which
 
 
   // bundle to generate the DB (see the runBundles file in tests)
-  case object generateBundle extends GenerateBlastDB(this)
+  case object generate extends GenerateBlastDB(this)
 
   // bundle to obtain and use the generated release
-  case object releaseBundle  extends BlastDBRelease(generateBundle)
+  case object release extends BlastDBRelease(generate)
 }
 
 ```
