@@ -47,7 +47,8 @@ case object rna16s extends AnyBlastDB {
   val predicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>
      /* - are annotated as encoding 16S */
      (row.select(gene_name) == geneNameFor16S ||
-      fasta.getV(header).description.toLowerCase.contains("16s")
+      fasta.getV(header).description.toLowerCase.contains("16s") ||
+      fasta.getV(header).description.toLowerCase.contains("small subunit ribosomal RNA")
      ) &&
      /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
     !(uninformativeTaxIDs contains row.select(tax_id)) &&
