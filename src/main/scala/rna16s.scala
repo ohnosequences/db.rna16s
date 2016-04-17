@@ -10,17 +10,17 @@ import era7bio.db.csvUtils._
 
 import ohnosequencesBundles.statika._
 
-import com.thinkaurelius.titan.core._
+import com.thinkaurelius.titan.core._, schema._
+import com.bio4j.model.ncbiTaxonomy.NCBITaxonomyGraph._
 import com.bio4j.titan.model.ncbiTaxonomy._
 import com.bio4j.titan.util.DefaultTitanGraph
-import org.apache.commons.configuration.Configuration
 
 
 case object bio4jTaxonomyBundle extends AnyBio4jDist {
 
   lazy val s3folder: S3Folder = S3Folder("resources.ohnosequences.com", "16s/bio4j-taxonomy/")
 
-  lazy val configuration: Configuration = DefaultBio4jTitanConfig(dbLocation)
+  lazy val configuration = DefaultBio4jTitanConfig(dbLocation)
 
   // the graph; its only (direct) use is for indexes
   // FIXME: this works but still with errors, should be fixed (something about transactions)
@@ -28,7 +28,34 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
     new TitanNCBITaxonomyGraph(
       new DefaultTitanGraph(TitanFactory.open(configuration))
     )
+
+
+  type TaxonNode = com.bio4j.model.ncbiTaxonomy.vertices.NCBITaxon[
+    DefaultTitanGraph,
+    TitanVertex, VertexLabelMaker,
+    TitanEdge, EdgeLabelMaker
+  ]
+
+  def checkAncestors(id: String, ancestors: Set[String]): Boolean = {
+    // Java to Scala
+    def optional[T](jopt: java.util.Optional[T]): Option[T] =
+      if (jopt.isPresent) Some(jopt.get) else None
+
+    @scala.annotation.tailrec
+    def checkAncestors_rec(node: TaxonNode): Boolean =
+      optional(node.ncbiTaxonParent_inV) match {
+        case None => false
+        case Some(parent) =>
+          if (ancestors.contains( parent.id() )) true
+          else checkAncestors_rec(parent)
+      }
+
+    optional(graph.nCBITaxonIdIndex.getVertex(id))
+      .map(checkAncestors_rec)
+      .getOrElse(false)
+  }
 }
+
 
 case object rna16s extends AnyBlastDB {
 
@@ -66,22 +93,32 @@ case object rna16s extends AnyBlastDB {
 
   /* Here we want to keep sequences which */
   val predicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>
-     /* - are annotated as encoding 16S */
-     (row.select(gene_name) == geneNameFor16S ||
+    /* - are annotated as encoding 16S */
+    ( row.select(gene_name) == geneNameFor16S ||
       fasta.getV(header).description.toLowerCase.contains("16s") ||
       fasta.getV(header).description.toLowerCase.contains("small subunit ribosomal")
-     ) &&
-     /* - are annotated as rRNA */
-      row.select(rna_type).toLowerCase.contains("rrna") ||
-     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
-    !(uninformativeTaxIDs contains row.select(tax_id)) &&
-     /* - and the corresponding sequence is not shorter than 1000 BP */
-     (fasta.getV(sequence).value.length >= 1000)
+    ) &&
+    /* - are annotated as rRNA */
+     row.select(rna_type).toLowerCase.contains("rrna") ||
+    /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
+    (uninformativeTaxIDs contains row.select(tax_id)) &&
+    /* - and the corresponding sequence is not shorter than 1000 BP */
+    (fasta.getV(sequence).value.length >= 1000) ||
+    /* - is a descendant of either Archaea or Bacteria */
+    bio4jTaxonomyBundle.checkAncestors(
+      row.select(tax_id), Set(
+        "2157", // Archaea
+        "2"     // Bacteria
+      )
+    )
   }
 
 
   // bundle to generate the DB (see the runBundles file in tests)
-  case object generate extends GenerateBlastDB(this)
+  case object generate extends GenerateBlastDB(this) {
+
+    override val bundleDependencies: List[AnyBundle] = List(bio4jTaxonomyBundle)
+  }
 
   // bundle to obtain and use the generated release
   case object release extends BlastDBRelease(generate)
