@@ -102,8 +102,8 @@ case object rna16s extends AnyBlastDB {
      row.select(rna_type).toLowerCase.contains("rrna") ||
     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
     (uninformativeTaxIDs contains row.select(tax_id)) &&
-    /* - and the corresponding sequence is not shorter than 1000 BP */
-    (fasta.getV(sequence).value.length >= 1000) ||
+    /* - and the corresponding sequence is not shorter than 1300 BP */
+    (fasta.getV(sequence).value.length >= 1300) ||
     /* - is a descendant of either Archaea or Bacteria */
     bio4jTaxonomyBundle.checkAncestors(
       row.select(tax_id), Set(
