@@ -21,8 +21,18 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "blast-api"       % "0.7.0",
   "ohnosequences" %% "statika"         % "2.0.0-M5",
   "era7bio"       %% "rnacentraldb"    % "0.2.1",
+  "ohnosequences-bundles" %% "bio4j-dist" % "0.2.0",
+  // Test:
   "era7"          %% "defaults"  % "0.1.0" % Test,
   "org.scalatest" %% "scalatest" % "2.2.6" % Test
+)
+
+
+dependencyOverrides ++= Set(
+  "commons-logging"            % "commons-logging"     % "1.1.3",
+  "commons-codec"              % "commons-codec"       % "1.7",
+  "org.apache.httpcomponents"  % "httpclient"          % "4.5.1",
+  "org.slf4j"                  % "slf4j-api"           % "1.7.7"
 )
 
 
