@@ -21,12 +21,28 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "blast-api"       % "0.7.0",
   "ohnosequences" %% "statika"         % "2.0.0-M5",
   "era7bio"       %% "rnacentraldb"    % "0.2.1",
+  "ohnosequences-bundles" %% "bio4j-dist" % "0.2.0",
+  // Test:
   "era7"          %% "defaults"  % "0.1.0" % Test,
   "org.scalatest" %% "scalatest" % "2.2.6" % Test
 )
 
 
+dependencyOverrides ++= Set(
+  "org.apache.httpcomponents"  % "httpclient"          % "4.5.1",
+  "org.slf4j"                  % "slf4j-api"           % "1.7.7"
+)
+
+
 fatArtifactSettings
+
+// copied from bio4j-titan:
+mergeStrategy in assembly ~= { old => {
+    case "log4j.properties"                       => MergeStrategy.filterDistinctLines
+    case PathList("org", "apache", "commons", _*) => MergeStrategy.first
+    case x                                        => old(x)
+  }
+}
 
 enablePlugins(BuildInfoPlugin)
 buildInfoPackage := "generated.metadata"
