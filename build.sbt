@@ -29,14 +29,20 @@ libraryDependencies ++= Seq(
 
 
 dependencyOverrides ++= Set(
-  "commons-logging"            % "commons-logging"     % "1.1.3",
-  "commons-codec"              % "commons-codec"       % "1.7",
   "org.apache.httpcomponents"  % "httpclient"          % "4.5.1",
   "org.slf4j"                  % "slf4j-api"           % "1.7.7"
 )
 
 
 fatArtifactSettings
+
+// copied from bio4j-titan:
+mergeStrategy in assembly ~= { old => {
+    case "log4j.properties"                       => MergeStrategy.filterDistinctLines
+    case PathList("org", "apache", "commons", _*) => MergeStrategy.first
+    case x                                        => old(x)
+  }
+}
 
 enablePlugins(BuildInfoPlugin)
 buildInfoPackage := "generated.metadata"
