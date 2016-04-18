@@ -36,27 +36,34 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
     TitanEdge, EdgeLabelMaker
   ]
 
-  def checkAncestors(id: String, ancestors: Set[String]): Boolean = {
-    // Java to Scala
-    def optional[T](jopt: java.util.Optional[T]): Option[T] =
-      if (jopt.isPresent) Some(jopt.get) else None
+  implicit class IdOps(val id: String) extends AnyVal {
 
-    @scala.annotation.tailrec
-    def checkAncestors_rec(node: TaxonNode): Boolean =
-      optional(node.ncbiTaxonParent_inV) match {
-        case None => false
-        case Some(parent) =>
-          if (ancestors.contains( parent.id() )) true
-          else checkAncestors_rec(parent)
-      }
+    def isDescendantOfOneIn(ancestors: Set[String]): Boolean = {
+      // Java to Scala
+      def optional[T](jopt: java.util.Optional[T]): Option[T] =
+        if (jopt.isPresent) Some(jopt.get) else None
 
-    optional(graph.nCBITaxonIdIndex.getVertex(id))
-      .map(checkAncestors_rec)
-      .getOrElse(false)
+      @ annotation.tailrec
+      def isDescendantOfOneIn_rec(node: TaxonNode): Boolean =
+        optional(node.ncbiTaxonParent_inV) match {
+          case None => false
+          case Some(parent) =>
+            if (ancestors.contains( parent.id() )) true
+            else isDescendantOfOneIn_rec(parent)
+        }
+
+      optional(graph.nCBITaxonIdIndex.getVertex(id))
+        .map(isDescendantOfOneIn_rec)
+        .getOrElse(false)
+    }
   }
 }
 
+/*
+  ## 16S RNA BLAST database
 
+  This contains the specification of our 16S BLAST database. All sequences are obtained from RNACentral, with sequences satisfying `predicate` being those included.
+*/
 case object rna16s extends AnyBlastDB {
 
   val name = "era7bio.db.rna16s"
@@ -67,9 +74,13 @@ case object rna16s extends AnyBlastDB {
 
   val s3location: S3Folder = S3Folder("resources.ohnosequences.com", "db/rna16s/")
 
-  /* The name identifying an RNA corresponding to 16S */
-  val geneNameFor16S = "16S rRNA"
-  /* These are NCBI taxonomy IDs corresponding to taxa which is at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes. */
+  /* We are using the ribosomal RNA type annotation on RNACentral as a first catch-all filter. We are aware of the existence of a gene annotation corresponding to 16S, that we are **not using** due to a significant amount of 16S sequences lacking the corresponding annotation. */
+  val ribosomalRNAType = "rRNA"
+
+  /* The sequence length threshold for a sequence to be admitted as 16S. */
+  val minimum16SLength: Int = 1300
+
+  /* These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes. */
   val uninformativeTaxIDsMap = Map(
     32644   -> "unclassified",
     358574  -> "uncultured microorganism",
@@ -91,28 +102,27 @@ case object rna16s extends AnyBlastDB {
 
   val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keys.map(_.toString).toSet
 
-  /* Here we want to keep sequences which */
+  /*
+    #### Database defining predicate
+
+    Sequences that satisfy this predicate (on themselves together with their annotation) are included in this database.
+  */
+  import bio4jTaxonomyBundle._
   val predicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>
-    /* - are annotated as encoding 16S */
-    ( row.select(gene_name) == geneNameFor16S ||
-      fasta.getV(header).description.toLowerCase.contains("16s") ||
-      fasta.getV(header).description.toLowerCase.contains("small subunit ribosomal")
-    ) &&
     /* - are annotated as rRNA */
-     row.select(rna_type).toLowerCase.contains("rrna") &&
+     row.select(rna_type).contains(ribosomalRNAType)        &&
     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
-    (uninformativeTaxIDs contains row.select(tax_id)) &&
-    /* - and the corresponding sequence is not shorter than 1300 BP */
-    (fasta.getV(sequence).value.length >= 1300) &&
+    ( ! uninformativeTaxIDs.contains(row.select(tax_id)) )  &&
+    /* - the corresponding sequence is not shorter than the threshold */
+    (fasta.getV(sequence).value.length >= minimum16SLength) &&
     /* - is a descendant of either Archaea or Bacteria */
-    bio4jTaxonomyBundle.checkAncestors(
-      row.select(tax_id), Set(
+    row.select(tax_id).isDescendantOfOneIn(
+      Set(
         "2157", // Archaea
         "2"     // Bacteria
       )
     )
   }
-
 
   // bundle to generate the DB (see the runBundles file in tests)
   case object generate extends GenerateBlastDB(this) {
