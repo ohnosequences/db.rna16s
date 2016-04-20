@@ -1,0 +1,2 @@
+
+- Filtering is now based on the NCBI taxonomy Bio4j graph
