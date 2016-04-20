@@ -81,6 +81,20 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
     private def unclassifiedBacteriaID = 2323
 
     def isDescendantOfUnclassifiedBacteria: Boolean = isDescendantOfOneIn( Set(unclassifiedBacteriaID.toString) )
+
+    def hasDescendantOrItselfUnclassified: Boolean = {
+
+      def hasDescendantOrItselfUnclassified_rec(node: TaxonNode): Boolean =
+        optional(node.ncbiTaxonParent_inV) match {
+          case None => false
+          case Some(parent) =>
+            if ( parent.name.contains("unclassified") ) true
+            else hasDescendantOrItselfUnclassified_rec(parent)
+        }
+
+      optional(graph.nCBITaxonIdIndex.getVertex(id))
+        .fold(false)(hasDescendantOrItselfUnclassified_rec)
+    }
   }
 }
 ```
@@ -190,7 +204,8 @@ Sequences that satisfy this predicate (on themselves together with their annotat
 
 ```scala
     ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor ) &&
-    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria )
+    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria ) &&
+    ( ! row.select(tax_id).hasDescendantOrItselfUnclassified )
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
