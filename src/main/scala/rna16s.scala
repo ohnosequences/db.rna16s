@@ -72,6 +72,10 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
         .map(isDescendantOfOneIn_rec)
         .getOrElse(false)
     }
+
+    private def unclassifiedBacteriaID = 2323
+
+    def isDescendantOfUnclassifiedBacteria: Boolean = isDescendantOfOneIn( Set(unclassifiedBacteriaID.toString) )
   }
 }
 
@@ -142,7 +146,8 @@ case object rna16s extends AnyBlastDB {
     /* - is a descendant of either Archaea or Bacteria */
     row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) ) &&
     /* - is not a descendant of an "environmental samples" taxon */
-    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor )
+    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor ) &&
+    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria )
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
