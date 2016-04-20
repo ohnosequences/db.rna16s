@@ -37,15 +37,34 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
     TitanVertex, VertexLabelMaker,
     TitanEdge, EdgeLabelMaker
   ]
+```
 
+**NOTE** all methods here work with a non-reflexive definition of ancestor/descendant
+
+```scala
   implicit class IdOps(val id: String) extends AnyVal {
 
-    def isDescendantOfOneIn(ancestors: Set[String]): Boolean = {
-      // Java to Scala
-      def optional[T](jopt: java.util.Optional[T]): Option[T] =
-        if (jopt.isPresent) Some(jopt.get) else None
+    // Java to Scala
+    private def optional[T](jopt: java.util.Optional[T]): Option[T] =
+      if (jopt.isPresent) Some(jopt.get) else None
 
-      @ annotation.tailrec
+    def hasEnvironmentalSamplesAncestor: Boolean = {
+
+      def hasEnvironmentalSamplesAncestor_rec(node: TaxonNode): Boolean =
+        optional(node.ncbiTaxonParent_inV) match {
+          case None => false
+          case Some(parent) =>
+            if (parent.name == "environmental samples") true
+            else hasEnvironmentalSamplesAncestor_rec(parent)
+        }
+
+      optional(graph.nCBITaxonIdIndex.getVertex(id))
+        .fold(false)(hasEnvironmentalSamplesAncestor_rec)
+    }
+
+    def isDescendantOfOneIn(ancestors: Set[String]): Boolean = {
+
+      @annotation.tailrec
       def isDescendantOfOneIn_rec(node: TaxonNode): Boolean =
         optional(node.ncbiTaxonParent_inV) match {
           case None => false
@@ -92,11 +111,21 @@ The sequence length threshold for a sequence to be admitted as 16S.
   val minimum16SLength: Int = 1300
 ```
 
+Taxa IDs for archaea and bacteria
+
+```scala
+  val archaeaTaxonID  = 2157
+  val bacteriaTaxonID = 2
+```
+
 These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes.
 
 ```scala
   val uninformativeTaxIDsMap = Map(
     32644   -> "unclassified",
+    2323    -> "unclassified Bacteria",
+    4992    -> "unclassified Bacteria (miscellaneous)", // LOL
+    118884  -> "unclassified Gammaproteobacteria",
     358574  -> "uncultured microorganism",
     155900  -> "uncultured organism",
     415540  -> "uncultured marine microorganism",
@@ -107,6 +136,7 @@ These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative
     152507  -> "uncultured actinobacterium",
     1211    -> "uncultured cyanobacterium",
     153809  -> "uncultured proteobacterium",
+    91750   -> "uncultured alpha proteobacterium",
     86027   -> "uncultured beta proteobacterium",
     86473   -> "uncultured gamma proteobacterium",
     34034   -> "uncultured delta proteobacterium",
@@ -149,18 +179,20 @@ Sequences that satisfy this predicate (on themselves together with their annotat
 - is a descendant of either Archaea or Bacteria
 
 ```scala
-    row.select(tax_id).isDescendantOfOneIn(
-      Set(
-        "2157", // Archaea
-        "2"     // Bacteria
-      )
-    )
+    row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) ) &&
+```
+
+- is not a descendant of an "environmental samples" taxon
+
+```scala
+    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor )
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
   case object generate extends GenerateBlastDB(this) {
 
-    override val bundleDependencies: List[AnyBundle] = List(bio4jTaxonomyBundle)
+    override val bundleDependencies: List[AnyBundle] =
+      List[AnyBundle](bio4jTaxonomyBundle, blastBundle)
   }
 
   // bundle to obtain and use the generated release
