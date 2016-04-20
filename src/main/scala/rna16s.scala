@@ -104,7 +104,7 @@ case object rna16s extends AnyBlastDB {
   val uninformativeTaxIDsMap = Map(
     32644   -> "unclassified",
     2323    -> "unclassified Bacteria",
-    4992    -> "unclassified Bacteria (miscellaneous)" // LOL
+    4992    -> "unclassified Bacteria (miscellaneous)", // LOL
     118884  -> "unclassified Gammaproteobacteria",
     358574  -> "uncultured microorganism",
     155900  -> "uncultured organism",
