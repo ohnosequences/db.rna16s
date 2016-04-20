@@ -103,6 +103,8 @@ case object rna16s extends AnyBlastDB {
   /* These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes. */
   val uninformativeTaxIDsMap = Map(
     32644   -> "unclassified",
+    2323    -> "unclassified Bacteria",
+    4992    -> "unclassified Bacteria (miscellaneous)" // LOL
     118884  -> "unclassified Gammaproteobacteria",
     358574  -> "uncultured microorganism",
     155900  -> "uncultured organism",
