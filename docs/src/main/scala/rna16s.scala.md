@@ -77,6 +77,10 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
         .map(isDescendantOfOneIn_rec)
         .getOrElse(false)
     }
+
+    private def unclassifiedBacteriaID = 2323
+
+    def isDescendantOfUnclassifiedBacteria: Boolean = isDescendantOfOneIn( Set(unclassifiedBacteriaID.toString) )
   }
 }
 ```
@@ -185,7 +189,8 @@ Sequences that satisfy this predicate (on themselves together with their annotat
 - is not a descendant of an "environmental samples" taxon
 
 ```scala
-    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor )
+    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor ) &&
+    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria )
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
