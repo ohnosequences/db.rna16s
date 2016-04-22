@@ -144,6 +144,12 @@ case object rna16s extends AnyBlastDB {
 
   val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keys.map(_.toString).toSet
 
+  /* and here we have RNACentral entries which we think are poorly assigned */
+  val blacklistedRNACentralIDs = Set(
+    "URS00007EE21F",  // Pseudomonas sp. NT 6-08 which looks to be a Staph aureus
+    "URS00008C61AD"   // ersinia pestis biovar Orientalis str. AS200901509 -> Staph aureus
+  )
+
   /*
     #### Database defining predicate
 
@@ -151,17 +157,19 @@ case object rna16s extends AnyBlastDB {
   */
   import bio4jTaxonomyBundle._
   val predicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>
+    /* is not blacklisted */
+    ( ! blacklistedRNACentralIDs.contains(row.select(id)) )                                             &&
     /* - are annotated as rRNA */
-     row.select(rna_type).contains(ribosomalRNAType)        &&
+     row.select(rna_type).contains(ribosomalRNAType)                                                    &&
     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
-    ( ! uninformativeTaxIDs.contains(row.select(tax_id)) )  &&
+    ( ! uninformativeTaxIDs.contains(row.select(tax_id)) )                                              &&
     /* - the corresponding sequence is not shorter than the threshold */
-    (fasta.getV(sequence).value.length >= minimum16SLength) &&
+    (fasta.getV(sequence).value.length >= minimum16SLength)                                             &&
     /* - is a descendant of either Archaea or Bacteria */
-    row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) ) &&
-    /* - is not a descendant of an "environmental samples" taxon */
-    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor ) &&
-    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria ) &&
+    row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) )  &&
+    /* - is not a descendant of an "environmental samples" or unclassified taxon */
+    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor )                                            &&
+    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria )                                         &&
     ( ! row.select(tax_id).hasDescendantOrItselfUnclassified )
   }
 
