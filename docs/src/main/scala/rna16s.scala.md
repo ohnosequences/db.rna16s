@@ -165,6 +165,15 @@ These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative
   val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keys.map(_.toString).toSet
 ```
 
+and here we have RNACentral entries which we think are poorly assigned
+
+```scala
+  val blacklistedRNACentralIDs = Set(
+    "URS00007EE21F",  // Pseudomonas sp. NT 6-08 which looks to be a Staph aureus
+    "URS00008C61AD"   // ersinia pestis biovar Orientalis str. AS200901509 -> Staph aureus
+  )
+```
+
 
 #### Database defining predicate
 
@@ -176,35 +185,41 @@ Sequences that satisfy this predicate (on themselves together with their annotat
   val predicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>
 ```
 
+is not blacklisted
+
+```scala
+    ( ! blacklistedRNACentralIDs.contains(row.select(id)) )                                             &&
+```
+
 - are annotated as rRNA
 
 ```scala
-     row.select(rna_type).contains(ribosomalRNAType)        &&
+     row.select(rna_type).contains(ribosomalRNAType)                                                    &&
 ```
 
 - their taxonomy association is *not* one of those in `uninformativeTaxIDs`
 
 ```scala
-    ( ! uninformativeTaxIDs.contains(row.select(tax_id)) )  &&
+    ( ! uninformativeTaxIDs.contains(row.select(tax_id)) )                                              &&
 ```
 
 - the corresponding sequence is not shorter than the threshold
 
 ```scala
-    (fasta.getV(sequence).value.length >= minimum16SLength) &&
+    (fasta.getV(sequence).value.length >= minimum16SLength)                                             &&
 ```
 
 - is a descendant of either Archaea or Bacteria
 
 ```scala
-    row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) ) &&
+    row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) )  &&
 ```
 
-- is not a descendant of an "environmental samples" taxon
+- is not a descendant of an "environmental samples" or unclassified taxon
 
 ```scala
-    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor ) &&
-    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria ) &&
+    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor )                                            &&
+    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria )                                         &&
     ( ! row.select(tax_id).hasDescendantOrItselfUnclassified )
   }
 
