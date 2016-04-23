@@ -144,10 +144,16 @@ case object rna16s extends AnyBlastDB {
 
   val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keys.map(_.toString).toSet
 
-  /* and here we have RNACentral entries which we think are poorly assigned */
+  /* and here we have RNACentral entries which we think are poorly assigned> This is list is by no means exhaustive, though its value can hardly be understimated. */
   val blacklistedRNACentralIDs = Set(
-    "URS00007EE21F",  // Pseudomonas sp. NT 6-08 which looks to be a Staph aureus
-    "URS00008C61AD"   // ersinia pestis biovar Orientalis str. AS200901509 -> Staph aureus
+    "URS00007EE21F",  // claims to be Pseudomonas sp. NT 6-08, it is a Staph aureus
+    "URS00008C61AD",  // claims to be Yersinia pestis biovar Orientalis str. AS200901509, it is a Staph aureus
+    "URS00008E71FD",  // claims to be Staphylococcus sciuri, it is a Pseudomonas
+    "URS000089CEEE",  // claims to be Bacillus sp. W4(2008), it is a Pseudomonas
+    "URS0000974DB8",  // claims to be Pseudomonas sp. CL3.1, it is a Bacillus
+    "URS00008E9E3B",  // claims to be Pantoea sp. CR30, it is a Bacillus
+    "URS00008DEF63",  // claims to be Microbacterium oxydans, it is a (fragment of) Bacillus
+    "URS000082C8CF"   // claims to be Streptococcus pneumoniae, it is a Bacillus plus some chimeric sequence
   )
 
   /*
