@@ -154,7 +154,9 @@ case object rna16s extends AnyBlastDB {
     "URS00008E9E3B",  // claims to be Pantoea sp. CR30, it is a Bacillus
     "URS00008DEF63",  // claims to be Microbacterium oxydans, it is a (fragment of) Bacillus
     "URS000082C8CF",  // claims to be Streptococcus pneumoniae, it is a Bacillus plus some chimeric sequence
-    "URS0000874571"   // claims to be Bordetella, it is a Pseudomonas aeruginosa
+    "URS0000874571",  // claims to be Bordetella, it is a Pseudomonas aeruginosa
+    "URS00008A3994",  // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
+    "URS00008898AD"   // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
   )
 
   /*
