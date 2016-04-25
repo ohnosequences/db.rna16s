@@ -146,6 +146,7 @@ case object rna16s extends AnyBlastDB {
 
   /* and here we have RNACentral entries which we think are poorly assigned> This is list is by no means exhaustive, though its value can hardly be understimated. */
   val blacklistedRNACentralIDs = Set(
+    "URS00008CCF2E",  // claims to be a Candidatus Hepatobacter penaei, it is a Pseudomonas
     "URS00007EE21F",  // claims to be Pseudomonas sp. NT 6-08, it is a Staph aureus
     "URS00008C61AD",  // claims to be Yersinia pestis biovar Orientalis str. AS200901509, it is a Staph aureus
     "URS00008E71FD",  // claims to be Staphylococcus sciuri, it is a Pseudomonas
