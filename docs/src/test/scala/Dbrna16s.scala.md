@@ -26,7 +26,7 @@ class Dbrna16sTest extends FunSuite {
 
 
 
-[test/scala/runBundles.scala]: runBundles.scala.md
+[main/scala/rna16s.scala]: ../../main/scala/rna16s.scala.md
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/Dbrna16s.scala]: Dbrna16s.scala.md
-[main/scala/rna16s.scala]: ../../main/scala/rna16s.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md

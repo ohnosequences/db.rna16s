@@ -169,6 +169,8 @@ and here we have RNACentral entries which we think are poorly assigned> This is 
 
 ```scala
   val blacklistedRNACentralIDs = Set(
+    "URS00008CD63B",  // claims to be Lactobacilus plantarum, it is an Enterococcus
+    "URS00008CCF2E",  // claims to be Candidatus Hepatobacter penaei, it is a Pseudomonas
     "URS00007EE21F",  // claims to be Pseudomonas sp. NT 6-08, it is a Staph aureus
     "URS00008C61AD",  // claims to be Yersinia pestis biovar Orientalis str. AS200901509, it is a Staph aureus
     "URS00008E71FD",  // claims to be Staphylococcus sciuri, it is a Pseudomonas
@@ -248,7 +250,7 @@ is not blacklisted
 
 
 
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/rna16s.scala]: rna16s.scala.md
 [test/scala/compats.scala]: ../../test/scala/compats.scala.md
 [test/scala/Dbrna16s.scala]: ../../test/scala/Dbrna16s.scala.md
-[main/scala/rna16s.scala]: rna16s.scala.md
+[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
