@@ -1,0 +1,2 @@
+- #22: Blacklisted `URS00008CD63B`, which claims to be _Lactobacilus plantarum_, but is an _Enterococcus_
+- #23: Blacklisted `URS00008CCF2E`, which claims to be _Candidatus Hepatobacter penaei_, but is a _Pseudomonas_
