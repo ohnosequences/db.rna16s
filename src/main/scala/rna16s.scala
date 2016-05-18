@@ -15,6 +15,8 @@ import com.bio4j.model.ncbiTaxonomy.NCBITaxonomyGraph._
 import com.bio4j.titan.model.ncbiTaxonomy._
 import com.bio4j.titan.util.DefaultTitanGraph
 
+import better.files._
+
 
 case object bio4jTaxonomyBundle extends AnyBio4jDist {
 
@@ -185,10 +187,29 @@ case object rna16s extends AnyBlastDB {
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
-  case object generate extends GenerateBlastDB(this) {
+  case object generate extends GenerateBlastDB(this)(bio4jTaxonomyBundle) {
 
-    override val bundleDependencies: List[AnyBundle] =
-      List[AnyBundle](bio4jTaxonomyBundle, blastBundle)
+
+    override def processSources(
+      tableInFile: File,
+      tableOutFile: File
+    )(fastaInFile: File,
+      fastaOutFile: File
+    ) {
+      lazy val tmpFasta: File = outputs / "tmp" / s"${db.name}.fasta"
+      lazy val tmpTable: File = outputs / "tmp" / "id2taxa.tsv"
+
+      // First process data with usual filters
+      super.processSources(
+        tableInFile,
+        tmpTable
+      )(fastaInFile,
+        tmpFasta
+      )
+
+      // Filter out assignments covered by bigger sequences
+
+    }
   }
 
   // bundle to obtain and use the generated release
