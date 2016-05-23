@@ -11,6 +11,6 @@ case object rna16sCompats {
       javaHeap = 20 // in G
     ),
     rna16s.generate,
-    generated.metadata.DbRna16s
+    generated.metadata.db.rna16s
   )
 }

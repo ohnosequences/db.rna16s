@@ -185,11 +185,7 @@ case object rna16s extends AnyBlastDB {
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
-  case object generate extends GenerateBlastDB(this) {
-
-    override val bundleDependencies: List[AnyBundle] =
-      List[AnyBundle](bio4jTaxonomyBundle, blastBundle)
-  }
+  case object generate extends GenerateBlastDB(this)(bio4jTaxonomyBundle)
 
   // bundle to obtain and use the generated release
   case object release extends BlastDBRelease(generate)
