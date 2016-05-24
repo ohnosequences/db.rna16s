@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "fastarious"      % "0.6.0",
   "ohnosequences" %% "blast-api"       % "0.7.0",
   "ohnosequences" %% "statika"         % "2.0.0-M5",
-  "era7bio"       %% "db-rnacentral"   % "0.3.0",
+  "era7bio"       %% "db-rnacentral"   % "0.4.0-SNAPSHOT",
   "ohnosequences-bundles" %% "bio4j-dist" % "0.2.0",
   // Test:
   "era7"          %% "defaults"  % "0.1.0" % Test,
@@ -50,7 +50,7 @@ buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifac
 buildInfoKeys    := Seq[BuildInfoKey](
   organization,
   version,
-  "artifact" -> normalizedName.value,
+  "artifact" -> name.value.toLowerCase,
   "artifactUrl" -> fatArtifactUrl.value
 )
 
