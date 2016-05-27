@@ -10,10 +10,10 @@ case object rna16sCompats {
   case object generateRna16sDB extends Compatible(
     amznAMIEnv(
       AmazonLinuxAMI(Ireland, HVM, InstanceStore),
-      javaHeap = 20 // in G
+      javaHeap = 40 // in G
     ),
     rna16s.generate,
-    generated.metadata.DbRna16s
+    generated.metadata.db.rna16s
   )
 }
 
@@ -22,7 +22,7 @@ case object rna16sCompats {
 
 
 
-[test/scala/runBundles.scala]: runBundles.scala.md
+[main/scala/rna16s.scala]: ../../main/scala/rna16s.scala.md
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/Dbrna16s.scala]: Dbrna16s.scala.md
-[main/scala/rna16s.scala]: ../../main/scala/rna16s.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md

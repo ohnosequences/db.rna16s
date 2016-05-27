@@ -14,9 +14,11 @@ class Dbrna16sTest extends FunSuite {
 
     rna16s.generate.processSources(
       file"source.table.sample.tsv",
-      file"output.table.sample.tsv".clear()
+      file"output.table.sample.tsv".clear(),
+      file"discarded.table.sample.tsv".clear()
     )(file"source.sample.fasta",
-      file"output.sample.fasta".clear()
+      file"output.sample.fasta".clear(),
+      file"discarded.sample.fasta".clear()
     )
   }
 }
@@ -26,7 +28,7 @@ class Dbrna16sTest extends FunSuite {
 
 
 
-[test/scala/runBundles.scala]: runBundles.scala.md
+[main/scala/rna16s.scala]: ../../main/scala/rna16s.scala.md
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/Dbrna16s.scala]: Dbrna16s.scala.md
-[main/scala/rna16s.scala]: ../../main/scala/rna16s.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md

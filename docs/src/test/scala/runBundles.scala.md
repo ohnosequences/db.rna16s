@@ -16,7 +16,7 @@ case object rna16sDBRelease {
       .runInstances(
         amount = 1,
         rna16sCompats.generateRna16sDB.instanceSpecs(
-          c3.x2large,
+          r3.x2large,
           user.keypair.name,
           Some(ec2Roles.projects.name)
         )
@@ -31,7 +31,7 @@ case object rna16sDBRelease {
 
 
 
-[test/scala/runBundles.scala]: runBundles.scala.md
+[main/scala/rna16s.scala]: ../../main/scala/rna16s.scala.md
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/Dbrna16s.scala]: Dbrna16s.scala.md
-[main/scala/rna16s.scala]: ../../main/scala/rna16s.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md

@@ -7,6 +7,7 @@ import ohnosequences.fastarious.fasta._
 import ohnosequences.awstools._, ec2._, InstanceType._, s3._, regions._
 import ohnosequences.statika._, aws._
 
+import com.github.tototoshi.csv._
 import era7bio.db.RNACentral5._
 import era7bio.db.csvUtils._
 
@@ -16,6 +17,8 @@ import com.thinkaurelius.titan.core._, schema._
 import com.bio4j.model.ncbiTaxonomy.NCBITaxonomyGraph._
 import com.bio4j.titan.model.ncbiTaxonomy._
 import com.bio4j.titan.util.DefaultTitanGraph
+
+import better.files._
 
 
 case object bio4jTaxonomyBundle extends AnyBio4jDist {
@@ -114,7 +117,9 @@ case object rna16s extends AnyBlastDB {
 
   val rnaCentralRelease: RNACentral5.type = RNACentral5
 
-  val s3location: S3Folder = S3Folder("resources.ohnosequences.com", "db/rna16s/")
+  val s3location: S3Folder = S3Folder("resources.ohnosequences.com", generated.metadata.db.rna16s.organization) /
+    generated.metadata.db.rna16s.artifact /
+    generated.metadata.db.rna16s.version.stripSuffix("-SNAPSHOT") /
 ```
 
 We are using the ribosomal RNA type annotation on RNACentral as a first catch-all filter. We are aware of the existence of a gene annotation corresponding to 16S, that we are **not using** due to a significant amount of 16S sequences lacking the corresponding annotation.
@@ -243,15 +248,82 @@ is not blacklisted
     ( ! row.select(tax_id).hasDescendantOrItselfUnclassified )
   }
 
-  // bundle to generate the DB (see the runBundles file in tests)
-  case object generate extends GenerateBlastDB(this) {
+  implicit class StreamOp[T](val s: Stream[T]) extends AnyVal {
 
-    override val bundleDependencies: List[AnyBundle] =
-      List[AnyBundle](bio4jTaxonomyBundle, blastBundle)
+    def group[K](key: T => K): Stream[(K, Stream[T])] = {
+      if (s.isEmpty) Stream()
+      else {
+        val k = key(s.head)
+        val (prefix, suffix) = s.span { key(_) == k }
+        (k -> prefix) #:: suffix.group(key)
+      }
+    }
+  }
+
+  // bundle to generate the DB (see the runBundles file in tests)
+  case object generate extends GenerateBlastDB(this)(bio4jTaxonomyBundle) {
+
+    def processSources(
+      tableInFile: File,
+      tableOutFile: File,
+      tableDiscardedFile: File
+    )(fastaInFile: File,
+      fastaOutFile: File,
+      fastaDiscardedFile: File
+    ) {
+
+      val tableReader = CSVReader.open(tableInFile.toJava)(tableFormat)
+      val tableOutWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
+      val tableDiscardedWriter = CSVWriter.open(tableDiscardedFile.toJava, append = true)(tableFormat)
+
+      println("Reading FASTA...")
+      val fastas: Stream[FASTA.Value] = parseFastaDropErrors(fastaInFile.lines).toStream
+
+      println("Reading table...")
+      val groupedRows: Stream[(String, Stream[Row])] = tableReader.iterator.toStream.group{ _.select(id) }
+
+      (groupedRows zip fastas) foreach { case ((commonID, rows), fasta) =>
+
+        if (commonID != fasta.getV(header).id)
+          sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
+
+        val extID = s"${commonID}|lcl|${db.name}"
+
+        val (goodRows, badRows) = rows.partition{ db.predicate(_, fasta) }
+
+        println(s"${goodRows.length}\t${badRows.length}")
+
+        if (badRows.nonEmpty) {
+          badRows.foreach( tableDiscardedWriter.writeRow )
+          fastaDiscardedFile.appendLine( fasta.asString )
+        }
+
+        val taxas: Set[String] = goodRows.map{ _.select(tax_id) }.toSet
+
+        if (taxas.nonEmpty) {
+          tableOutWriter.writeRow( Seq(extID, taxas.mkString(";")) )
+
+          fastaOutFile.appendLine(
+            fasta.update(
+              header := FastaHeader(s"${extID} ${fasta.getV(header).description}")
+            ).asString
+          )
+        }
+      }
+
+      tableReader.close()
+      tableOutWriter.close()
+      tableDiscardedWriter.close()
+    }
+
   }
 
   // bundle to obtain and use the generated release
-  case object release extends BlastDBRelease(generate)
+  case object release extends BlastDBRelease(generate) {
+
+    val blastDBS3 = era7bio.db.rna16s.s3location / "blastdb" /
+    val id2taxasS3 = era7bio.db.rna16s.s3location / "data" / "id2taxa.tsv"
+  }
 }
 
 ```
@@ -259,7 +331,7 @@ is not blacklisted
 
 
 
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/rna16s.scala]: rna16s.scala.md
 [test/scala/compats.scala]: ../../test/scala/compats.scala.md
 [test/scala/Dbrna16s.scala]: ../../test/scala/Dbrna16s.scala.md
-[main/scala/rna16s.scala]: rna16s.scala.md
+[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
