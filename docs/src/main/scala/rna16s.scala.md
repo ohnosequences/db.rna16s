@@ -181,7 +181,16 @@ and here we have RNACentral entries which we think are poorly assigned> This is 
     "URS000082C8CF",  // claims to be Streptococcus pneumoniae, it is a Bacillus plus some chimeric sequence
     "URS0000874571",  // claims to be Bordetella, it is a Pseudomonas aeruginosa
     "URS00008A3994",  // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
-    "URS00008898AD"   // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
+    "URS00008898AD",  // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
+    "URS0000215B45",  // claims to be Vibrio cholerae HC-02A1, it is an Enterococcus faecalis
+    "URS00008239BE",  // claims to be Mycobacterium abscessus, it is an Acinetobacter
+    "URS000074A9F2",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS0000735DC4",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS00005BB216",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS0000590E49",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS0000865688",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS000085F838",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS000074A9F2"   // claims to be Prolinoborus fasciculus, it is an Acinetobacter
   )
 ```
 
@@ -250,7 +259,7 @@ is not blacklisted
 
 
 
-[main/scala/rna16s.scala]: rna16s.scala.md
+[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
 [test/scala/compats.scala]: ../../test/scala/compats.scala.md
 [test/scala/Dbrna16s.scala]: ../../test/scala/Dbrna16s.scala.md
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/rna16s.scala]: rna16s.scala.md
