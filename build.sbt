@@ -1,11 +1,10 @@
 Nice.scalaProject
 
-name          := "db-rna16s"
+name          := "db.rna16s"
 organization  := "era7bio"
-description   := "db-rna16s project"
+description   := "rna16s reference database based on RNAcentral"
 
-// the repo name differs on github:
-GithubRelease.repo := s"${organization.value}/db.rna16S"
+GithubRelease.repo := organization.value +"/"+ name.value
 
 scalaVersion := "2.11.8"
 
@@ -20,7 +19,7 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "fastarious"      % "0.6.0",
   "ohnosequences" %% "blast-api"       % "0.7.0",
   "ohnosequences" %% "statika"         % "2.0.0-M5",
-  "era7bio"       %% "rnacentraldb"    % "0.2.1",
+  "era7bio"       %% "db-rnacentral"   % "0.4.0",
   "ohnosequences-bundles" %% "bio4j-dist" % "0.2.0",
   // Test:
   "era7"          %% "defaults"  % "0.1.0" % Test,
@@ -45,8 +44,8 @@ mergeStrategy in assembly ~= { old => {
 }
 
 enablePlugins(BuildInfoPlugin)
-buildInfoPackage := "generated.metadata"
-buildInfoObject  := name.value.split("""\W""").map(_.capitalize).mkString
+buildInfoPackage := "generated.metadata.db"
+buildInfoObject  := "rna16s"
 buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
 buildInfoKeys    := Seq[BuildInfoKey](
   organization,
