@@ -260,5 +260,9 @@ case object rna16s extends AnyBlastDB {
   }
 
   // bundle to obtain and use the generated release
-  case object release extends BlastDBRelease(generate)
+  case object release extends BlastDBRelease(generate) {
+
+    val blastDBS3 = era7bio.db.rna16s.s3location / "blastdb" /
+    val id2taxasS3 = era7bio.db.rna16s.s3location / "data" / "id2taxa.tsv"
+  }
 }
