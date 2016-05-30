@@ -5,6 +5,7 @@ import ohnosequences.fastarious.fasta._
 import ohnosequences.awstools._, ec2._, InstanceType._, s3._, regions._
 import ohnosequences.statika._, aws._
 
+import com.github.tototoshi.csv._
 import era7bio.db.RNACentral5._
 import era7bio.db.csvUtils._
 
@@ -108,7 +109,9 @@ case object rna16s extends AnyBlastDB {
 
   val rnaCentralRelease: RNACentral5.type = RNACentral5
 
-  val s3location: S3Folder = S3Folder("resources.ohnosequences.com", "db/rna16s/")
+  val s3location: S3Folder = S3Folder("resources.ohnosequences.com", generated.metadata.db.rna16s.organization) /
+    generated.metadata.db.rna16s.artifact /
+    generated.metadata.db.rna16s.version.stripSuffix("-SNAPSHOT") /
 
   /* We are using the ribosomal RNA type annotation on RNACentral as a first catch-all filter. We are aware of the existence of a gene annotation corresponding to 16S, that we are **not using** due to a significant amount of 16S sequences lacking the corresponding annotation. */
   val ribosomalRNAType = "rRNA"
@@ -160,7 +163,16 @@ case object rna16s extends AnyBlastDB {
     "URS000082C8CF",  // claims to be Streptococcus pneumoniae, it is a Bacillus plus some chimeric sequence
     "URS0000874571",  // claims to be Bordetella, it is a Pseudomonas aeruginosa
     "URS00008A3994",  // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
-    "URS00008898AD"   // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
+    "URS00008898AD",  // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
+    "URS0000215B45",  // claims to be Vibrio cholerae HC-02A1, it is an Enterococcus faecalis
+    "URS00008239BE",  // claims to be Mycobacterium abscessus, it is an Acinetobacter
+    "URS000074A9F2",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS0000735DC4",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS00005BB216",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS0000590E49",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS0000865688",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS000085F838",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
+    "URS000074A9F2"   // claims to be Prolinoborus fasciculus, it is an Acinetobacter
   )
 
   /*
@@ -186,32 +198,80 @@ case object rna16s extends AnyBlastDB {
     ( ! row.select(tax_id).hasDescendantOrItselfUnclassified )
   }
 
-  // bundle to generate the DB (see the runBundles file in tests)
-  case object generate extends GenerateBlastDB(this)(bio4jTaxonomyBundle) {
+  implicit class StreamOp[T](val s: Stream[T]) extends AnyVal {
 
-
-    override def processSources(
-      tableInFile: File,
-      tableOutFile: File
-    )(fastaInFile: File,
-      fastaOutFile: File
-    ) {
-      lazy val tmpFasta: File = outputs / "tmp" / s"${db.name}.fasta"
-      lazy val tmpTable: File = outputs / "tmp" / "id2taxa.tsv"
-
-      // First process data with usual filters
-      super.processSources(
-        tableInFile,
-        tmpTable
-      )(fastaInFile,
-        tmpFasta
-      )
-
-      // Filter out assignments covered by bigger sequences
-
+    def group[K](key: T => K): Stream[(K, Stream[T])] = {
+      if (s.isEmpty) Stream()
+      else {
+        val k = key(s.head)
+        val (prefix, suffix) = s.span { key(_) == k }
+        (k -> prefix) #:: suffix.group(key)
+      }
     }
   }
 
+  // bundle to generate the DB (see the runBundles file in tests)
+  case object generate extends GenerateBlastDB(this)(bio4jTaxonomyBundle) {
+
+    def processSources(
+      tableInFile: File,
+      tableOutFile: File,
+      tableDiscardedFile: File
+    )(fastaInFile: File,
+      fastaOutFile: File,
+      fastaDiscardedFile: File
+    ) {
+
+      val tableReader = CSVReader.open(tableInFile.toJava)(tableFormat)
+      val tableOutWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
+      val tableDiscardedWriter = CSVWriter.open(tableDiscardedFile.toJava, append = true)(tableFormat)
+
+      println("Reading FASTA...")
+      val fastas: Stream[FASTA.Value] = parseFastaDropErrors(fastaInFile.lines).toStream
+
+      println("Reading table...")
+      val groupedRows: Stream[(String, Stream[Row])] = tableReader.iterator.toStream.group{ _.select(id) }
+
+      (groupedRows zip fastas) foreach { case ((commonID, rows), fasta) =>
+
+        if (commonID != fasta.getV(header).id)
+          sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
+
+        val extID = s"${commonID}|lcl|${db.name}"
+
+        val (goodRows, badRows) = rows.partition{ db.predicate(_, fasta) }
+
+        println(s"${goodRows.length}\t${badRows.length}")
+
+        if (badRows.nonEmpty) {
+          badRows.foreach( tableDiscardedWriter.writeRow )
+          fastaDiscardedFile.appendLine( fasta.asString )
+        }
+
+        val taxas: Set[String] = goodRows.map{ _.select(tax_id) }.toSet
+
+        if (taxas.nonEmpty) {
+          tableOutWriter.writeRow( Seq(extID, taxas.mkString(";")) )
+
+          fastaOutFile.appendLine(
+            fasta.update(
+              header := FastaHeader(s"${extID} ${fasta.getV(header).description}")
+            ).asString
+          )
+        }
+      }
+
+      tableReader.close()
+      tableOutWriter.close()
+      tableDiscardedWriter.close()
+    }
+
+  }
+
   // bundle to obtain and use the generated release
-  case object release extends BlastDBRelease(generate)
+  case object release extends BlastDBRelease(generate) {
+
+    val blastDBS3 = era7bio.db.rna16s.s3location / "blastdb" /
+    val id2taxasS3 = era7bio.db.rna16s.s3location / "data" / "id2taxa.tsv"
+  }
 }

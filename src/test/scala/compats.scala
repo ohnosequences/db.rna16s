@@ -8,9 +8,9 @@ case object rna16sCompats {
   case object generateRna16sDB extends Compatible(
     amznAMIEnv(
       AmazonLinuxAMI(Ireland, HVM, InstanceStore),
-      javaHeap = 20 // in G
+      javaHeap = 40 // in G
     ),
     rna16s.generate,
-    generated.metadata.DbRna16s
+    generated.metadata.db.rna16s
   )
 }

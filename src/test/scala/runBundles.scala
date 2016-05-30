@@ -14,7 +14,7 @@ case object rna16sDBRelease {
       .runInstances(
         amount = 1,
         rna16sCompats.generateRna16sDB.instanceSpecs(
-          c3.x2large,
+          r3.x2large,
           user.keypair.name,
           Some(ec2Roles.projects.name)
         )

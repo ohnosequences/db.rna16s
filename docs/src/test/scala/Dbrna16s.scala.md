@@ -14,9 +14,11 @@ class Dbrna16sTest extends FunSuite {
 
     rna16s.generate.processSources(
       file"source.table.sample.tsv",
-      file"output.table.sample.tsv".clear()
+      file"output.table.sample.tsv".clear(),
+      file"discarded.table.sample.tsv".clear()
     )(file"source.sample.fasta",
-      file"output.sample.fasta".clear()
+      file"output.sample.fasta".clear(),
+      file"discarded.sample.fasta".clear()
     )
   }
 }
