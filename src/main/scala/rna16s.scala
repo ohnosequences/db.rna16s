@@ -241,7 +241,7 @@ case object rna16s extends AnyBlastDB {
 
         val (goodRows, badRows) = rows.partition{ db.predicate(_, fasta) }
 
-        println(s"${goodRows.length}\t${badRows.length}")
+        // println(s"${goodRows.length}\t${badRows.length}")
 
         if (badRows.nonEmpty) {
           badRows.foreach( tableDiscardedWriter.writeRow )
@@ -273,5 +273,51 @@ case object rna16s extends AnyBlastDB {
 
     val blastDBS3 = era7bio.db.rna16s.s3location / "blastdb" /
     val id2taxasS3 = era7bio.db.rna16s.s3location / "data" / "id2taxa.tsv"
+  }
+
+  // From Map[K, Set[V]] to Map[V, Set[K]]
+  implicit class MapOp[K, V](val m: Map[K, Array[V]]) extends AnyVal {
+
+    def vals2keys: Map[V, Set[K]] =
+      m.foldLeft(Map[V, Set[K]]()) { case (acc, (k, vs)) =>
+
+        vs.foldLeft(acc) { (accc, v) =>
+
+          accc.updated(v, accc.get(v).getOrElse(Set()) + k)
+        }
+      }
+  }
+
+  case object filterCovered extends GenerateBlastDB(this)() {
+
+    def processSources(
+      tableInFile: File,
+      tableOutFile: File,
+      tableDiscardedFile: File
+    )(fastaInFile: File,
+      fastaOutFile: File,
+      fastaDiscardedFile: File
+    ) {
+
+      val tableOutWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
+      val tableDiscardedWriter = CSVWriter.open(tableDiscardedFile.toJava, append = true)(tableFormat)
+
+      val id2taxas = CSVReader.open(tableInFile.toJava)(tableFormat).iterator.map { row => row(0) -> row(1).split(';').map(_.trim) }.toMap
+
+      // Only those taxas assigned to multiple ids:
+      val taxa2ids = id2taxas.vals2keys.filter { case (taxa, ids) => ids.size > 1 }
+
+      // TODO: filter those ids that are contained one in another
+      val filtered: Map[String, Array[String]] = ???
+
+      filtered.vals2keys.foreach { case (id, taxas) =>
+        tableOutWriter.writeRow( Seq(id, taxas.mkString(";")) )
+      }
+
+      tableOutWriter.close()
+      tableDiscardedWriter.close()
+    }
+
+
   }
 }
