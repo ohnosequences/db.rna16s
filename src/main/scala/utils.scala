@@ -1,5 +1,7 @@
 package era7bio.db
 
+import scala.collection._
+
 case object collectionUtils {
 
   implicit class StreamOp[T](val s: Stream[T]) extends AnyVal {
@@ -17,18 +19,24 @@ case object collectionUtils {
   }
 
 
-  implicit class MapOp[K, V](val m: Map[K, Iterable[V]]) extends AnyVal {
+  implicit class MapOp[K, V](val m: collection.Map[K, Iterable[V]]) extends AnyVal {
 
-    /* From Map[K, Seq[V]] to Map[V, Seq[K]] */
-    def trans: Map[V, Seq[K]] =
-      m.foldLeft(Map[V, Seq[K]]()) { case (acc, (k, vs)) =>
+    /* From Map[K, Seq[V]] to Map[V, Seq[K]],
+       applying given function (`identity` by default)
+    */
+    def trans[FK, FV](f: ((K, V)) => (FK, FV)): Map[FV, Seq[FK]] =
+      m.foldLeft(Map[FV, Seq[FK]]()) { case (acc, (k, vs)) =>
 
         vs.foldLeft(acc) { (accc, v) =>
 
-          val ks = accc.get(v).getOrElse( Seq() )
-          accc.updated(v, k +: ks)
+          val (fk, fv) = f(k -> v)
+          val fks = accc.get(fv).getOrElse( Seq() )
+
+          accc.updated(fv, fk +: fks)
         }
       }
+
+    def trans: Map[V, Seq[K]] = trans(identity[(K, V)])
   }
 
 }

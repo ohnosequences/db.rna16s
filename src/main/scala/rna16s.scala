@@ -1,5 +1,7 @@
 package era7bio.db
 
+import scala.collection._
+
 import ohnosequences.blast.api._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.awstools._, ec2._, InstanceType._, s3._, regions._
@@ -268,6 +270,7 @@ case object rna16s extends AnyBlastDB {
     type ID = String
     type Taxa = String
     type Fasta = FASTA.Value
+    type Eith[X] = Either[X, X]
 
     def processSources(
       tableInFile: File,
@@ -277,26 +280,67 @@ case object rna16s extends AnyBlastDB {
       fastaOutFile: File,
       fastaDiscardedFile: File
     ) {
+      val leftWriter = CSVWriter.open(tableDiscardedFile.toJava, append = true)(tableFormat)
+      val rightWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
 
-      val tableOutWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
-      val tableDiscardedWriter = CSVWriter.open(tableDiscardedFile.toJava, append = true)(tableFormat)
+      // id1 -> fasta1
+      // id2 -> fasta2
+      val id2fasta: mutable.Map[ID, Fasta] =
+        parseFastaDropErrors(fastaInFile.lines)
+          .foldLeft(mutable.Map[ID, Fasta]()) { (acc, fasta) =>
+            acc + (fasta.getV(header).id -> fasta)
+          }
 
-      // val id2fasta = CSVReader.open(tableInFile.toJava)(tableFormat).iterator.map { row => row(0) -> row(1).split(';').map(_.trim) }.toMap
+      // id1 -> taxa1; taxa2; taxa3
+      val id2taxas: Map[ID, Seq[Taxa]] = CSVReader.open(tableInFile.toJava)(tableFormat)
+        .iterator.map { row =>
+          row(0) ->
+          row(1).split(';').map(_.trim).toSeq
+        }.toMap
 
-      val id2taxas: Map[ID, Seq[Taxa]] = CSVReader.open(tableInFile.toJava)(tableFormat).iterator.map { row => row(0) -> row(1).split(';').map(_.trim).toSeq }.toMap
+      // taxa1 -> id1
+      // taxa2 -> id1; id2
+      val taxa2ids: Map[Taxa, Seq[ID]] = id2taxas.trans
 
-      // Only those taxas assigned to multiple ids:
-      val taxa2ids = id2taxas.trans.filter { case (taxa, ids) => ids.size > 1 }
+      // Left IDs are contained in another ones, Right IDs are not contained
+      val taxa2partitionedIDs: Map[Taxa, Seq[Eith[ID]]] = taxa2ids.map { case (taxa, ids) =>
 
-      // TODO: filter those ids that are contained one in another
-      val taxa2FilteredIDs: Map[Taxa, Seq[ID]] = ???
+        // here we get fastas and filtering out those that are known to be contained in others
+        val fastas: Seq[Fasta] = ids.map(id2fasta.apply)
 
-      taxa2FilteredIDs.trans.foreach { case (id, taxas) =>
-        tableOutWriter.writeRow( Seq(id, taxas.mkString(";")) )
+        val (contained: Seq[Fasta], notContained: Seq[Fasta]) =
+          partitionContained(fastas){ _.getV(sequence).value }
+
+        // the result of this .map
+        taxa -> (
+             contained.map { f =>  Left(f.getV(header).id): Eith[ID] } ++
+          notContained.map { f => Right(f.getV(header).id): Eith[ID] }
+        )
       }
 
-      tableOutWriter.close()
-      tableDiscardedWriter.close()
+
+      val id2partitionedTaxas: Map[ID, Seq[Eith[Taxa]]] = taxa2partitionedIDs.trans {
+        case (taxa, Left(id)) => (Left(taxa), id)
+        case (taxa, Right(id)) => (Right(taxa), id)
+      }
+
+      id2partitionedTaxas.foreach { case (id, partTaxas) =>
+
+        val lefts:  Seq[Taxa] = partTaxas.collect { case Left(t) => t }
+        val rights: Seq[Taxa] = partTaxas.collect { case Right(t) => t }
+
+        if (lefts.nonEmpty)   leftWriter.writeRow( Seq(id,  lefts.mkString(";")) )
+        if (rights.nonEmpty) rightWriter.writeRow( Seq(id, rights.mkString(";")) )
+
+        if (rights.isEmpty) { // all taxas for this id got discarded:
+          fastaDiscardedFile.appendLine( id2fasta(id).asString )
+        } else {
+          fastaOutFile.appendLine( id2fasta(id).asString )
+        }
+      }
+
+      leftWriter.close()
+      rightWriter.close()
     }
 
     /* Filters out those sequences that are contained in any other ones.
