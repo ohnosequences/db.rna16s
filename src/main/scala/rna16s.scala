@@ -8,6 +8,7 @@ import ohnosequences.statika._, aws._
 import com.github.tototoshi.csv._
 import era7bio.db.RNACentral5._
 import era7bio.db.csvUtils._
+import era7bio.db.collectionUtils._
 
 import ohnosequencesBundles.statika._
 
@@ -198,18 +199,6 @@ case object rna16s extends AnyBlastDB {
     ( ! row.select(tax_id).hasDescendantOrItselfUnclassified )
   }
 
-  implicit class StreamOp[T](val s: Stream[T]) extends AnyVal {
-
-    def group[K](key: T => K): Stream[(K, Stream[T])] = {
-      if (s.isEmpty) Stream()
-      else {
-        val k = key(s.head)
-        val (prefix, suffix) = s.span { key(_) == k }
-        (k -> prefix) #:: suffix.group(key)
-      }
-    }
-  }
-
   // bundle to generate the DB (see the runBundles file in tests)
   case object generate extends GenerateBlastDB(this)(bio4jTaxonomyBundle) {
 
@@ -275,20 +264,10 @@ case object rna16s extends AnyBlastDB {
     val id2taxasS3 = era7bio.db.rna16s.s3location / "data" / "id2taxa.tsv"
   }
 
-  // From Map[K, Set[V]] to Map[V, Set[K]]
-  implicit class MapOp[K, V](val m: Map[K, Array[V]]) extends AnyVal {
-
-    def vals2keys: Map[V, Set[K]] =
-      m.foldLeft(Map[V, Set[K]]()) { case (acc, (k, vs)) =>
-
-        vs.foldLeft(acc) { (accc, v) =>
-
-          accc.updated(v, accc.get(v).getOrElse(Set()) + k)
-        }
-      }
-  }
-
   case object filterCovered extends GenerateBlastDB(this)() {
+    type ID = String
+    type Taxa = String
+    type Fasta = FASTA.Value
 
     def processSources(
       tableInFile: File,
@@ -302,15 +281,17 @@ case object rna16s extends AnyBlastDB {
       val tableOutWriter = CSVWriter.open(tableOutFile.toJava, append = true)(tableFormat)
       val tableDiscardedWriter = CSVWriter.open(tableDiscardedFile.toJava, append = true)(tableFormat)
 
-      val id2taxas = CSVReader.open(tableInFile.toJava)(tableFormat).iterator.map { row => row(0) -> row(1).split(';').map(_.trim) }.toMap
+      // val id2fasta = CSVReader.open(tableInFile.toJava)(tableFormat).iterator.map { row => row(0) -> row(1).split(';').map(_.trim) }.toMap
+
+      val id2taxas: Map[ID, Seq[Taxa]] = CSVReader.open(tableInFile.toJava)(tableFormat).iterator.map { row => row(0) -> row(1).split(';').map(_.trim).toSeq }.toMap
 
       // Only those taxas assigned to multiple ids:
-      val taxa2ids = id2taxas.vals2keys.filter { case (taxa, ids) => ids.size > 1 }
+      val taxa2ids = id2taxas.trans.filter { case (taxa, ids) => ids.size > 1 }
 
       // TODO: filter those ids that are contained one in another
-      val filtered: Map[String, Array[String]] = ???
+      val taxa2FilteredIDs: Map[Taxa, Seq[ID]] = ???
 
-      filtered.vals2keys.foreach { case (id, taxas) =>
+      taxa2FilteredIDs.trans.foreach { case (id, taxas) =>
         tableOutWriter.writeRow( Seq(id, taxas.mkString(";")) )
       }
 
@@ -318,6 +299,32 @@ case object rna16s extends AnyBlastDB {
       tableDiscardedWriter.close()
     }
 
+    /* Filters out those sequences that are contained in any other ones.
+       Returns a pair: contained seq-s and not-contained.
+    */
+    def partitionContained[T](seq: Seq[T])(content: T => String): (Seq[T], Seq[T]) = {
+      // from long to short:
+      val sorted = seq.sortBy{ t => content(t).length }(Ordering.Int.reverse)
 
+      // for each head filters out those ones in the tail that are contained in it
+      @scala.annotation.tailrec
+      def sieve_rec(acc: (Seq[T], Seq[T]), rest: Seq[T]): (Seq[T], Seq[T]) = rest match {
+        case Nil => acc
+        // note, this reverses the ordering:
+        case head +: tail => {
+          val  (accContained,  accNotContained) = acc
+          val (tailContained, tailNotContained) = tail.partition { x =>
+            content(head) contains content(x)
+          }
+
+          sieve_rec(
+            (tailContained ++ accContained, head +: accNotContained),
+            tailNotContained
+          )
+        }
+      }
+
+      sieve_rec((Seq(), Seq()), sorted)
+    }
   }
 }
