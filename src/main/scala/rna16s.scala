@@ -1,7 +1,5 @@
 package era7bio.db
 
-import scala.collection._
-
 import ohnosequences.blast.api._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.awstools._, ec2._, InstanceType._, s3._, regions._
@@ -285,10 +283,10 @@ case object rna16s extends AnyBlastDB {
 
       // id1 -> fasta1
       // id2 -> fasta2
-      val id2fasta: mutable.Map[ID, Fasta] =
+      val id2fasta: Map[ID, Fasta] =
         parseFastaDropErrors(fastaInFile.lines)
-          .foldLeft(mutable.Map[ID, Fasta]()) { (acc, fasta) =>
-            acc + (fasta.getV(header).id -> fasta)
+          .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
+            acc.updated( fasta.getV(header).id, fasta )
           }
 
       // id1 -> taxa1; taxa2; taxa3
@@ -298,11 +296,12 @@ case object rna16s extends AnyBlastDB {
           row(1).split(';').map(_.trim).toSeq
         }.toMap
 
-      // taxa1 -> id1
-      // taxa2 -> id1; id2
+      // taxa1 -> id1; id2; id3
+      // taxa2 -> id2
       val taxa2ids: Map[Taxa, Seq[ID]] = id2taxas.trans
 
-      // Left IDs are contained in another ones, Right IDs are not contained
+      // taxa1 -> Left(id1); Right(id2); Left(id3)
+      // Lefts are contained in another ones, Rights are not contained
       val taxa2partitionedIDs: Map[Taxa, Seq[Eith[ID]]] = taxa2ids.map { case (taxa, ids) =>
 
         // here we get fastas and filtering out those that are known to be contained in others
@@ -318,7 +317,8 @@ case object rna16s extends AnyBlastDB {
         )
       }
 
-
+      // id1 -> Left(taxa1); Right(taxa2); ...
+      // Lefts are discarded mappings; Rights are accepted
       val id2partitionedTaxas: Map[ID, Seq[Eith[Taxa]]] = taxa2partitionedIDs.trans {
         case (taxa, Left(id)) => (Left(taxa), id)
         case (taxa, Right(id)) => (Right(taxa), id)
@@ -332,7 +332,7 @@ case object rna16s extends AnyBlastDB {
         if (lefts.nonEmpty)   leftWriter.writeRow( Seq(id,  lefts.mkString(";")) )
         if (rights.nonEmpty) rightWriter.writeRow( Seq(id, rights.mkString(";")) )
 
-        if (rights.isEmpty) { // all taxas for this id got discarded:
+        if (rights.isEmpty) { // all taxas for this ID got discarded:
           fastaDiscardedFile.appendLine( id2fasta(id).asString )
         } else {
           fastaOutFile.appendLine( id2fasta(id).asString )

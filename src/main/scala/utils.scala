@@ -1,7 +1,5 @@
 package era7bio.db
 
-import scala.collection._
-
 case object collectionUtils {
 
   implicit class StreamOp[T](val s: Stream[T]) extends AnyVal {
@@ -19,7 +17,7 @@ case object collectionUtils {
   }
 
 
-  implicit class MapOp[K, V](val m: collection.Map[K, Iterable[V]]) extends AnyVal {
+  implicit class MapOp[K, V](val m: Map[K, Iterable[V]]) extends AnyVal {
 
     /* From Map[K, Seq[V]] to Map[V, Seq[K]],
        applying given function (`identity` by default)
