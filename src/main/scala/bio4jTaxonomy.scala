@@ -1,14 +1,7 @@
 package era7bio.db
 
-import ohnosequences.blast.api._
-import ohnosequences.fastarious.fasta._
-import ohnosequences.awstools._, ec2._, InstanceType._, s3._, regions._
-import ohnosequences.statika._, aws._
-
-import com.github.tototoshi.csv._
-import era7bio.db.RNACentral5._
-import era7bio.db.csvUtils._
-import era7bio.db.collectionUtils._
+import ohnosequences.awstools.s3._
+import ohnosequences.statika._
 
 import ohnosequencesBundles.statika._
 
