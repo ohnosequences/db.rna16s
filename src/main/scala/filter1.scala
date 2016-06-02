@@ -14,7 +14,7 @@ import better.files._
 case object filter1 extends FilterData(
   sourceTableS3 = RNACentral5.table,
   sourceFastaS3 = RNACentral5.fasta,
-  outputS3Prefix = rna16s.s3prefix / "filter1" /
+  outputS3Prefix = era7bio.db.rna16s.s3prefix / "filter1" /
 )(
   deps = bio4jTaxonomyBundle
 ) {
@@ -130,7 +130,7 @@ case object filter1 extends FilterData(
       }
 
       if (acceptedRows.nonEmpty) {
-        val extendedID: String = s"${commonID}|lcl|${rna16s.dbName}"
+        val extendedID: String = s"${commonID}|lcl|${era7bio.db.rna16s.dbName}"
 
         accepted.table.writer.writeRow(Seq(
           extendedID,

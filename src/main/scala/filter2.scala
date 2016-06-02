@@ -12,7 +12,7 @@ import better.files._
 case object filter2 extends FilterData(
   sourceTableS3 = filter1.accepted.table.s3,
   sourceFastaS3 = filter1.accepted.fasta.s3,
-  outputS3Prefix = rna16s.s3prefix / "filter2" /
+  outputS3Prefix = era7bio.db.rna16s.s3prefix / "filter2" /
 )() {
 
   type ID = String
