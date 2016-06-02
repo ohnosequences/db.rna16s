@@ -8,6 +8,4 @@ case object generate extends GenerateBlastDB(
   dbName = rna16s.dbName,
   sourceFastaS3 = filter2.accepted.fasta.s3,
   outputS3Prefix = rna16s.s3prefix / "blastdb" /
-)(
-  deps = filter2
-)
+)()
