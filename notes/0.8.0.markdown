@@ -1,0 +1,4 @@
+* #26: Added filtering of assignments for sequences contained in other ones
+* Restructured code with the new modular bundles from the db.rnacentral-library:
+  now the DB release process is split in three steps: filter1 -> filter2 -> generate
+* Some refactoring and optimizations for the filter1 (of unrelated sequences)
