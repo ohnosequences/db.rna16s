@@ -86,15 +86,12 @@ case object filter1 extends FilterData(
 
     Sequences that satisfy this predicate (on themselves together with their annotation) are included in this database.
   */
-  val filterPredicate: (Row, FASTA.Value) => Boolean = { (row, fasta) =>
-    /* is not blacklisted */
-    ( ! blacklistedRNACentralIDs.contains(row.select(id)) )                                             &&
+
+  def predicate(row: Row): Boolean = {
     /* - are annotated as rRNA */
      row.select(rna_type).contains(ribosomalRNAType)                                                    &&
     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
     ( ! uninformativeTaxIDs.contains(row.select(tax_id)) )                                              &&
-    /* - the corresponding sequence is not shorter than the threshold */
-    (fasta.getV(sequence).value.length >= minimum16SLength)                                             &&
     /* - is a descendant of either Archaea or Bacteria */
     row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) )  &&
     /* - is not a descendant of an "environmental samples" or unclassified taxon */
@@ -113,23 +110,36 @@ case object filter1 extends FilterData(
       if (commonID != fasta.getV(header).id)
         sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
 
-      val extID = s"${commonID}|lcl|${rna16s.dbName}"
+      val (acceptedRows, rejectedRows) =
+        if (/* the common ID is blacklisted */
+            (blacklistedRNACentralIDs contains commonID) ||
+            /* or the corresponding sequence is shorter than the threshold */
+            (fasta.getV(sequence).value.length < minimum16SLength)
+        ) {
+          /* then all rows are rejected */
+          (Seq[Row](), rows)
+        } else {
+          /* otherwise they are partitioned according to the predicate */
+          rows.partition(predicate)
+        }
 
-      val (goodRows, badRows) = rows.partition{ filterPredicate(_, fasta) }
 
-      if (badRows.nonEmpty) {
-        badRows.foreach( rejected.table.writer.writeRow )
+      if (rejectedRows.nonEmpty) {
+        rejectedRows.foreach( rejected.table.writer.writeRow )
         rejected.fasta.file.appendLine( fasta.asString )
       }
 
-      val taxas: Set[String] = goodRows.map{ _.select(tax_id) }.toSet
+      if (acceptedRows.nonEmpty) {
+        val extendedID: String = s"${commonID}|lcl|${rna16s.dbName}"
 
-      if (taxas.nonEmpty) {
-        accepted.table.writer.writeRow( Seq(extID, taxas.mkString(";")) )
+        accepted.table.writer.writeRow(Seq(
+          extendedID,
+          acceptedRows.map{ _.select(tax_id) }.distinct.mkString(";")
+        ))
 
         accepted.fasta.file.appendLine(
           fasta.update(
-            header := FastaHeader(s"${extID} ${fasta.getV(header).description}")
+            header := FastaHeader(Seq(extendedID, fasta.getV(header).description).mkString(" ") )
           ).asString
         )
       }
