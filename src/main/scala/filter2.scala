@@ -10,10 +10,9 @@ import better.files._
 
 
 case object filter2 extends FilterData(
-  sourceTableS3 = filter1.acceptedS3Prefix / filter1.tableName,
-  sourceFastaS3 = filter1.acceptedS3Prefix / filter1.fastaName,
-  acceptedS3Prefix = rna16s.s3prefix / "filter2" / "accepted" /,
-  rejectedS3Prefix = rna16s.s3prefix / "filter2" / "rejected" /
+  sourceTableS3 = filter1.accepted.table.s3,
+  sourceFastaS3 = filter1.accepted.fasta.s3,
+  outputS3Prefix = rna16s.s3prefix / "filter2" /
 )(
   deps = filter1
 ) {
@@ -26,23 +25,24 @@ case object filter2 extends FilterData(
 
   def filterData(): Unit = {
 
-    val leftWriter = CSVWriter.open(rejected.table.toJava, append = true)(tableFormat)
-    val rightWriter = CSVWriter.open(accepted.table.toJava, append = true)(tableFormat)
-
     // id1 -> fasta1
     // id2 -> fasta2
-    val id2fasta: Map[ID, Fasta] =
-      parseFastaDropErrors(source.fasta.lines)
+    val id2fasta: Map[ID, Fasta] = source.fasta.stream
         .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
-          acc.updated( fasta.getV(header).id, fasta )
+          acc.updated(
+            fasta.getV(header).id,
+            fasta
+          )
         }
 
     // id1 -> taxa1; taxa2; taxa3
-    val id2taxas: Map[ID, Seq[Taxa]] = CSVReader.open(source.table.toJava)(tableFormat)
-      .iterator.map { row =>
-        row(0) ->
-        row(1).split(';').map(_.trim).toSeq
-      }.toMap
+    val id2taxas: Map[ID, Seq[Taxa]] = source.table.reader.iterator
+        .foldLeft(Map[ID, Seq[Taxa]]()) { (acc, row) =>
+          acc.updated(
+            row(0),
+            row(1).split(';').map(_.trim).toSeq
+          )
+        }
 
     // taxa1 -> id1; id2; id3
     // taxa2 -> id2
@@ -77,18 +77,15 @@ case object filter2 extends FilterData(
       val lefts:  Seq[Taxa] = partTaxas.collect { case Left(t) => t }
       val rights: Seq[Taxa] = partTaxas.collect { case Right(t) => t }
 
-      if (lefts.nonEmpty)   leftWriter.writeRow( Seq(id,  lefts.mkString(";")) )
-      if (rights.nonEmpty) rightWriter.writeRow( Seq(id, rights.mkString(";")) )
+      if (lefts.nonEmpty)   rejected.table.writer.writeRow( Seq(id,  lefts.mkString(";")) )
+      if (rights.nonEmpty) accepted.table.writer.writeRow( Seq(id, rights.mkString(";")) )
 
       if (rights.isEmpty) { // all taxas for this ID got discarded:
-        rejected.fasta.appendLine( id2fasta(id).asString )
+        rejected.fasta.file.appendLine( id2fasta(id).asString )
       } else {
-        accepted.fasta.appendLine( id2fasta(id).asString )
+        accepted.fasta.file.appendLine( id2fasta(id).asString )
       }
     }
-
-    leftWriter.close()
-    rightWriter.close()
   }
 
   /* Filters out those sequences that are contained in any other ones.

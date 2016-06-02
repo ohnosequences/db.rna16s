@@ -19,6 +19,6 @@ package object rna16s {
     generated.metadata.db.rna16s.artifact /
     generated.metadata.db.rna16s.version.stripSuffix("-SNAPSHOT") /
 
-  val blastDBS3: S3Folder  = rna16s.s3prefix / "blastdb" /
-  val id2taxasS3: S3Object = rna16s.filter2.acceptedS3Prefix / rna16s.filter2.tableName
+  val blastDBS3: S3Folder  = rna16s.generate.outputS3Prefix
+  val id2taxasS3: S3Object = rna16s.filter2.accepted.table.s3
 }

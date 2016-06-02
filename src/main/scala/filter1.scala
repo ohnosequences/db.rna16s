@@ -14,8 +14,7 @@ import better.files._
 case object filter1 extends FilterData(
   sourceTableS3 = RNACentral5.table,
   sourceFastaS3 = RNACentral5.fasta,
-  acceptedS3Prefix = rna16s.s3prefix / "filter2" / "accepted" /,
-  rejectedS3Prefix = rna16s.s3prefix / "filter2" / "rejected" /
+  outputS3Prefix = rna16s.s3prefix / "filter1" /
 )(
   deps = bio4jTaxonomyBundle
 ) {
@@ -107,17 +106,9 @@ case object filter1 extends FilterData(
   // bundle to generate the DB (see the runBundles file in tests)
   def filterData(): Unit = {
 
-    val tableReader = CSVReader.open(source.table.toJava)(tableFormat)
-    val tableOutWriter = CSVWriter.open(accepted.table.toJava, append = true)(tableFormat)
-    val tableDiscardedWriter = CSVWriter.open(rejected.table.toJava, append = true)(tableFormat)
+    val groupedRows: Stream[(String, Stream[Row])] = source.table.reader.iterator.toStream.group{ _.select(id) }
 
-    println("Reading FASTA...")
-    val fastas: Stream[FASTA.Value] = parseFastaDropErrors(source.fasta.lines).toStream
-
-    println("Reading table...")
-    val groupedRows: Stream[(String, Stream[Row])] = tableReader.iterator.toStream.group{ _.select(id) }
-
-    (groupedRows zip fastas) foreach { case ((commonID, rows), fasta) =>
+    (groupedRows zip source.fasta.stream) foreach { case ((commonID, rows), fasta) =>
 
       if (commonID != fasta.getV(header).id)
         sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
@@ -127,26 +118,22 @@ case object filter1 extends FilterData(
       val (goodRows, badRows) = rows.partition{ filterPredicate(_, fasta) }
 
       if (badRows.nonEmpty) {
-        badRows.foreach( tableDiscardedWriter.writeRow )
-        rejected.fasta.appendLine( fasta.asString )
+        badRows.foreach( rejected.table.writer.writeRow )
+        rejected.fasta.file.appendLine( fasta.asString )
       }
 
       val taxas: Set[String] = goodRows.map{ _.select(tax_id) }.toSet
 
       if (taxas.nonEmpty) {
-        tableOutWriter.writeRow( Seq(extID, taxas.mkString(";")) )
+        accepted.table.writer.writeRow( Seq(extID, taxas.mkString(";")) )
 
-        accepted.fasta.appendLine(
+        accepted.fasta.file.appendLine(
           fasta.update(
             header := FastaHeader(s"${extID} ${fasta.getV(header).description}")
           ).asString
         )
       }
     }
-
-    tableReader.close()
-    tableOutWriter.close()
-    tableDiscardedWriter.close()
   }
 
 }
