@@ -9,21 +9,21 @@ import era7bio.db._
 import era7.defaults._
 
 
-case object rna16sDBRelease {
+case object rna16s {
 
-  def launch(user: AWSUser): List[String] = {
+  // use `sbt test:console`:
+  // > era7bio.db.test.bundles.runBundle(...)
+  def runBundle[B <: AnyBundle](compat: era7bio.db.rna16s.compats.DefaultCompatible[B], user: AWSUser): List[String] =
     EC2.create(user.profile)
       .runInstances(
         amount = 1,
-        rna16sCompats.generateRna16sDB.instanceSpecs(
+        compat.instanceSpecs(
           r3.x2large,
           user.keypair.name,
           Some(ec2Roles.projects.name)
         )
       )
       .map { _.getInstanceId }
-  }
-
 }
 
 ```
@@ -31,7 +31,11 @@ case object rna16sDBRelease {
 
 
 
-[main/scala/rna16s.scala]: ../../main/scala/rna16s.scala.md
-[test/scala/compats.scala]: compats.scala.md
-[test/scala/Dbrna16s.scala]: Dbrna16s.scala.md
+[main/scala/bio4jTaxonomy.scala]: ../../main/scala/bio4jTaxonomy.scala.md
+[main/scala/compats.scala]: ../../main/scala/compats.scala.md
+[main/scala/filter1.scala]: ../../main/scala/filter1.scala.md
+[main/scala/filter2.scala]: ../../main/scala/filter2.scala.md
+[main/scala/generateBlastDB.scala]: ../../main/scala/generateBlastDB.scala.md
+[main/scala/package.scala]: ../../main/scala/package.scala.md
+[main/scala/release.scala]: ../../main/scala/release.scala.md
 [test/scala/runBundles.scala]: runBundles.scala.md
