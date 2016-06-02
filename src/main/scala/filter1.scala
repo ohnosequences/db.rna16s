@@ -1,7 +1,7 @@
 package era7bio.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
-import era7bio.db.RNACentral5._
+import era7bio.db.rnacentral._, RNACentral5._
 import bio4jTaxonomyBundle._
 
 import ohnosequences.fastarious.fasta._
