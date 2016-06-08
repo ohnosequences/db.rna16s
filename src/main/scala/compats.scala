@@ -14,4 +14,5 @@ case object compats {
   case object filter1  extends DefaultCompatible(era7bio.db.rna16s.filter1,  javaHeap = 40)
   case object filter2  extends DefaultCompatible(era7bio.db.rna16s.filter2,  javaHeap = 40)
   case object generate extends DefaultCompatible(era7bio.db.rna16s.generate, javaHeap = 10)
+  case object filter3  extends DefaultCompatible(era7bio.db.rna16s.filter3,  javaHeap = 10)
 }

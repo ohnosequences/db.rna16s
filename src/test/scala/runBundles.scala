@@ -16,7 +16,7 @@ case object rna16s {
       .runInstances(
         amount = 1,
         compat.instanceSpecs(
-          r3.x2large,
+          r3.large,
           user.keypair.name,
           Some(ec2Roles.projects.name)
         )

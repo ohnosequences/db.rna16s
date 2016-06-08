@@ -75,7 +75,7 @@ case object filter2 extends FilterData(
       val lefts:  Seq[Taxa] = partTaxas.collect { case Left(t) => t }
       val rights: Seq[Taxa] = partTaxas.collect { case Right(t) => t }
 
-      if (lefts.nonEmpty)   rejected.table.writer.writeRow( Seq(id,  lefts.mkString(";")) )
+      if (lefts.nonEmpty)  rejected.table.writer.writeRow( Seq(id, lefts.mkString(";")) )
       if (rights.nonEmpty) accepted.table.writer.writeRow( Seq(id, rights.mkString(";")) )
 
       if (rights.isEmpty) { // all taxas for this ID got discarded:
