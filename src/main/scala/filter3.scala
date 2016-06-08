@@ -74,6 +74,6 @@ case object filter3 extends FilterData(
     }
 
     /* We don't change the FASTA file (and therefore the generated BlastDB) */
-    source.fasta.file.moveTo(accepted.fasta.file)
+    source.fasta.file.moveTo(accepted.fasta.file, overwrite = true)
   }
 }
