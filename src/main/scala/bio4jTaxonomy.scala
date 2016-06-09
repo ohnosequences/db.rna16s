@@ -34,23 +34,27 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
   ]
 
   /* **NOTE** all methods here work with a non-reflexive definition of ancestor/descendant */
-  implicit class IdOps(val id: String) extends AnyVal {
+  implicit class IdOps(val id: String) {
 
     // Java to Scala
     private def optional[T](jopt: java.util.Optional[T]): Option[T] =
       if (jopt.isPresent) Some(jopt.get) else None
 
+    lazy val asNode:     Option[TaxonNode] = id.asNode
+    lazy val parentNode: Option[TaxonNode] = asNode.flatMap{ n => optional(n.ncbiTaxonParent_inV) }
+
+
     def hasEnvironmentalSamplesAncestor: Boolean = {
 
       def hasEnvironmentalSamplesAncestor_rec(node: TaxonNode): Boolean =
-        optional(node.ncbiTaxonParent_inV) match {
+        parentNode match {
           case None => false
           case Some(parent) =>
             if (parent.name == "environmental samples") true
             else hasEnvironmentalSamplesAncestor_rec(parent)
         }
 
-      optional(graph.nCBITaxonIdIndex.getVertex(id))
+      id.asNode
         .fold(false)(hasEnvironmentalSamplesAncestor_rec)
     }
 
@@ -58,14 +62,14 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
 
       @annotation.tailrec
       def isDescendantOfOneIn_rec(node: TaxonNode): Boolean =
-        optional(node.ncbiTaxonParent_inV) match {
+        parentNode match {
           case None => false
           case Some(parent) =>
             if (ancestors.contains( parent.id() )) true
             else isDescendantOfOneIn_rec(parent)
         }
 
-      optional(graph.nCBITaxonIdIndex.getVertex(id))
+      id.asNode
         .map(isDescendantOfOneIn_rec)
         .getOrElse(false)
     }
@@ -77,14 +81,14 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
     def hasDescendantOrItselfUnclassified: Boolean = {
 
       def hasDescendantOrItselfUnclassified_rec(node: TaxonNode): Boolean =
-        optional(node.ncbiTaxonParent_inV) match {
+        parentNode match {
           case None => false
           case Some(parent) =>
             if ( parent.name.contains("unclassified") ) true
             else hasDescendantOrItselfUnclassified_rec(parent)
         }
 
-      optional(graph.nCBITaxonIdIndex.getVertex(id))
+      id.asNode
         .fold(false)(hasDescendantOrItselfUnclassified_rec)
     }
   }
