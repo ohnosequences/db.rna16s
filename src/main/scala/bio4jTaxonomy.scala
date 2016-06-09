@@ -46,6 +46,7 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
 
     def hasEnvironmentalSamplesAncestor: Boolean = {
 
+      @annotation.tailrec
       def hasEnvironmentalSamplesAncestor_rec(node: TaxonNode): Boolean =
         parentNode match {
           case None => false
@@ -80,6 +81,7 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
 
     def hasDescendantOrItselfUnclassified: Boolean = {
 
+      @annotation.tailrec
       def hasDescendantOrItselfUnclassified_rec(node: TaxonNode): Boolean =
         parentNode match {
           case None => false
