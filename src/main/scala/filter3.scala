@@ -48,8 +48,12 @@ case object filter3 extends FilterData(
         row(csv.columnNames.ReadID) -> row(csv.columnNames.TaxID)
       }.toMap
 
-    /* Then we process the source table and compare assignments with LCA from MG7 */
-    source.table.reader.iterator.foreach { row =>
+    /* Then we process the source table and compare assignments with LCA from MG7.
+       We know that in the output of filter2 table and fasta IDs are synchronized,
+       so we can just zip them. */
+    ( source.table.reader.iterator zip
+      source.fasta.stream.iterator
+    ).foreach { case (row, fasta) =>
 
       val id: ID = row(0)
       val taxas: Seq[Taxa] = row(1).split(';').map(_.trim).toSeq
@@ -67,13 +71,18 @@ case object filter3 extends FilterData(
         case Some(lcaParent) => {
           val (acceptedTaxas, rejectedTaxas) = taxas.partition{ _.isDescendantOf(lcaParent) }
 
-          if (acceptedTaxas.nonEmpty) accepted.table.writer.writeRow( Seq(id, acceptedTaxas.mkString(";")) )
-          if (rejectedTaxas.nonEmpty) rejected.table.writer.writeRow( Seq(id, rejectedTaxas.mkString(";")) )
+          if (acceptedTaxas.nonEmpty) {
+            accepted.table.writer.writeRow( Seq(id, acceptedTaxas.mkString(";")) )
+            accepted.fasta.file.appendLine( fasta.asString )
+          }
+          // absolutely the same for rejected.*
+          if (rejectedTaxas.nonEmpty) {
+            rejected.table.writer.writeRow( Seq(id, rejectedTaxas.mkString(";")) )
+            rejected.fasta.file.appendLine( fasta.asString )
+          }
         }
       }
     }
 
-    /* We don't change the FASTA file (and therefore the generated BlastDB) */
-    source.fasta.file.moveTo(accepted.fasta.file, overwrite = true)
   }
 }
