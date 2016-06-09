@@ -40,7 +40,7 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
     private def optional[T](jopt: java.util.Optional[T]): Option[T] =
       if (jopt.isPresent) Some(jopt.get) else None
 
-    lazy val asNode:     Option[TaxonNode] = id.asNode
+    lazy val asNode:     Option[TaxonNode] = optional(graph.nCBITaxonIdIndex.getVertex(id))
     lazy val parentNode: Option[TaxonNode] = asNode.flatMap{ n => optional(n.ncbiTaxonParent_inV) }
     lazy val parentID:   Option[String]    = parentNode.map{ n => n.id }
 
@@ -49,7 +49,7 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
 
       @annotation.tailrec
       def hasEnvironmentalSamplesAncestor_rec(node: TaxonNode): Boolean =
-        parentNode match {
+        optional(node.ncbiTaxonParent_inV) match {
           case None => false
           case Some(parent) =>
             if (parent.name == "environmental samples") true
@@ -64,7 +64,7 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
 
       @annotation.tailrec
       def isDescendantOfOneIn_rec(node: TaxonNode): Boolean =
-        parentNode match {
+        optional(node.ncbiTaxonParent_inV) match {
           case None => false
           case Some(parent) =>
             if (ancestors.contains( parent.id() )) true
@@ -82,7 +82,7 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
 
       @annotation.tailrec
       def hasDescendantOrItselfUnclassified_rec(node: TaxonNode): Boolean =
-        parentNode match {
+        optional(node.ncbiTaxonParent_inV) match {
           case None => false
           case Some(parent) =>
             if ( parent.name.contains("unclassified") ) true
