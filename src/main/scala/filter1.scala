@@ -28,6 +28,8 @@ case object filter1 extends FilterData(
   /* Taxa IDs for archaea and bacteria */
   val archaeaTaxonID  = 2157
   val bacteriaTaxonID = 2
+  val unclassifiedBacteriaID = 2323
+
 
   /* These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes. */
   val uninformativeTaxIDsMap = Map(
@@ -96,7 +98,7 @@ case object filter1 extends FilterData(
     row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) )  &&
     /* - is not a descendant of an "environmental samples" or unclassified taxon */
     ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor )                                            &&
-    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria )                                         &&
+    ( ! row.select(tax_id).isDescendantOf(unclassifiedBacteriaID.toString) )                            &&
     ( ! row.select(tax_id).hasDescendantOrItselfUnclassified )
   }
 

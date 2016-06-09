@@ -42,6 +42,7 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
 
     lazy val asNode:     Option[TaxonNode] = id.asNode
     lazy val parentNode: Option[TaxonNode] = asNode.flatMap{ n => optional(n.ncbiTaxonParent_inV) }
+    lazy val parentID:   Option[String]    = parentNode.map{ n => n.id }
 
 
     def hasEnvironmentalSamplesAncestor: Boolean = {
@@ -75,9 +76,7 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
         .getOrElse(false)
     }
 
-    private def unclassifiedBacteriaID = 2323
-
-    def isDescendantOfUnclassifiedBacteria: Boolean = isDescendantOfOneIn( Set(unclassifiedBacteriaID.toString) )
+    def isDescendantOf(ancestor: String): Boolean = isDescendantOfOneIn( Set(ancestor) )
 
     def hasDescendantOrItselfUnclassified: Boolean = {
 
@@ -93,5 +92,6 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
       id.asNode
         .fold(false)(hasDescendantOrItselfUnclassified_rec)
     }
+
   }
 }

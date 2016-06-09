@@ -54,18 +54,18 @@ case object filter3 extends FilterData(
       val id: ID = row(0)
       val taxas: Seq[Taxa] = row(1).split(';').map(_.trim).toSeq
 
-      id2mg7lca.get(id) match {
-
-        /* If this id is not in the MG7 lca output, it means that
+      id2mg7lca.get(id).flatMap(_.parentID) match {
+        /* Either this id is not in the MG7 lca output, then it means that
            this query sequence has no hits with anything except of itself,
-           i.e. is distinct enough and good for us */
+           i.e. is distinct enough and good for us.
+           Or the `lca` has no parent (is the root node) */
         case None => accepted.table.writer.writeRow(row)
 
         /* Otherwise we want to filter out those taxa assignments,
-           that are less specific than the LCA obtained from MG7 */
-        case Some(lca) => {
-
-          val (acceptedTaxas, rejectedTaxas) = taxas.partition{ _.isDescendantOfOneIn(Set(lca)) }
+           that are too different from the LCA obtained from MG7,
+           i.e. are not descendants of its parent */
+        case Some(lcaParent) => {
+          val (acceptedTaxas, rejectedTaxas) = taxas.partition{ _.isDescendantOf(lcaParent) }
 
           if (acceptedTaxas.nonEmpty) accepted.table.writer.writeRow( Seq(id, acceptedTaxas.mkString(";")) )
           if (rejectedTaxas.nonEmpty) rejected.table.writer.writeRow( Seq(id, rejectedTaxas.mkString(";")) )
