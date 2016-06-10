@@ -28,11 +28,7 @@ case object mg7results extends Bundle() {
   }
 }
 
-case object filter3 extends FilterData(
-  sourceTableS3 = filter2.accepted.table.s3,
-  sourceFastaS3 = filter2.accepted.fasta.s3,
-  outputS3Prefix = era7bio.db.rna16s.s3prefix / "filter3" /
-)(
+case object filter3 extends FilterDataFrom(filter2)(
   deps = mg7results, bio4jTaxonomyBundle
 ) {
 
@@ -51,7 +47,7 @@ case object filter3 extends FilterData(
     /* Then we process the source table and compare assignments with LCA from MG7.
        We know that in the output of filter2 table and fasta IDs are synchronized,
        so we can just zip them. */
-    ( source.table.reader.iterator zip
+    ( source.table.csvReader.iterator zip
       source.fasta.stream.iterator
     ).foreach { case (row, fasta) =>
 
@@ -63,7 +59,7 @@ case object filter3 extends FilterData(
            this query sequence has no hits with anything except of itself,
            i.e. is distinct enough and good for us.
            Or the `lca` has no parent (is the root node) */
-        case None => accepted.table.writer.writeRow(row)
+        case None => writeOutput(id, taxas, Seq(), fasta)
 
         /* Otherwise we want to filter out those taxa assignments,
            that are too different from the LCA obtained from MG7,
@@ -71,18 +67,17 @@ case object filter3 extends FilterData(
         case Some(lcaParent) => {
           val (acceptedTaxas, rejectedTaxas) = taxas.partition{ _.isDescendantOf(lcaParent) }
 
-          if (acceptedTaxas.nonEmpty) {
-            accepted.table.writer.writeRow( Seq(id, acceptedTaxas.mkString(";")) )
-            accepted.fasta.file.appendLine( fasta.asString )
-          }
-          // absolutely the same for rejected.*
-          if (rejectedTaxas.nonEmpty) {
-            rejected.table.writer.writeRow( Seq(id, rejectedTaxas.mkString(";")) )
-            rejected.fasta.file.appendLine( fasta.asString )
-          }
+          writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
         }
       }
     }
 
   }
 }
+
+
+case object filter3AndGenerate extends FilterAndGenerateBlastDB(
+  era7bio.db.rna16s.dbName,
+  era7bio.db.rna16s.dbType,
+  era7bio.db.rna16s.filter3
+)
