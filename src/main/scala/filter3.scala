@@ -1,8 +1,8 @@
 package era7bio.db.rna16s
 
-import era7bio.db._, csvUtils._, collectionUtils._, bio4jTaxonomyBundle._
+import era7bio.db._, csvUtils._, collectionUtils._
 
-import ohnosequences.mg7._, bio4j.taxonomyTree._
+import ohnosequences.mg7._, bio4j.taxonomyTree._, bio4j.titanTaxonomyTree._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 import ohnosequences.awstools.s3._
@@ -29,12 +29,14 @@ case object mg7results extends Bundle() {
 }
 
 case object filter3 extends FilterDataFrom(filter2)(
-  deps = mg7results, bio4jTaxonomyBundle
+  deps = mg7results, bio4j.taxonomyBundle
 ) {
 
   type ID = String
   type Taxa = String
   type Fasta = FASTA.Value
+
+  private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
 
   def filterData(): Unit = {
 
@@ -54,7 +56,10 @@ case object filter3 extends FilterDataFrom(filter2)(
       val id: ID = row(0)
       val taxas: Seq[Taxa] = row(1).split(';').map(_.trim).toSeq
 
-      id2mg7lca.get(id).flatMap(_.parentID) match {
+      id2mg7lca.get(id)
+        .flatMap(taxonomyGraph.getNode)
+        .flatMap(_.parent) match {
+
         /* Either this id is not in the MG7 lca output, then it means that
            this query sequence has no hits with anything except of itself,
            i.e. is distinct enough and good for us.
@@ -65,7 +70,13 @@ case object filter3 extends FilterDataFrom(filter2)(
            that are too different from the LCA obtained from MG7,
            i.e. are not descendants of its parent */
         case Some(lcaParent) => {
-          val (acceptedTaxas, rejectedTaxas) = taxas.partition{ _.isDescendantOf(lcaParent) }
+          val (acceptedTaxas, rejectedTaxas) = taxas.partition { taxa =>
+
+            taxonomyGraph.getNode(taxa).map { node =>
+              // lcaParent is in the lineage:
+              node.lineage.exists { _.id == lcaParent.id }
+            }.getOrElse(false)
+          }
 
           writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
         }
