@@ -8,12 +8,7 @@ import ohnosequences.statika._
 import com.github.tototoshi.csv._
 import better.files._
 
-
-case object filter2 extends FilterData(
-  sourceTableS3 = filter1.accepted.table.s3,
-  sourceFastaS3 = filter1.accepted.fasta.s3,
-  outputS3Prefix = era7bio.db.rna16s.s3prefix / "filter2" /
-)() {
+case object filter2 extends FilterDataFrom(filter1)() {
 
   type ID = String
   type Taxa = String
@@ -34,13 +29,13 @@ case object filter2 extends FilterData(
         }
 
     // id1 -> taxa1; taxa2; taxa3
-    val id2taxas: Map[ID, Seq[Taxa]] = source.table.reader.iterator
-        .foldLeft(Map[ID, Seq[Taxa]]()) { (acc, row) =>
-          acc.updated(
-            row(0),
-            row(1).split(';').map(_.trim).toSeq
-          )
-        }
+    val id2taxas: Map[ID, Seq[Taxa]] = source.table.csvReader.iterator
+      .foldLeft(Map[ID, Seq[Taxa]]()) { (acc, row) =>
+        acc.updated(
+          row(0),
+          row(1).split(';').map(_.trim).toSeq
+        )
+      }
 
     // taxa1 -> id1; id2; id3
     // taxa2 -> id2
@@ -72,17 +67,10 @@ case object filter2 extends FilterData(
 
     id2partitionedTaxas.foreach { case (id, partTaxas) =>
 
-      val lefts:  Seq[Taxa] = partTaxas.collect { case Left(t) => t }
-      val rights: Seq[Taxa] = partTaxas.collect { case Right(t) => t }
+      val rejectedTaxas: Seq[Taxa] = partTaxas.collect { case Left(t) => t }
+      val acceptedTaxas: Seq[Taxa] = partTaxas.collect { case Right(t) => t }
 
-      if (lefts.nonEmpty)  rejected.table.writer.writeRow( Seq(id, lefts.mkString(";")) )
-      if (rights.nonEmpty) accepted.table.writer.writeRow( Seq(id, rights.mkString(";")) )
-
-      if (rights.isEmpty) { // all taxas for this ID got discarded:
-        rejected.fasta.file.appendLine( id2fasta(id).asString )
-      } else {
-        accepted.fasta.file.appendLine( id2fasta(id).asString )
-      }
+      writeOutput(id, acceptedTaxas, rejectedTaxas, id2fasta(id))
     }
   }
 
@@ -114,3 +102,10 @@ case object filter2 extends FilterData(
     sieve_rec((Seq(), Seq()), sorted)
   }
 }
+
+
+case object filter2AndGenerate extends FilterAndGenerateBlastDB(
+  era7bio.db.rna16s.dbName,
+  era7bio.db.rna16s.dbType,
+  era7bio.db.rna16s.filter2
+)

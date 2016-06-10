@@ -22,4 +22,9 @@ case object rna16s {
         )
       )
       .map { _.getInstanceId }
+
+  def filter1(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.filter1, user)
+
+  def filter2AndGenerate(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.filter2AndGenerate, user)
+  def filter3AndGenerate(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.filter3AndGenerate, user)
 }

@@ -24,13 +24,13 @@ case object referenceDBPipeline {
   /* As the reference database we use the one generated from filter2 */
   case object rna16sRefDB extends ReferenceDB(
     era7bio.db.rna16s.dbName,
-    generateFrom(filter2).outputS3Prefix,
-    filter2.accepted.table.s3
+    filter2AndGenerate.s3,
+    filter2.output.table.s3
   )
 
   /* As input we use the FASTA accepted by filter2 */
   val splitInputs: Map[ID, S3Resource] = Map(
-    "refdb" -> S3Resource(era7bio.db.rna16s.filter2.accepted.fasta.s3)
+    "refdb" -> S3Resource(era7bio.db.rna16s.filter2.output.fasta.s3)
   )
 
   def outputS3Folder(step: String): S3Folder = era7bio.db.rna16s.s3prefix / "mg7" / step /

@@ -12,9 +12,9 @@ import better.files._
 
 
 case object filter1 extends FilterData(
-  sourceTableS3 = RNACentral5.table,
-  sourceFastaS3 = RNACentral5.fasta,
-  outputS3Prefix = era7bio.db.rna16s.s3prefix / "filter1" /
+  RNACentral5.table,
+  RNACentral5.fasta,
+  era7bio.db.rna16s.s3prefix
 )(
   deps = bio4jTaxonomyBundle
 ) {
@@ -105,7 +105,8 @@ case object filter1 extends FilterData(
   // bundle to generate the DB (see the runBundles file in tests)
   def filterData(): Unit = {
 
-    val groupedRows: Stream[(String, Stream[Row])] = source.table.reader.iterator.toStream.group{ _.select(id) }
+    val groupedRows: Stream[(String, Stream[Row])] =
+      source.table.tsvReader.iterator.toStream.group{ _.select(id) }
 
     (groupedRows zip source.fasta.stream) foreach { case ((commonID, rows), fasta) =>
 
@@ -125,26 +126,14 @@ case object filter1 extends FilterData(
           rows.partition(predicate)
         }
 
+      val extendedID: String = s"${commonID}|lcl|${era7bio.db.rna16s.dbName}"
 
-      if (rejectedRows.nonEmpty) {
-        rejectedRows.foreach( rejected.table.writer.writeRow )
-        rejected.fasta.file.appendLine( fasta.asString )
-      }
-
-      if (acceptedRows.nonEmpty) {
-        val extendedID: String = s"${commonID}|lcl|${era7bio.db.rna16s.dbName}"
-
-        accepted.table.writer.writeRow(Seq(
-          extendedID,
-          acceptedRows.map{ _.select(tax_id) }.distinct.mkString(";")
-        ))
-
-        accepted.fasta.file.appendLine(
-          fasta.update(
-            header := FastaHeader(Seq(extendedID, fasta.getV(header).description).mkString(" ") )
-          ).asString
-        )
-      }
+      writeOutput(
+        extendedID,
+        acceptedRows.map{ _.select(tax_id) }.distinct,
+        rejectedRows.map{ _.select(tax_id) }.distinct,
+        fasta.update( header := FastaHeader(Seq(extendedID, fasta.getV(header).description).mkString(" ") ) )
+      )
     }
   }
 
