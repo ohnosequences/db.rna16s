@@ -45,21 +45,6 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
     lazy val parentID:   Option[String]    = parentNode.map{ n => n.id }
 
 
-    def hasEnvironmentalSamplesAncestor: Boolean = {
-
-      @annotation.tailrec
-      def hasEnvironmentalSamplesAncestor_rec(node: TaxonNode): Boolean =
-        optional(node.ncbiTaxonParent_inV) match {
-          case None => false
-          case Some(parent) =>
-            if (parent.name == "environmental samples") true
-            else hasEnvironmentalSamplesAncestor_rec(parent)
-        }
-
-      id.asNode
-        .fold(false)(hasEnvironmentalSamplesAncestor_rec)
-    }
-
     def isDescendantOfOneIn(ancestors: Set[String]): Boolean = {
 
       @annotation.tailrec
@@ -77,21 +62,6 @@ case object bio4jTaxonomyBundle extends AnyBio4jDist {
     }
 
     def isDescendantOf(ancestor: String): Boolean = isDescendantOfOneIn( Set(ancestor) )
-
-    def hasDescendantOrItselfUnclassified: Boolean = {
-
-      @annotation.tailrec
-      def hasDescendantOrItselfUnclassified_rec(node: TaxonNode): Boolean =
-        optional(node.ncbiTaxonParent_inV) match {
-          case None => false
-          case Some(parent) =>
-            if ( parent.name.contains("unclassified") ) true
-            else hasDescendantOrItselfUnclassified_rec(parent)
-        }
-
-      id.asNode
-        .fold(false)(hasDescendantOrItselfUnclassified_rec)
-    }
 
   }
 }
