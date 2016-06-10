@@ -3,7 +3,7 @@ package era7bio.db.rna16s
 import era7bio.db._, csvUtils._, collectionUtils._
 import era7bio.db.rnacentral._, RNACentral5._
 
-import ohnosequences.mg7.bio4j.titanTaxonomyTree._
+import ohnosequences.mg7._, bio4j.titanTaxonomyTree._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 
@@ -16,7 +16,7 @@ case object filter1 extends FilterData(
   RNACentral5.fasta,
   era7bio.db.rna16s.s3prefix
 )(
-  deps = bio4jTaxonomyBundle
+  deps = bio4j.taxonomyBundle
 ) {
 
   /* We are using the ribosomal RNA type annotation on RNACentral as a first catch-all filter. We are aware of the existence of a gene annotation corresponding to 16S, that we are **not using** due to a significant amount of 16S sequences lacking the corresponding annotation. */
