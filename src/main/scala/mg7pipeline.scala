@@ -24,8 +24,8 @@ case object referenceDBPipeline {
   /* As the reference database we use the one generated from filter2 */
   case object rna16sRefDB extends ReferenceDB(
     era7bio.db.rna16s.dbName,
-    era7bio.db.rna16s.generate.outputS3Prefix,
-    era7bio.db.rna16s.filter2.accepted.table.s3
+    generateFrom(filter2).outputS3Prefix,
+    filter2.accepted.table.s3
   )
 
   /* As input we use the FASTA accepted by filter2 */

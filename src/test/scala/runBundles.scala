@@ -10,8 +10,8 @@ import era7.defaults._
 case object rna16s {
 
   // use `sbt test:console`:
-  // > era7bio.db.test.bundles.runBundle(...)
-  def runBundle[B <: AnyBundle](compat: era7bio.db.rna16s.compats.DefaultCompatible[B], user: AWSUser): List[String] =
+  // > era7bio.db.test.rna16s.launch(...)
+  def launch[B <: AnyBundle](compat: era7bio.db.rna16s.compats.DefaultCompatible[B], user: AWSUser): List[String] =
     EC2.create(user.profile)
       .runInstances(
         amount = 1,
