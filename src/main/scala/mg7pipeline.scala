@@ -47,7 +47,7 @@ case object referenceDBPipeline {
       word_size(150)              ::
       evalue(BigDecimal(1E-100))  ::
       max_target_seqs(10000)      ::
-      perc_identity(98.0)         ::
+      perc_identity(99.0)         ::
       *[AnyDenotation]
     ).value,
     referenceDBs = Set(rna16sRefDB)
