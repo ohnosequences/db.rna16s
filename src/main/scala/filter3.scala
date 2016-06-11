@@ -56,29 +56,35 @@ case object filter3 extends FilterDataFrom(filter2)(
       val id: ID = row(0)
       val taxas: Seq[Taxa] = row(1).split(';').map(_.trim).toSeq
 
-      id2mg7lca.get(id)
-        .flatMap(taxonomyGraph.getNode)
-        .flatMap(_.parent) match {
+      if (taxas.length == 1) {
+        /* If there's only one assignment we don't touch it */
+        writeOutput(id, taxas, Seq(), fasta)
+      } else {
 
-        /* Either this id is not in the MG7 lca output, then it means that
-           this query sequence has no hits with anything except of itself,
-           i.e. is distinct enough and good for us.
-           Or the `lca` has no parent (is the root node) */
-        case None => writeOutput(id, taxas, Seq(), fasta)
+        id2mg7lca.get(id)
+          .flatMap(taxonomyGraph.getNode)
+          .flatMap(_.parent) match {
 
-        /* Otherwise we want to filter out those taxa assignments,
-           that are too different from the LCA obtained from MG7,
-           i.e. are not descendants of its parent */
-        case Some(lcaParent) => {
-          val (acceptedTaxas, rejectedTaxas) = taxas.partition { taxa =>
+          /* Either this id is not in the MG7 lca output, then it means that
+             this query sequence has no hits with anything except of itself,
+             i.e. is distinct enough and good for us.
+             Or the `lca` has no parent (is the root node) */
+          case None => writeOutput(id, taxas, Seq(), fasta)
 
-            taxonomyGraph.getNode(taxa).map { node =>
-              // lcaParent is in the lineage:
-              node.lineage.exists { _.id == lcaParent.id }
-            }.getOrElse(false)
+          /* Otherwise we want to filter out those taxa assignments,
+             that are too different from the LCA obtained from MG7,
+             i.e. are not descendants of its parent */
+          case Some(lcaParent) => {
+            val (acceptedTaxas, rejectedTaxas) = taxas.partition { taxa =>
+
+              taxonomyGraph.getNode(taxa).map { node =>
+                // lcaParent is in the lineage:
+                node.lineage.exists { _.id == lcaParent.id }
+              }.getOrElse(false)
+            }
+
+            writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
           }
-
-          writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
         }
       }
     }
