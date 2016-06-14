@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "fastarious"    % "0.6.0",
   "ohnosequences" %% "blast-api"     % "0.7.0",
   "ohnosequences" %% "statika"       % "2.0.0-M5",
-  "ohnosequences" %% "mg7"           % "1.0.0-M4",
+  "ohnosequences" %% "mg7"           % "1.0.0-M5-pr78",
   "ohnosequences-bundles" %% "bio4j-dist" % "0.2.0",
   // Test:
   "era7bio"       %% "defaults"  % "0.2.0" % Test,
