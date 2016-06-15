@@ -1,0 +1,3 @@
+* #27: Added MG7 pipeline code and filter3 to filter out those taxa assignments that are less specific than the LCA we get from the results of the MG7 run on the ref DB generated from filter2
+* #30: Changed all filters output to the unified format: summary 3-column table with both accepted and rejected taxas
+* #31: Simplified filter1 and replaced bio4jTaxonomy bundle with the one from mg7

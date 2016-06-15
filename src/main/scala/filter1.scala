@@ -2,8 +2,8 @@ package era7bio.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import era7bio.db.rnacentral._, RNACentral5._
-import bio4jTaxonomyBundle._
 
+import ohnosequences.mg7._, bio4j.titanTaxonomyTree._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 
@@ -12,11 +12,11 @@ import better.files._
 
 
 case object filter1 extends FilterData(
-  sourceTableS3 = RNACentral5.table,
-  sourceFastaS3 = RNACentral5.fasta,
-  outputS3Prefix = era7bio.db.rna16s.s3prefix / "filter1" /
+  RNACentral5.table,
+  RNACentral5.fasta,
+  era7bio.db.rna16s.s3prefix
 )(
-  deps = bio4jTaxonomyBundle
+  deps = bio4j.taxonomyBundle
 ) {
 
   /* We are using the ribosomal RNA type annotation on RNACentral as a first catch-all filter. We are aware of the existence of a gene annotation corresponding to 16S, that we are **not using** due to a significant amount of 16S sequences lacking the corresponding annotation. */
@@ -26,8 +26,10 @@ case object filter1 extends FilterData(
   val minimum16SLength: Int = 1300
 
   /* Taxa IDs for archaea and bacteria */
-  val archaeaTaxonID  = 2157
-  val bacteriaTaxonID = 2
+  val bacteriaTaxonID        = "2"
+  val archaeaTaxonID         = "2157"
+  val unclassifiedBacteriaID = "2323"
+
 
   /* These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes. */
   val uninformativeTaxIDsMap = Map(
@@ -53,7 +55,7 @@ case object filter1 extends FilterData(
     115414  -> "uncultured marine alpha proteobacterium"
   )
 
-  val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keys.map(_.toString).toSet
+  val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keySet.map(_.toString)
 
   /* and here we have RNACentral entries which we think are poorly assigned> This is list is by no means exhaustive, though its value can hardly be understimated. */
   val blacklistedRNACentralIDs = Set(
@@ -86,24 +88,40 @@ case object filter1 extends FilterData(
 
     Sequences that satisfy this predicate (on themselves together with their annotation) are included in this database.
   */
+  private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
 
   def predicate(row: Row): Boolean = {
+    val taxID = row.select(tax_id)
+
     /* - are annotated as rRNA */
-     row.select(rna_type).contains(ribosomalRNAType)                                                    &&
+    row.select(rna_type).contains(ribosomalRNAType) &&
     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
-    ( ! uninformativeTaxIDs.contains(row.select(tax_id)) )                                              &&
-    /* - is a descendant of either Archaea or Bacteria */
-    row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) )  &&
-    /* - is not a descendant of an "environmental samples" or unclassified taxon */
-    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor )                                            &&
-    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria )                                         &&
-    ( ! row.select(tax_id).hasDescendantOrItselfUnclassified )
+    ( ! uninformativeTaxIDs.contains(taxID) ) && {
+
+      taxonomyGraph.getNode(taxID).map(_.lineage) match {
+        case None => false // not in the DB
+        case Some(ancestors) =>
+
+          /* - is a descendant of either Archaea or Bacteria */
+          ancestors.exists { ancestor =>
+            ancestor.id == archaeaTaxonID ||
+            ancestor.id == bacteriaTaxonID
+          } &&
+          /* - is not a descendant of an environmental or unclassified taxon */
+          ancestors.filter { ancestor =>
+            ancestor.name == "environmental samples" ||
+            ancestor.name.contains("unclassified")   ||
+            ancestor.id == unclassifiedBacteriaID
+          }.isEmpty
+      }
+    }
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
   def filterData(): Unit = {
 
-    val groupedRows: Stream[(String, Stream[Row])] = source.table.reader.iterator.toStream.group{ _.select(id) }
+    val groupedRows: Stream[(String, Stream[Row])] =
+      source.table.tsvReader.iterator.toStream.group{ _.select(id) }
 
     (groupedRows zip source.fasta.stream) foreach { case ((commonID, rows), fasta) =>
 
@@ -123,26 +141,14 @@ case object filter1 extends FilterData(
           rows.partition(predicate)
         }
 
+      val extendedID: String = s"${commonID}|lcl|${era7bio.db.rna16s.dbName}"
 
-      if (rejectedRows.nonEmpty) {
-        rejectedRows.foreach( rejected.table.writer.writeRow )
-        rejected.fasta.file.appendLine( fasta.asString )
-      }
-
-      if (acceptedRows.nonEmpty) {
-        val extendedID: String = s"${commonID}|lcl|${era7bio.db.rna16s.dbName}"
-
-        accepted.table.writer.writeRow(Seq(
-          extendedID,
-          acceptedRows.map{ _.select(tax_id) }.distinct.mkString(";")
-        ))
-
-        accepted.fasta.file.appendLine(
-          fasta.update(
-            header := FastaHeader(Seq(extendedID, fasta.getV(header).description).mkString(" ") )
-          ).asString
-        )
-      }
+      writeOutput(
+        extendedID,
+        acceptedRows.map{ _.select(tax_id) }.distinct,
+        rejectedRows.map{ _.select(tax_id) }.distinct,
+        fasta.update( header := FastaHeader(Seq(extendedID, fasta.getV(header).description).mkString(" ") ) )
+      )
     }
   }
 
