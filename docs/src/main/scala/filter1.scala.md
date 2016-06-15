@@ -4,8 +4,8 @@ package era7bio.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import era7bio.db.rnacentral._, RNACentral5._
-import bio4jTaxonomyBundle._
 
+import ohnosequences.mg7._, bio4j.titanTaxonomyTree._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 
@@ -14,11 +14,11 @@ import better.files._
 
 
 case object filter1 extends FilterData(
-  sourceTableS3 = RNACentral5.table,
-  sourceFastaS3 = RNACentral5.fasta,
-  outputS3Prefix = era7bio.db.rna16s.s3prefix / "filter1" /
+  RNACentral5.table,
+  RNACentral5.fasta,
+  era7bio.db.rna16s.s3prefix
 )(
-  deps = bio4jTaxonomyBundle
+  deps = bio4j.taxonomyBundle
 ) {
 ```
 
@@ -37,8 +37,9 @@ The sequence length threshold for a sequence to be admitted as 16S.
 Taxa IDs for archaea and bacteria
 
 ```scala
-  val archaeaTaxonID  = 2157
-  val bacteriaTaxonID = 2
+  val bacteriaTaxonID        = "2"
+  val archaeaTaxonID         = "2157"
+  val unclassifiedBacteriaID = "2323"
 ```
 
 These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes.
@@ -67,7 +68,7 @@ These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative
     115414  -> "uncultured marine alpha proteobacterium"
   )
 
-  val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keys.map(_.toString).toSet
+  val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keySet.map(_.toString)
 ```
 
 and here we have RNACentral entries which we think are poorly assigned> This is list is by no means exhaustive, though its value can hardly be understimated.
@@ -106,39 +107,54 @@ Sequences that satisfy this predicate (on themselves together with their annotat
 
 
 ```scala
+  private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
+
   def predicate(row: Row): Boolean = {
+    val taxID = row.select(tax_id)
 ```
 
 - are annotated as rRNA
 
 ```scala
-     row.select(rna_type).contains(ribosomalRNAType)                                                    &&
+    row.select(rna_type).contains(ribosomalRNAType) &&
 ```
 
 - their taxonomy association is *not* one of those in `uninformativeTaxIDs`
 
 ```scala
-    ( ! uninformativeTaxIDs.contains(row.select(tax_id)) )                                              &&
+    ( ! uninformativeTaxIDs.contains(taxID) ) && {
+
+      taxonomyGraph.getNode(taxID).map(_.lineage) match {
+        case None => false // not in the DB
+        case Some(ancestors) =>
 ```
 
 - is a descendant of either Archaea or Bacteria
 
 ```scala
-    row.select(tax_id).isDescendantOfOneIn( Set( archaeaTaxonID.toString, bacteriaTaxonID.toString ) )  &&
+          ancestors.exists { ancestor =>
+            ancestor.id == archaeaTaxonID ||
+            ancestor.id == bacteriaTaxonID
+          } &&
 ```
 
-- is not a descendant of an "environmental samples" or unclassified taxon
+- is not a descendant of an environmental or unclassified taxon
 
 ```scala
-    ( ! row.select(tax_id).hasEnvironmentalSamplesAncestor )                                            &&
-    ( ! row.select(tax_id).isDescendantOfUnclassifiedBacteria )                                         &&
-    ( ! row.select(tax_id).hasDescendantOrItselfUnclassified )
+          ancestors.filter { ancestor =>
+            ancestor.name == "environmental samples" ||
+            ancestor.name.contains("unclassified")   ||
+            ancestor.id == unclassifiedBacteriaID
+          }.isEmpty
+      }
+    }
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
   def filterData(): Unit = {
 
-    val groupedRows: Stream[(String, Stream[Row])] = source.table.reader.iterator.toStream.group{ _.select(id) }
+    val groupedRows: Stream[(String, Stream[Row])] =
+      source.table.tsvReader.iterator.toStream.group{ _.select(id) }
 
     (groupedRows zip source.fasta.stream) foreach { case ((commonID, rows), fasta) =>
 
@@ -175,26 +191,14 @@ otherwise they are partitioned according to the predicate
           rows.partition(predicate)
         }
 
+      val extendedID: String = s"${commonID}|lcl|${era7bio.db.rna16s.dbName}"
 
-      if (rejectedRows.nonEmpty) {
-        rejectedRows.foreach( rejected.table.writer.writeRow )
-        rejected.fasta.file.appendLine( fasta.asString )
-      }
-
-      if (acceptedRows.nonEmpty) {
-        val extendedID: String = s"${commonID}|lcl|${era7bio.db.rna16s.dbName}"
-
-        accepted.table.writer.writeRow(Seq(
-          extendedID,
-          acceptedRows.map{ _.select(tax_id) }.distinct.mkString(";")
-        ))
-
-        accepted.fasta.file.appendLine(
-          fasta.update(
-            header := FastaHeader(Seq(extendedID, fasta.getV(header).description).mkString(" ") )
-          ).asString
-        )
-      }
+      writeOutput(
+        extendedID,
+        acceptedRows.map{ _.select(tax_id) }.distinct,
+        rejectedRows.map{ _.select(tax_id) }.distinct,
+        fasta.update( header := FastaHeader(Seq(extendedID, fasta.getV(header).description).mkString(" ") ) )
+      )
     }
   }
 
@@ -205,11 +209,11 @@ otherwise they are partitioned according to the predicate
 
 
 
-[main/scala/bio4jTaxonomy.scala]: bio4jTaxonomy.scala.md
 [main/scala/compats.scala]: compats.scala.md
 [main/scala/filter1.scala]: filter1.scala.md
 [main/scala/filter2.scala]: filter2.scala.md
-[main/scala/generateBlastDB.scala]: generateBlastDB.scala.md
+[main/scala/filter3.scala]: filter3.scala.md
+[main/scala/mg7pipeline.scala]: mg7pipeline.scala.md
 [main/scala/package.scala]: package.scala.md
 [main/scala/release.scala]: release.scala.md
 [test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
