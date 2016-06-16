@@ -195,19 +195,13 @@ To make it a bit shorter I assume that you first do `import era7bio.db._` in the
 1. `filter1`
     - Recommended EC2 instance type: `r3.x2large`, it has 60GB RAM
     - Approximate run time: several hours
-    - Command:
-      ```scala
-      > test.rna16s.launch(rna16s.compats.filter1, your_aws_user)
-      ```
+    - Command: `test.rna16s.launch(rna16s.compats.filter1, your_aws_user)`.  
       It returns you the instance ID. You have to terminate it **manually**.
 
 2. `filter2`
     - Recommended EC2 instance type: `r3.large` or `m3.xlarge`
     - Approximate run time: 10-20 minutes
-    - Command:
-      ```scala
-      > test.rna16s.launch(rna16s.compats.filter2AndGenerate, your_aws_user)
-      ```
+    - Command: `test.rna16s.launch(rna16s.compats.filter2AndGenerate, your_aws_user)`.  
       It returns you the instance ID. You have to terminate it **manually**.
 
 3. MG7 + `filter3`
@@ -226,8 +220,5 @@ To make it a bit shorter I assume that you first do `import era7bio.db._` in the
    * 3.2. Then run `filter3`:
       - Recommended EC2 instance type: `r3.large` or `m3.xlarge`
       - Approximate run time: 10-20 minutes
-      - Command:
-        ```scala
-        > test.rna16s.launch(rna16s.compats.filter3AndGenerate, your_aws_user)
-        ```
+      - Command: `test.rna16s.launch(rna16s.compats.filter3AndGenerate, your_aws_user)`.  
         It returns you the instance ID. You have to terminate it **manually**.
