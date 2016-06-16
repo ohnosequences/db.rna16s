@@ -1,10 +1,10 @@
 # 16S RNA Reference Database
 
-<!-- [![](https://travis-ci.org/era7bio/db.rna16s.svg?branch=master)](https://travis-ci.org/era7bio/db.rna16s) -->
-<!-- [![](https://img.shields.io/codacy/???.svg)](https://www.codacy.com/app/era7/db.rna16s) -->
-[![](http://github-release-version.herokuapp.com/github/era7bio/db.rna16s/release.svg)](https://github.com/era7bio/db.rna16s/releases/latest)
+[![](https://travis-ci.org/ohnosequences/db.rna16s.svg?branch=master)](https://travis-ci.org/ohnosequences/db.rna16s)
+[![](https://img.shields.io/codacy/62caae6ae58f48dca6633f2f88ed8898.svg)](https://www.codacy.com/app/era7/db.rna16s)
+[![](http://github-release-version.herokuapp.com/github/ohnosequences/db.rna16s/release.svg)](https://github.com/ohnosequences/db.rna16s/releases/latest)
 [![](https://img.shields.io/badge/license-AGPLv3-blue.svg)](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29)
-[![](https://img.shields.io/badge/contact-gitter_chat-dd1054.svg)](https://gitter.im/era7bio/db.rna16s)
+[![](https://img.shields.io/badge/contact-gitter_chat-dd1054.svg)](https://gitter.im/ohnosequences/db.rna16s)
 
 This is a reference database of 16S sequences based on the data from [RNAcentral release 5](http://blog.rnacentral.org/2016/03/rnacentral-release-5.html).
 
