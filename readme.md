@@ -121,7 +121,7 @@ Where parameters values can be found in [`build.sbt`](build.sbt). They may chang
 
 Inside of this folder there are various subfolders, such as `filter1/`, `filter2/`, etc. Each of them has the same structure:
 
-```
+```shell
 filterN/
 ├── blastdb/                       # BLAST DB files
 │   └── era7bio.db.rna16s.fasta.*
@@ -133,6 +133,20 @@ filterN/
 ```
 
 This schema may change with time, so it's always better to retrieve these paths from the code of the library.
+
+
+#### Output tables format
+
+* *Assignments table* `output/filterN.csv` has 2 column format:
+  - Extended sequence ID: `<RNAcentral_ID>|lcl|<rna16s_DB_name>`
+  - List of assigned taxonomic IDs (separated with `;`)
+
+* *Summary table* `summary/finterN.csv` is similar but has 3 columns:
+  - Extended sequence ID
+  - Accepted taxonomic IDs list
+  - Rejected taxonomic IDs list
+
+All produced tables have CSV format (comma separated values) with Unix line endings (`\n`).
 
 
 ### In-code usage
