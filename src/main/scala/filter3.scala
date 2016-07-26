@@ -57,6 +57,7 @@ case object filter3 extends FilterDataFrom(filter2)(deps = mg7results, bio4j.tax
         else {
 
           id2mg7lca.get(id)
+            // TODO if the resulting ID is not in the bio4j taxonomy it should be discarded
             .flatMap(taxonomyGraph.getNode)
             .flatMap(_.parent)
             /* Either this id is not in the MG7 lca output, then it means that this query sequence has no hits with anything except of itself, i.e. is distinct enough and good for us. Or the `lca` has no parent (is the root node) */
