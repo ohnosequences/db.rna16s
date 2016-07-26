@@ -42,20 +42,22 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
     val id2mg7lca: Map[ID, Taxa] = mg7LCAfromFile(mg7results.lcaTable)
 
     /* Then we process the source table and compare assignments with LCA from MG7. We know that in the output of dropRedundantAssignments table and fasta IDs are synchronized, so we can just zip them. */
-    ( source.table.csvReader.iterator zip source.fasta.stream.iterator ).foreach {
+    ( source.table.csvReader.iterator zip
+      source.fasta.stream.iterator
+    ).foreach {
 
       case (row, fasta) => {
 
         val (id, taxas) = idTaxasFromRow(row)
 
         /* If there's only one assignment we don't touch it */
-        // TODO why this is so?
+        // NOTE: see https://github.com/ohnosequences/db.rna16s/pull/32#discussion_r71972097 for the reasons
         if (taxas.length == 1)
           accept(id, taxas, fasta)
         else {
 
           id2mg7lca.get(id)
-            // TODO if the resulting ID is not in the bio4j taxonomy it should be discarded
+            // NOTE: if the resulting ID is not in the bio4j taxonomy it was already discarded by previous filters
             .flatMap(taxonomyGraph.getNode)
             .flatMap(_.parent)
             /*
