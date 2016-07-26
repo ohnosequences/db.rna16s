@@ -28,69 +28,68 @@ case object mg7results extends Bundle() {
   }
 }
 
-case object filter3 extends FilterDataFrom(filter2)(
-  deps = mg7results, bio4j.taxonomyBundle
-) {
+case object filter3 extends FilterDataFrom(filter2)(deps = mg7results, bio4j.taxonomyBundle) {
 
-  type ID = String
-  type Taxa = String
-  type Fasta = FASTA.Value
+  type ID     = String
+  type Taxa   = String
+  type Fasta  = FASTA.Value
 
   private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
 
   def filterData(): Unit = {
 
     /* First we read what we've got from MG7 */
-    val id2mg7lca: Map[ID, Taxa] = csv.newReader(mg7results.lcaTable)
-      .allWithHeaders.map { row =>
-        row(csv.columnNames.ReadID) -> row(csv.columnNames.TaxID)
-      }.toMap
+    val id2mg7lca: Map[ID, Taxa] = mg7LCAfromFile(mg7results.lcaTable)
 
     /* Then we process the source table and compare assignments with LCA from MG7.
        We know that in the output of filter2 table and fasta IDs are synchronized,
        so we can just zip them. */
-    ( source.table.csvReader.iterator zip
-      source.fasta.stream.iterator
-    ).foreach { case (row, fasta) =>
+    ( source.table.csvReader.iterator zip source.fasta.stream.iterator ).foreach {
 
-      val id: ID = row(0)
-      val taxas: Seq[Taxa] = row(1).split(';').map(_.trim).toSeq
+      case (row, fasta) => {
 
-      if (taxas.length == 1) {
-        // TODO why this is so?
+        val (id, taxas) = idTaxasFromRow(row)
+
         /* If there's only one assignment we don't touch it */
-        writeOutput(id, taxas, Seq(), fasta)
-      } else {
+        // TODO why this is so?
+        if (taxas.length == 1)
+          accept(id, taxas, fasta)
+        else {
 
-        id2mg7lca.get(id)
-          .flatMap(taxonomyGraph.getNode)
-          .flatMap(_.parent) match {
+          id2mg7lca.get(id)
+            .flatMap(taxonomyGraph.getNode)
+            .flatMap(_.parent)
+            /* Either this id is not in the MG7 lca output, then it means that this query sequence has no hits with anything except of itself, i.e. is distinct enough and good for us. Or the `lca` has no parent (is the root node) */
+            // TODO if the lca's parent is the root this asignment should be discarded!
+            .fold( accept(id, taxas, fasta) ) { lcaParent => {
 
-          // TODO if the lca's parent is the root this asignment should be discarded!
-          /* Either this id is not in the MG7 lca output, then it means that
-             this query sequence has no hits with anything except of itself,
-             i.e. is distinct enough and good for us.
-             Or the `lca` has no parent (is the root node) */
-          case None => writeOutput(id, taxas, Seq(), fasta)
+              val (acceptedTaxas, rejectedTaxas) =
+                taxas.partition { taxa => (taxonomyGraph getNode taxa).fold(false)( _ isInLineageOf lcaParent ) }
 
-          /* Otherwise we want to filter out those taxa assignments,
-             that are too different from the LCA obtained from MG7,
-             i.e. are not descendants of its parent */
-          case Some(lcaParent) => {
-            val (acceptedTaxas, rejectedTaxas) = taxas.partition { taxa =>
-
-              taxonomyGraph.getNode(taxa).map { node =>
-                // lcaParent is in the lineage:
-                node.lineage.exists { _.id == lcaParent.id }
-              }.getOrElse(false)
+              writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
             }
-
-            writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
           }
         }
       }
     }
+  }
 
+  val mg7LCAfromFile: File => Map[ID,Taxa] =
+    file =>
+      (csv newReader file)
+        .allWithHeaders.map { row => ( row(csv.columnNames.ReadID) -> row(csv.columnNames.TaxID) ) }
+        .toMap
+
+  val idTaxasFromRow: Seq[String] => (ID,Seq[Taxa]) =
+    row => ( row(0), row(1).split(';').map(_.trim).toSeq )
+
+  val accept: (ID, Seq[Taxa], Fasta) => Unit =
+    (id, taxas, fasta) => writeOutput(id, taxas, Seq(), fasta)
+
+  implicit final class nodeOps(val node: TitanTaxonNode) {
+
+    def isInLineageOf(other: TitanTaxonNode): Boolean =
+      other.lineage.exists { _.id == node.id }
   }
 }
 
