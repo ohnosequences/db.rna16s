@@ -57,6 +57,7 @@ case object filter3 extends FilterDataFrom(filter2)(
       val taxas: Seq[Taxa] = row(1).split(';').map(_.trim).toSeq
 
       if (taxas.length == 1) {
+        // TODO why this is so?
         /* If there's only one assignment we don't touch it */
         writeOutput(id, taxas, Seq(), fasta)
       } else {
@@ -65,6 +66,7 @@ case object filter3 extends FilterDataFrom(filter2)(
           .flatMap(taxonomyGraph.getNode)
           .flatMap(_.parent) match {
 
+          // TODO if the lca's parent is the root this asignment should be discarded!
           /* Either this id is not in the MG7 lca output, then it means that
              this query sequence has no hits with anything except of itself,
              i.e. is distinct enough and good for us.
