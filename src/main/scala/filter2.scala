@@ -1,19 +1,17 @@
 package era7bio.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
-
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
-
 import com.github.tototoshi.csv._
 import better.files._
 
 case object filter2 extends FilterDataFrom(filter1)() {
 
-  type ID = String
-  type Taxa = String
-  type Fasta = FASTA.Value
-  type Eith[X] = Either[X, X]
+  type ID       = String
+  type Taxa     = String
+  type Fasta    = FASTA.Value
+  type Eith[X]  = Either[X, X]
 
 
   def filterData(): Unit = {
@@ -82,7 +80,7 @@ case object filter2 extends FilterDataFrom(filter1)() {
     val sorted = seq.sortBy{ t => content(t).length }(Ordering.Int.reverse)
 
     // for each head filters out those ones in the tail that are contained in it
-    @scala.annotation.tailrec
+    @annotation.tailrec
     def sieve_rec(acc: (Seq[T], Seq[T]), rest: Seq[T]): (Seq[T], Seq[T]) = rest match {
       case Nil => acc
       // note, this reverses the ordering:
@@ -102,7 +100,6 @@ case object filter2 extends FilterDataFrom(filter1)() {
     sieve_rec((Seq(), Seq()), sorted)
   }
 }
-
 
 case object filter2AndGenerate extends FilterAndGenerateBlastDB(
   era7bio.db.rna16s.dbName,

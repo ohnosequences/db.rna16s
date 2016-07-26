@@ -68,7 +68,7 @@ case object filter3 extends FilterDataFrom(filter2)(deps = mg7results, bio4j.tax
               lcaParent => {
                 /* Here we discard those taxa whose lineage does **not** contain the *parent* of the lca assignment. */
                 val (acceptedTaxas, rejectedTaxas) =
-                  taxas.partition { taxa => (taxonomyGraph getNode taxa).fold(false)( lcaParent isInLineageOf taxa ) }
+                  taxas.partition { taxa => (taxonomyGraph getNode taxa).fold(false)( lcaParent isInLineageOf _ ) }
 
                 writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
               }
