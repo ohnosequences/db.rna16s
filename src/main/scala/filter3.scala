@@ -60,7 +60,6 @@ case object filter3 extends FilterDataFrom(filter2)(deps = mg7results, bio4j.tax
             .flatMap(taxonomyGraph.getNode)
             .flatMap(_.parent)
             /* Either this id is not in the MG7 lca output, then it means that this query sequence has no hits with anything except of itself, i.e. is distinct enough and good for us. Or the `lca` has no parent (is the root node) */
-            // TODO if the lca's parent is the root this asignment should be discarded!
             .fold( accept(id, taxas, fasta) ) { lcaParent => {
 
               val (acceptedTaxas, rejectedTaxas) =
