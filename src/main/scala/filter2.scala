@@ -7,7 +7,7 @@ import com.github.tototoshi.csv._
 import better.files._
 
 // TODO I don't understand what this is trying to do, and how.
-case object filter2 extends FilterDataFrom(filter1)() {
+case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)() {
 
   type ID       = String
   type Taxa     = String
@@ -102,8 +102,8 @@ case object filter2 extends FilterDataFrom(filter1)() {
   }
 }
 
-case object filter2AndGenerate extends FilterAndGenerateBlastDB(
+case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   era7bio.db.rna16s.dbName,
   era7bio.db.rna16s.dbType,
-  era7bio.db.rna16s.filter2
+  era7bio.db.rna16s.dropRedundantAssignments
 )

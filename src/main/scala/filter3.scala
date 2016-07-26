@@ -12,7 +12,7 @@ import com.amazonaws.services.s3.transfer._
 import com.github.tototoshi.csv._
 import better.files._
 
-/* This bundle just downloads the output of the MG7 run of the results of filter2 */
+/* This bundle just downloads the output of the MG7 run of the results of dropRedundantAssignments */
 case object mg7results extends Bundle() {
 
   lazy val s3location: S3Object = referenceDBPipeline.outputS3Folder("merge") / "refdb.lca.csv"
@@ -28,7 +28,7 @@ case object mg7results extends Bundle() {
   }
 }
 
-case object filter3 extends FilterDataFrom(filter2)(deps = mg7results, bio4j.taxonomyBundle) {
+case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(deps = mg7results, bio4j.taxonomyBundle) {
 
   type ID     = String
   type Taxa   = String
@@ -41,7 +41,7 @@ case object filter3 extends FilterDataFrom(filter2)(deps = mg7results, bio4j.tax
     /* First we read what we've got from MG7 */
     val id2mg7lca: Map[ID, Taxa] = mg7LCAfromFile(mg7results.lcaTable)
 
-    /* Then we process the source table and compare assignments with LCA from MG7. We know that in the output of filter2 table and fasta IDs are synchronized, so we can just zip them. */
+    /* Then we process the source table and compare assignments with LCA from MG7. We know that in the output of dropRedundantAssignments table and fasta IDs are synchronized, so we can just zip them. */
     ( source.table.csvReader.iterator zip source.fasta.stream.iterator ).foreach {
 
       case (row, fasta) => {
@@ -98,8 +98,8 @@ case object filter3 extends FilterDataFrom(filter2)(deps = mg7results, bio4j.tax
 }
 
 
-case object filter3AndGenerate extends FilterAndGenerateBlastDB(
+case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   era7bio.db.rna16s.dbName,
   era7bio.db.rna16s.dbType,
-  era7bio.db.rna16s.filter3
+  era7bio.db.rna16s.dropInconsistentAssignments
 )
