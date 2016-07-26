@@ -41,9 +41,7 @@ case object filter3 extends FilterDataFrom(filter2)(deps = mg7results, bio4j.tax
     /* First we read what we've got from MG7 */
     val id2mg7lca: Map[ID, Taxa] = mg7LCAfromFile(mg7results.lcaTable)
 
-    /* Then we process the source table and compare assignments with LCA from MG7.
-       We know that in the output of filter2 table and fasta IDs are synchronized,
-       so we can just zip them. */
+    /* Then we process the source table and compare assignments with LCA from MG7. We know that in the output of filter2 table and fasta IDs are synchronized, so we can just zip them. */
     ( source.table.csvReader.iterator zip source.fasta.stream.iterator ).foreach {
 
       case (row, fasta) => {
@@ -60,15 +58,21 @@ case object filter3 extends FilterDataFrom(filter2)(deps = mg7results, bio4j.tax
             // TODO if the resulting ID is not in the bio4j taxonomy it should be discarded
             .flatMap(taxonomyGraph.getNode)
             .flatMap(_.parent)
-            /* Either this id is not in the MG7 lca output, then it means that this query sequence has no hits with anything except of itself, i.e. is distinct enough and good for us. Or the `lca` has no parent (is the root node) */
-            .fold( accept(id, taxas, fasta) ) { lcaParent => {
+            /*
+              Either
 
-              val (acceptedTaxas, rejectedTaxas) =
-                taxas.partition { taxa => (taxonomyGraph getNode taxa).fold(false)( _ isInLineageOf lcaParent ) }
+              1. this id is not in the MG7 lca output, so that this query sequence has no hits with anything but itself. In that case we need to consider its assignment correct, thus the base case of the fold.
+              2. If the lca has no parent = is the root node, then we can already accept it: it will be in the lineage of every node
+            */
+            .fold( accept(id, taxas, fasta) ) {
+              lcaParent => {
+                /* Here we discard those taxa whose lineage does **not** contain the *parent* of the lca assignment. */
+                val (acceptedTaxas, rejectedTaxas) =
+                  taxas.partition { taxa => (taxonomyGraph getNode taxa).fold(false)( lcaParent isInLineageOf taxa ) }
 
-              writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
+                writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
+              }
             }
-          }
         }
       }
     }
