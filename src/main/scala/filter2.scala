@@ -6,6 +6,7 @@ import ohnosequences.statika._
 import com.github.tototoshi.csv._
 import better.files._
 
+// TODO I don't understand what this is trying to do, and how.
 case object filter2 extends FilterDataFrom(filter1)() {
 
   type ID       = String
