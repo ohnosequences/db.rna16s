@@ -57,11 +57,10 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
         else {
 
           id2mg7lca.get(id)
-            // NOTE: if the resulting ID is not in the bio4j taxonomy it was already discarded by previous filters
             .flatMap(taxonomyGraph.getNode)
             .flatMap(_.parent)
             /*
-              Either
+              Note that the previous filters guarantee that the mg7 LCA IDs *are* in the NCBI taxonomy graph; thus this option will be None if either
 
               1. this id is not in the MG7 lca output, so that this query sequence has no hits with anything but itself. In that case we need to consider its assignment correct, thus the base case of the fold.
               2. If the lca has no parent = is the root node, then we can already accept it: it will be in the lineage of every node
