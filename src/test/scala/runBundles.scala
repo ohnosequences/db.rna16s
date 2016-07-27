@@ -23,8 +23,8 @@ case object rna16s {
       )
       .map { _.getInstanceId }
 
-  def filter1(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.filter1, user)
+  def pick16SCandidates(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.pick16SCandidates, user)
 
-  def filter2AndGenerate(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.filter2AndGenerate, user)
-  def filter3AndGenerate(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.filter3AndGenerate, user)
+  def dropRedundantAssignmentsAndGenerate(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.dropRedundantAssignmentsAndGenerate, user)
+  def dropInconsistentAssignmentsAndGenerate(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.dropInconsistentAssignmentsAndGenerate, user)
 }
