@@ -1,4 +1,3 @@
-Nice.scalaProject
 
 name          := "db.rna16s"
 organization  := "era7bio"
@@ -27,14 +26,13 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.6" % Test
 )
 
-
 dependencyOverrides ++= Set(
   "org.apache.httpcomponents" % "httpclient" % "4.5.1",
   "org.slf4j"                 % "slf4j-api"  % "1.7.7"
 )
 
 
-fatArtifactSettings
+addFatArtifactPublishing()
 
 // copied from bio4j-titan:
 mergeStrategy in assembly ~= { old => {
