@@ -57,11 +57,15 @@ This step actually consists of two:
 - Run MG7 pipeline using the reference database from `dropRedundantAssignments` using its output sequences FASTA as input data. This will produce a table which matches each sequence the lowest common ancestor (LCA) of the assignments of any other (very) similar sequences.
 
 - For each sequence we check the relation of its assignments with the corresponding LCA that we've got from MG7. If some assignment is too far away from the LCA in the taxonomic tree, it is discarded.  
-  If a sequence has a single assignment, it is ignored, because it may represent a rare organism and it may be misplaced in the taxonomic tree.
+
+  If a sequence has only one (single) assignment, it is not tested with the described filter, because
+
+  + it may represent a rare organism that doesn't necessarily have relations with its taxonomic neighbors
+  + it can be an organism that was originally misclassified and put in the taxonomy far away from its real relatives (that could be discovered later, for example)
 
 After this step BLAST database is generated again.
 
-Over **99.8%** of the sequences from `dropRedundantAssignments` pass `dropRedundantAssignments`, because it's mostly about reducing the number of assignments and there are not many sequences that get all assignments discarded.
+Over **99.8%** of the sequences from `dropRedundantAssignments` pass `dropInconsistentAssignments` filter, because it's mostly about reducing the number of assignments and there are not many sequences that get all assignments discarded.
 
 #### Example of a wrong assignment
 
