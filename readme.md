@@ -43,7 +43,7 @@ Only **~3.9%** of all RNAcentral sequences pass this filter.
 
 This step filters out assignments that are covered by bigger sequences. For example, if a sequence `S` has an assignment to taxon `A`, and a sequence `s` which is a subsequence of `S` has the same assignment, it gets discarded for `s`. If this was the only assignment for `s`, then the sequence gets discarded.
 
-A match with a bigger sequence is always better, but if we won't discard those subsequence assignments they will be always implied, which doesn't add information for the analysis. So this filter allows to reduce the size of the database while leaving only most informative assignments.
+If a bigger sequence is matched, all its subsequences will be matched as well, but it won't add any information to the results. So this filter allows to reduce the size of the database while leaving only most informative assignments.
 
 After this step a BLAST database is generated from the sequences that passed the filter.
 
