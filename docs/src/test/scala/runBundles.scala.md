@@ -37,10 +37,10 @@ case object rna16s {
 
 
 [test/scala/runBundles.scala]: runBundles.scala.md
-[main/scala/filter2.scala]: ../../main/scala/filter2.scala.md
+[main/scala/dropRedundantAssignments.scala]: ../../main/scala/dropRedundantAssignments.scala.md
 [main/scala/mg7pipeline.scala]: ../../main/scala/mg7pipeline.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
 [main/scala/compats.scala]: ../../main/scala/compats.scala.md
-[main/scala/filter1.scala]: ../../main/scala/filter1.scala.md
-[main/scala/filter3.scala]: ../../main/scala/filter3.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md
+[main/scala/dropInconsistentAssignments.scala]: ../../main/scala/dropInconsistentAssignments.scala.md
+[main/scala/pick16SCandidates.scala]: ../../main/scala/pick16SCandidates.scala.md
