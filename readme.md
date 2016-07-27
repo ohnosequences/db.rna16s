@@ -15,13 +15,13 @@ We have developed various criteria and tuned them during long testing and manual
 
 Here goes an overview of the general filtering routine. For more details, check the code [documentation](docs/src/main/scala/). Filtering is split in several steps:
 
-- `filter1`: filters out unrelated and uninformative *sequences*
-- `filter2`: filters out uninformative *assignments*
-- `filter3`: filters out *wrong* assignments
+- `pick16SCandidates`: filters out unrelated and uninformative *sequences*
+- `dropRedundantAssignments`: filters out uninformative *assignments*
+- `dropInconsistentAssignments`: filters out *wrong* assignments
 
 Some more details about each step.
 
-### `filter1`
+### `pick16SCandidates` filter
 
 This is an important filter, because out of the huge RNAcentral database it chooses only 16S sequences and filters out those that are badly classified or are not informative.
 To pass this filter sequences have to satisfy the following predicate:
@@ -34,12 +34,12 @@ To pass this filter sequences have to satisfy the following predicate:
   + a descendant of either *Archaea* or *Bacteria*
   + **not** a descendant of an *environmental* or *unclassified* taxon
 
-You can lookup the mentioned constants in the [`filter1`](docs/src/main/scala/filter1.scala.md) code.
+You can lookup the mentioned constants in the [`pick16SCandidates`](docs/src/main/scala/pick16SCandidates.scala.md) code.
 
 Only **~3.9%** of all RNAcentral sequences pass this filter.
 
 
-### `filter2`
+### `dropRedundantAssignments` filter
 
 This step filters out assignments that are covered by bigger sequences. For example, if a sequence `S` has an assignment to taxon `A`, and a sequence `s` which is a subsequence of `S` has the same assignment, it gets discarded for `s`. If this was the only assignment for `s`, then the sequence gets discarded.
 
@@ -47,21 +47,21 @@ A match with a bigger sequence is always better, but if we won't discard those s
 
 After this step a BLAST database is generated from the sequences that passed the filter.
 
-Around **72%** of the sequences from `filter1` pass `filter3`. Among these sequences there are also some with a reduced number of assignments.
+Around **72%** of the sequences from `pick16SCandidates` pass `dropInconsistentAssignments`. Among these sequences there are also some with a reduced number of assignments.
 
 
-### `filter3`
+### `dropInconsistentAssignments` filter
 
 This step actually consists of two:
 
-- Run MG7 pipeline using the reference database from `filter2` using its output sequences FASTA as input data. This will produce a table which matches each sequence the lowest common ancestor (LCA) of the assignments of any other (very) similar sequences.
+- Run MG7 pipeline using the reference database from `dropRedundantAssignments` using its output sequences FASTA as input data. This will produce a table which matches each sequence the lowest common ancestor (LCA) of the assignments of any other (very) similar sequences.
 
 - For each sequence we check the relation of its assignments with the corresponding LCA that we've got from MG7. If some assignment is too far away from the LCA in the taxonomic tree, it is discarded.  
   If a sequence has a single assignment, it is ignored, because it may represent a rare organism and it may be misplaced in the taxonomic tree.
 
 After this step BLAST database is generated again.
 
-Over **99.8%** of the sequences from `filter2` pass `filter2`, because it's mostly about reducing the number of assignments and there are not many sequences that get all assignments discarded.
+Over **99.8%** of the sequences from `dropRedundantAssignments` pass `dropRedundantAssignments`, because it's mostly about reducing the number of assignments and there are not many sequences that get all assignments discarded.
 
 #### Example of a wrong assignment
 
@@ -119,17 +119,17 @@ s3://resources.ohnosequences.com/<organization>/<artifact_name>/<release_version
 
 Where parameters values can be found in [`build.sbt`](build.sbt). They may change, but at the moment this address looks like `s3://resources.ohnosequences.com/era7bio/db.rna16s/0.9.0/`.
 
-Inside of this folder there are various subfolders, such as `filter1/`, `filter2/`, etc. Each of them has the same structure:
+Inside of this folder there are various subfolders, such as `pick16SCandidates/`, `dropRedundantAssignments/`, etc. Each of them has the same structure:
 
 ```shell
-filterN/
+filterName/
 ├── blastdb/                       # BLAST DB files
 │   └── era7bio.db.rna16s.fasta.*
 ├── output/
-│   ├── filterN.csv                # assignments table
-│   └── filterN.fasta              # corresponding FASTA
+│   ├── filterName.csv                # assignments table
+│   └── filterName.fasta              # corresponding FASTA
 └── summary/
-    └── filterN.csv                # summary of accepted/rejected taxas
+    └── filterName.csv                # summary of accepted/rejected taxas
 ```
 
 This schema may change with time, so it's always better to retrieve these paths from the code of the library.
@@ -137,7 +137,7 @@ This schema may change with time, so it's always better to retrieve these paths 
 
 #### Output tables format
 
-* *Assignments table* `output/filterN.csv` has 2 column format:
+* *Assignments table* `output/filterName.csv` has 2 column format:
   - Extended sequence ID: `<RNAcentral_ID>|lcl|<rna16s_DB_name>`
   - List of assigned taxonomic IDs (separated with `;`)
 
@@ -192,19 +192,19 @@ Here is the sequence of bundles you have to launch to repeat the whole DB genera
 
 To make it a bit shorter I assume that you first do `import era7bio.db._` in the `test:console`
 
-1. `filter1`
+1. `pick16SCandidates`
     - Recommended EC2 instance type: `r3.x2large`, it has 60GB RAM
     - Approximate run time: several hours
-    - Command: `test.rna16s.launch(rna16s.compats.filter1, your_aws_user)`.  
+    - Command: `test.rna16s.launch(rna16s.compats.pick16SCandidates, your_aws_user)`.  
       It returns you the instance ID. You have to terminate it **manually**.
 
-2. `filter2`
+2. `dropRedundantAssignments`
     - Recommended EC2 instance type: `r3.large` or `m3.xlarge`
     - Approximate run time: 10-20 minutes
-    - Command: `test.rna16s.launch(rna16s.compats.filter2AndGenerate, your_aws_user)`.  
+    - Command: `test.rna16s.launch(rna16s.compats.dropRedundantAssignmentsAndGenerate, your_aws_user)`.  
       It returns you the instance ID. You have to terminate it **manually**.
 
-3. MG7 + `filter3`
+3. MG7 + `dropInconsistentAssignments`
 
    * 3.1. First you need to run all the steps of the MG7 pipeline (one after another, not all at once):
 
@@ -217,7 +217,7 @@ To make it a bit shorter I assume that you first do `import era7bio.db._` in the
 
       Each loquat will offer you to subscribe to the notifications and tell you when it finished.
 
-   * 3.2. Then run `filter3`:
+   * 3.2. Then run `dropInconsistentAssignments`:
       - Recommended EC2 instance type: `r3.large` or `m3.xlarge`
       - Approximate run time: 10-20 minutes
       - Command: `test.rna16s.launch(rna16s.compats.filter3AndGenerate, your_aws_user)`.  
