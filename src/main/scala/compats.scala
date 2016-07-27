@@ -12,8 +12,8 @@ case object compats {
     generated.metadata.db.rna16s
   )
 
-  case object filter1 extends DefaultCompatible(era7bio.db.rna16s.filter1, javaHeap = 40)
+  case object pick16SCandidates extends DefaultCompatible(era7bio.db.rna16s.pick16SCandidates, javaHeap = 40)
 
-  case object filter2AndGenerate extends DefaultCompatible(era7bio.db.rna16s.filter2AndGenerate, javaHeap = 10)
-  case object filter3AndGenerate extends DefaultCompatible(era7bio.db.rna16s.filter3AndGenerate, javaHeap = 10)
+  case object dropRedundantAssignmentsAndGenerate extends DefaultCompatible(era7bio.db.rna16s.dropRedundantAssignmentsAndGenerate, javaHeap = 10)
+  case object dropInconsistentAssignmentsAndGenerate extends DefaultCompatible(era7bio.db.rna16s.dropInconsistentAssignmentsAndGenerate, javaHeap = 10)
 }

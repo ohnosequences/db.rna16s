@@ -4,16 +4,14 @@ package era7bio.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import era7bio.db.rnacentral._, RNACentral5._
-
 import ohnosequences.mg7._, bio4j.titanTaxonomyTree._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
-
 import com.github.tototoshi.csv._
 import better.files._
 
 
-case object filter1 extends FilterData(
+case object pick16SCandidates extends FilterData(
   RNACentral5.table,
   RNACentral5.fasta,
   era7bio.db.rna16s.s3prefix
@@ -209,11 +207,11 @@ otherwise they are partitioned according to the predicate
 
 
 
-[main/scala/compats.scala]: compats.scala.md
-[main/scala/filter1.scala]: filter1.scala.md
-[main/scala/filter2.scala]: filter2.scala.md
-[main/scala/filter3.scala]: filter3.scala.md
+[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
 [main/scala/mg7pipeline.scala]: mg7pipeline.scala.md
 [main/scala/package.scala]: package.scala.md
+[main/scala/compats.scala]: compats.scala.md
 [main/scala/release.scala]: release.scala.md
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[main/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
