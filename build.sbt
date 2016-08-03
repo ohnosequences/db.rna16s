@@ -32,7 +32,7 @@ dependencyOverrides ++= Set(
 )
 
 
-addFatArtifactPublishing()
+addFatArtifactPublishing(Test)
 
 // copied from bio4j-titan:
 mergeStrategy in assembly ~= { old => {
