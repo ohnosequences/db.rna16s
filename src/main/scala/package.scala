@@ -1,4 +1,4 @@
-package era7bio.db
+package ohnosequences.db
 
 import ohnosequences.blast.api.BlastDBType
 import ohnosequences.awstools.s3._
@@ -10,7 +10,7 @@ import ohnosequences.awstools.s3._
 */
 package object rna16s {
 
-  val dbName = "era7bio.db.rna16s"
+  val dbName = "ohnosequences.db.rna16s"
   val dbType = BlastDBType.nucl
 
   val s3prefix: S3Folder = S3Folder("resources.ohnosequences.com", generated.metadata.db.rna16s.organization) /

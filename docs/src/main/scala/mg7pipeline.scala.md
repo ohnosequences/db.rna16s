@@ -1,6 +1,6 @@
 
 ```scala
-package era7bio.db.rna16s
+package ohnosequences.db.rna16s
 
 import ohnosequences.mg7._, loquats._, dataflows._
 import ohnosequences.datasets._, illumina._
@@ -28,7 +28,7 @@ As the reference database we use the one generated from dropRedundantAssignments
 
 ```scala
   case object rna16sRefDB extends ReferenceDB(
-    era7bio.db.rna16s.dbName,
+    ohnosequences.db.rna16s.dbName,
     dropRedundantAssignmentsAndGenerate.s3,
     dropRedundantAssignments.output.table.s3
   )
@@ -38,10 +38,10 @@ As input we use the FASTA accepted by dropRedundantAssignments
 
 ```scala
   val splitInputs: Map[ID, S3Resource] = Map(
-    "refdb" -> S3Resource(era7bio.db.rna16s.dropRedundantAssignments.output.fasta.s3)
+    "refdb" -> S3Resource(ohnosequences.db.rna16s.dropRedundantAssignments.output.fasta.s3)
   )
 
-  def outputS3Folder(step: String): S3Folder = era7bio.db.rna16s.s3prefix / "mg7" / step /
+  def outputS3Folder(step: String): S3Folder = ohnosequences.db.rna16s.s3prefix / "mg7" / step /
 
   case object mg7parameters extends MG7Parameters(
     (_, step) => outputS3Folder(step),
@@ -121,7 +121,7 @@ These objects define the mg7 pipeline steps. You need to run them in the order t
 For running them, go to the scala console and run
 
 ```
-era7bio.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<yourUser>)
+ohnosequences.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<yourUser>)
 ```
 
 
