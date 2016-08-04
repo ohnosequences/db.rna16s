@@ -6,6 +6,7 @@ import ohnosequences.statika._
 import com.github.tototoshi.csv._
 import better.files._
 
+/* The general purpose of this filter is to drop redundant assignments. It will reduce the size of the database, while preserving the most informative assignments. By redundant we mean assignments `Seq1 -> Taxon0` such that there exists `Seq2 -> Taxon0` and `Seq1` is a subsequence of `Seq2`. */
 case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)() {
 
   type ID       = String
@@ -13,7 +14,12 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
   type Fasta    = FASTA.Value
   type Eith[X]  = Either[X, X]
 
+  /* The idea of this implementation is to transpose the input assignment mapping (`id2taxas`) to get all sequence IDs assigned to a given taxon. 
 
+     Then we consider actual sequences corresponding to those IDs and partition them on those that are contained in other ones and those that are not. First ones are marked as discarded and the latter as accepted.
+
+     By transposing this map again, we get for each sequence ID a set of accepted and discarded assignments. If a sequence doesn't have any accepted assignments left, it gets completely discarded from the database.
+  */
   def filterData(): Unit = {
 
     /* Mapping of sequence IDs to corresponding FASTA sequences */
