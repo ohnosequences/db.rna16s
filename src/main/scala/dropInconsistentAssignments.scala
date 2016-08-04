@@ -1,4 +1,4 @@
-package era7bio.db.rna16s
+package ohnosequences.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
 
@@ -100,7 +100,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
-  era7bio.db.rna16s.dbName,
-  era7bio.db.rna16s.dbType,
-  era7bio.db.rna16s.dropInconsistentAssignments
+  ohnosequences.db.rna16s.dbName,
+  ohnosequences.db.rna16s.dbType,
+  ohnosequences.db.rna16s.dropInconsistentAssignments
 )

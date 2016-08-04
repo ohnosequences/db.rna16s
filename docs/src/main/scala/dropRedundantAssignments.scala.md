@@ -1,6 +1,6 @@
 
 ```scala
-package era7bio.db.rna16s
+package ohnosequences.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import ohnosequences.fastarious.fasta._
@@ -137,9 +137,9 @@ Returns a pair: contained seq-s and not-contained.
 }
 
 case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
-  era7bio.db.rna16s.dbName,
-  era7bio.db.rna16s.dbType,
-  era7bio.db.rna16s.dropRedundantAssignments
+  ohnosequences.db.rna16s.dbName,
+  ohnosequences.db.rna16s.dbType,
+  ohnosequences.db.rna16s.dropRedundantAssignments
 )
 
 ```

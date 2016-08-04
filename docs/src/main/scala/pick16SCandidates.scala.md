@@ -1,6 +1,6 @@
 
 ```scala
-package era7bio.db.rna16s
+package ohnosequences.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import era7bio.db.rnacentral._, RNACentral5._
@@ -14,7 +14,7 @@ import better.files._
 case object pick16SCandidates extends FilterData(
   RNACentral5.table,
   RNACentral5.fasta,
-  era7bio.db.rna16s.s3prefix
+  ohnosequences.db.rna16s.s3prefix
 )(
   deps = bio4j.taxonomyBundle
 ) {
@@ -189,7 +189,7 @@ otherwise they are partitioned according to the predicate
           rows.partition(predicate)
         }
 
-      val extendedID: String = s"${commonID}|lcl|${era7bio.db.rna16s.dbName}"
+      val extendedID: String = s"${commonID}|lcl|${ohnosequences.db.rna16s.dbName}"
 
       writeOutput(
         extendedID,
