@@ -1,4 +1,4 @@
-package era7bio.db.rna16s
+package ohnosequences.db.rna16s
 
 import ohnosequences.awstools.s3._
 
