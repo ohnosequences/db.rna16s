@@ -82,25 +82,6 @@ import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
 import com.github.tototoshi.csv._
 import better.files._
-```
-
-This bundle just downloads the output of the MG7 run of the results of dropRedundantAssignments
-
-```scala
-case object mg7results extends Bundle() {
-
-  lazy val s3location: S3Object = referenceDBPipeline.outputS3Folder("merge") / "refdb.lca.csv"
-  lazy val lcaTable: File = File(s3location.key)
-
-  def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
-
-    transferManager.download(
-      s3location.bucket, s3location.key,
-      lcaTable.toJava
-    ).waitForCompletion
-  }
-}
 
 case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(deps = mg7results, bio4j.taxonomyBundle) {
 
@@ -189,12 +170,30 @@ Here we discard those taxa whose lineage does **not** contain the *parent* of th
   }
 }
 
-
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
   ohnosequences.db.rna16s.dbType,
   ohnosequences.db.rna16s.dropInconsistentAssignments
 )
+```
+
+This bundle just downloads the output of the MG7 run of the results of the drop redundant assignments step
+
+```scala
+case object mg7results extends Bundle() {
+
+  lazy val s3location: S3Object = referenceDBPipeline.outputS3Folder("merge") / "refdb.lca.csv"
+  lazy val lcaTable: File = File(s3location.key)
+
+  def instructions: AnyInstructions = LazyTry {
+    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+
+    transferManager.download(
+      s3location.bucket, s3location.key,
+      lcaTable.toJava
+    ).waitForCompletion
+  }
+}
 
 ```
 
