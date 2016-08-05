@@ -6,18 +6,99 @@
 [![](https://img.shields.io/badge/license-AGPLv3-blue.svg)](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29)
 [![](https://img.shields.io/badge/contact-gitter_chat-dd1054.svg)](https://gitter.im/ohnosequences/db.rna16s)
 
-A comprehensive, compact, and automatically curated 16S database.
+A comprehensive, compact, and automatically curated 16S database, where each sequence is assigned to a set of NCBI taxonomy IDs.
 
-### Data sources
+## Data sources
 
 All data comes from the latest [RNACentral][RNACentral] release, the most comprehensive RNA sequence resource: **all** RNA sequences from *ENA*, *GreenGenes*, *RDP*, *RefSeq* or *SILVA*, among others, are included (see [here][RNACentral data sources] for the full list).
 
-### Database generation and curation
+## Database generation and curation
 
-### Usage
+We can divide this into three steps:
+
+1. **Pick 16S candidate sequences** take all sequences which contain the full sequence of a 16S gene
+2. **Drop redundant assignments and sequences** if a sequence `S` has an assignment to taxon `A`, and a sequence `s` which is a subsequence of `S` has the same assignment, we drop this assignment from `s`; sequences with no assignments left are dropped
+3. **Drop inconsistent assignments** run MG7 with both input and reference the output of 2, and drop the original assignments which are far from the one obtained through MG7
+
+For more details read the corresponding [code documentation][code docs].
+
+## Database files and formats
+
+The output of each step is in S3, at `s3://resources.ohnosequences.com/ohnosequences/db.rna16s/<version>/<step>/`. This folder has the following structure:
+
+
+``` shell
+<step>/
+├── blastdb/                       # BLAST db files
+│   └── ohnosequences.db.rna16s.fasta.*
+├── output/
+│   ├── <step>.csv                # assignments
+│   └── <step>.fasta              # sequences
+└── summary/
+    └── <step>.csv                # summary accepted/rejected taxas
+```
+
+
+All csv files are *comma-separated* files with *Unix line endings* `\n`. Their structure:
+
+1. **Assignments** `output/<step>.csv` has **2 columns**:
+    1. Extended sequence ID, with format `<RNAcentral_ID>|lcl|ohnosequences.db.rna16s`
+    2. List of taxonomic assignments IDs, separated by `;`
+
+    Sample row:
+    ``` csv
+    URS0123213|lcl|ohnosequences.db.rna16s, 1234;45123;43131
+    ```
+2. **Summary** `summary/<step>.csv` has **3 columns**:
+    1. Extended sequence ID, with format `<RNAcentral_ID>|lcl|ohnosequences.db.rna16s`
+    2. List of taxonomic assignments IDs, separated by `;`
+    3. List of taxonomic assignments IDs **dropped** by this step, separated by `;`
+
+    Sample row:
+    ``` csv
+    URS0123213|lcl|ohnosequences.db.rna16s, 1234;3424, 45123;43131
+    ```
+
+## Usage
+
+You can of course just download the data from S3; if you want to use it from Scala code, or with [MG7][MG7], there are some helpers available:
+
+### Scala
+
+Add this library as a dependency in your `build.sbt`:
+
+```scala
+libraryDependencies += "ohnosequences" %% "db-rna16s" % "<version>"
+```
+
+Then in the code you can refer to various constants from the `ohnosequences.db.rna16s` namespace. The most useful are defined as shortcuts in the `release` object:
+
+- `release.fastaS3` is the S3 address of FASTA file with the database sequences
+- `release.id2taxasS3` is the S3 address of the assignments table
+- `release.blastDBS3` is the S3 address of the BLAST DB folder (S3 prefix)
+
+You can then use any S3 API to get these files and do whatever you feel like with them.
+
+### MG7
+
+You can directly use `db.rna16s` as a reference database with [MG7][MG7]. For that, first define a reference database bundle object:
+
+``` scala
+import ohnosequences.mg7._
+import era7bio.db.rna16s
+
+case object rna16sRefDB extends ReferenceDB(
+  rna16s.dbName,
+  rna16s.release.blastDBS3,
+  rna16s.release.id2taxasS3
+)
+```
+
+Then you can use it in your `MG7Parameters` configuration as one of the `referenceDBs`.
 
 ----
 
+> **NOTE** everything below will go to code documentation
 
 We have developed various criteria and tuned them during long testing and manual review process to filter over *9 million sequences* of RNAcentral and retrieve only around **262 000** most representative and informative sequences. The source code in this repository allows us to make generation process of this database easily reproducible for any new release of RNAcentral.
 
@@ -120,123 +201,7 @@ We take their LCA which is `subgenusABC` and look at its parent: `genusABC`. Eac
 |:-----|:---------------------------|
 | seqA | subspeciesA1; subspeciesA2 |
 
-
-## Usage
-
-### Released data in S3
-
-The output of each release is stored in an S3 folder of the following format:
-
-```
-s3://resources.ohnosequences.com/<organization>/<artifact_name>/<release_version>/
-```
-
-Where parameters values can be found in [`build.sbt`](build.sbt). They may change, but at the moment this address looks like `s3://resources.ohnosequences.com/era7bio/db.rna16s/0.9.0/`.
-
-Inside of this folder there are various subfolders, such as `pick16SCandidates/`, `dropRedundantAssignments/`, etc. Each of them has the same structure:
-
-```shell
-filterName/
-├── blastdb/                       # BLAST DB files
-│   └── era7bio.db.rna16s.fasta.*
-├── output/
-│   ├── filterName.csv                # assignments table
-│   └── filterName.fasta              # corresponding FASTA
-└── summary/
-    └── filterName.csv                # summary of accepted/rejected taxas
-```
-
-This schema may change with time, so it's always better to retrieve these paths from the code of the library.
-
-
-#### Output tables format
-
-* *Assignments table* `output/filterName.csv` has 2 column format:
-  - Extended sequence ID: `<RNAcentral_ID>|lcl|<rna16s_DB_name>`
-  - List of assigned taxonomic IDs (separated with `;`)
-
-* *Summary table* `summary/finterN.csv` is similar but has 3 columns:
-  - Extended sequence ID
-  - Accepted taxonomic IDs list
-  - Rejected taxonomic IDs list
-
-All produced tables have CSV format (comma separated values) with Unix line endings (`\n`).
-
-
-### In-code usage
-
-First add this library as a dependency in your `build.sbt`:
-
-```scala
-libraryDependencies += "era7bio" %% "db-rna16s" % "<latest_version>"
-```
-
-Then in the code you can refer to various constants in the `era7bio.db.rna16s` namespace. The most useful are defined as shortcuts in the `release` object:
-
-- `release.fastaS3` is the S3 address of FASTA file with the database sequences
-- `release.id2taxasS3` is the S3 address of the assignments table
-- `release.blastDBS3` is the S3 address of the BLAST DB folder (S3 prefix)
-
-
-#### MG7 Reference Database
-
-To use it in [MG7](https://github.com/ohnosequences/mg7), first define a reference database bundle object:
-
-```scala
-import ohnosequences.mg7._
-import era7bio.db.rna16s
-
-case object rna16sRefDB extends ReferenceDB(
-  rna16s.dbName,
-  rna16s.release.blastDBS3,
-  rna16s.release.id2taxasS3
-)
-```
-
-Then you can use it in your `MG7Parameters` configuration as one of the `referenceDBs`.
-
-
-## Maintenance
-
-Here is the sequence of bundles you have to launch to repeat the whole DB generation process.
-
-* First of all you need to publish an fat-jar artifact with `sbt publish`
-* Then launch `sbt test:console` and run commands in it
-* For each bundle you can choose EC2 instance type in [`src/test/scala/runBundles.scala`](src/test/scala/runBundles.scala)
-
-To make it a bit shorter I assume that you first do `import era7bio.db._` in the `test:console`
-
-1. `pick16SCandidates`
-    - Recommended EC2 instance type: `r3.x2large`, it has 60GB RAM
-    - Approximate run time: several hours
-    - Command: `test.rna16s.launch(rna16s.compats.pick16SCandidates, your_aws_user)`.  
-      It returns you the instance ID. You have to terminate it **manually**.
-
-2. `dropRedundantAssignments`
-    - Recommended EC2 instance type: `r3.large` or `m3.xlarge`
-    - Approximate run time: 10-20 minutes
-    - Command: `test.rna16s.launch(rna16s.compats.dropRedundantAssignmentsAndGenerate, your_aws_user)`.  
-      It returns you the instance ID. You have to terminate it **manually**.
-
-3. MG7 + `dropInconsistentAssignments`
-
-   * 3.1. First you need to run all the steps of the MG7 pipeline (one after another, not all at once):
-
-      ```scala
-      > rna16s.referenceDBPipeline.split.deploy(your_aws_user)
-      > rna16s.referenceDBPipeline.blastLoquat.deploy(your_aws_user)
-      > rna16s.referenceDBPipeline.assignLoquat.deploy(your_aws_user)
-      > rna16s.referenceDBPipeline.mergeLoquat.deploy(your_aws_user)
-      ```
-
-      Each loquat will offer you to subscribe to the notifications and tell you when it finished.
-
-   * 3.2. Then run `dropInconsistentAssignments`:
-      - Recommended EC2 instance type: `r3.large` or `m3.xlarge`
-      - Approximate run time: 10-20 minutes
-      - Command: `test.rna16s.launch(rna16s.compats.filter3AndGenerate, your_aws_user)`.  
-        It returns you the instance ID. You have to terminate it **manually**.
-
-
 [RNACentral]: https://rnacentral.org
-[RNACentral data sources]: http://rnacentral.org/expert-databases
+[RNACentral data sources]: https://rnacentral.org/expert-databases
+[MG7]: https://github.com/ohnosequences/mg7
+[code docs]: docs/src/main/scala/
