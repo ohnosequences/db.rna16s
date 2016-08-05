@@ -6,7 +6,7 @@
 [![](https://img.shields.io/badge/license-AGPLv3-blue.svg)](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29)
 [![](https://img.shields.io/badge/contact-gitter_chat-dd1054.svg)](https://gitter.im/ohnosequences/db.rna16s)
 
-A comprehensive, compact, and automatically curated 16S database, where each sequence is assigned to a set of NCBI taxonomy IDs.
+A comprehensive, compact, and automatically curated microbial 16S database, where each sequence is assigned to a set of NCBI taxonomy IDs.
 
 ## Data sources
 
