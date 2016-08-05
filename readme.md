@@ -10,9 +10,14 @@ A comprehensive, compact, and automatically curated 16S database.
 
 ### Data sources
 
-All data comes from the latest [RNACentral][RNACentral] release, the most comprehensive RNA sequence resource: all RNA sequences from ENA, GreenGenes, RDP, RefSeq or SILVA, among others, are included (see [here][RNACentral data sources] for the full list).
+All data comes from the latest [RNACentral][RNACentral] release, the most comprehensive RNA sequence resource: **all** RNA sequences from *ENA*, *GreenGenes*, *RDP*, *RefSeq* or *SILVA*, among others, are included (see [here][RNACentral data sources] for the full list).
+
+### Database generation and curation
+
+### Usage
 
 ----
+
 
 We have developed various criteria and tuned them during long testing and manual review process to filter over *9 million sequences* of RNAcentral and retrieve only around **262 000** most representative and informative sequences. The source code in this repository allows us to make generation process of this database easily reproducible for any new release of RNAcentral.
 
