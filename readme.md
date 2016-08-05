@@ -6,10 +6,15 @@
 [![](https://img.shields.io/badge/license-AGPLv3-blue.svg)](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29)
 [![](https://img.shields.io/badge/contact-gitter_chat-dd1054.svg)](https://gitter.im/ohnosequences/db.rna16s)
 
-This is a reference database of 16S sequences based on the data from [RNAcentral release 5](http://blog.rnacentral.org/2016/03/rnacentral-release-5.html).
+A comprehensive, compact, and automatically curated 16S database.
+
+### Data sources
+
+All data comes from the latest [RNACentral][RNACentral] release, the most comprehensive RNA sequence resource: all RNA sequences from ENA, GreenGenes, RDP, RefSeq or SILVA, among others, are included (see [here][RNACentral data sources] for the full list).
+
+----
 
 We have developed various criteria and tuned them during long testing and manual review process to filter over *9 million sequences* of RNAcentral and retrieve only around **262 000** most representative and informative sequences. The source code in this repository allows us to make generation process of this database easily reproducible for any new release of RNAcentral.
-
 
 ## Filtering routine overview
 
@@ -226,3 +231,7 @@ To make it a bit shorter I assume that you first do `import era7bio.db._` in the
       - Approximate run time: 10-20 minutes
       - Command: `test.rna16s.launch(rna16s.compats.filter3AndGenerate, your_aws_user)`.  
         It returns you the instance ID. You have to terminate it **manually**.
+
+
+[RNACentral]: https://rnacentral.org
+[RNACentral data sources]: http://rnacentral.org/expert-databases
