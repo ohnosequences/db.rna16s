@@ -100,16 +100,6 @@ Then you can use it in your `MG7Parameters` configuration as one of the `referen
 
 > **NOTE** everything below will go to code documentation
 
-### `dropRedundantAssignments` filter
-
-This step filters out assignments that are covered by bigger sequences. For example, if a sequence `S` has an assignment to taxon `A`, and a sequence `s` which is a subsequence of `S` has the same assignment, it gets discarded for `s`. If this was the only assignment for `s`, then the sequence gets discarded.
-
-If a bigger sequence is matched, all its subsequences will be matched as well, but it won't add any information to the results. So this filter allows to reduce the size of the database while leaving only most informative assignments.
-
-After this step a BLAST database is generated from the sequences that passed the filter.
-
-Around **72%** of the sequences from `pick16SCandidates` pass `dropInconsistentAssignments`. Among these sequences there are also some with a reduced number of assignments.
-
 ### `dropInconsistentAssignments` filter
 
 This step actually consists of two:
