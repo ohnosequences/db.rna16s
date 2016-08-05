@@ -1,4 +1,4 @@
-# 16S RNA Reference Database
+# db.rna16s
 
 [![](https://travis-ci.org/ohnosequences/db.rna16s.svg?branch=master)](https://travis-ci.org/ohnosequences/db.rna16s)
 [![](https://img.shields.io/codacy/62caae6ae58f48dca6633f2f88ed8898.svg)](https://www.codacy.com/app/era7/db.rna16s)
