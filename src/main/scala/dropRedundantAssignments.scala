@@ -4,6 +4,8 @@
   The goal of this step is reducing the number of both sequences and assignments in the database without losing information. For this, an assignment of a sequence `s` to a taxon `A` is considered redundant if there is a sequence `S` with an assignment to `A` such that `s` is a **subsequence** of `S`. Why? because when using these sequences as a reference, every alignment with `s` can be seen as one with `S`.
 
   This step is run here on the output of of the pick 16S candidates step, but it would work exactly the same on any other set of sequences (and assignments).
+
+  The output of this step represents around `70%` of the pick 16S candidates output; there is also a significant number of sequences with *less* assignments.
 */
 package ohnosequences.db.rna16s
 
@@ -20,7 +22,10 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
   type Fasta    = FASTA.Value
   type Eith[X]  = Either[X, X]
 
-  /* The idea of this implementation is to transpose the input assignment mapping (`id2taxas`) to get all sequence IDs assigned to a given taxon.
+  /*
+    ## Implementation
+
+    The idea of this implementation is to transpose the input assignment mapping (`id2taxas`) to get all sequence IDs assigned to a given taxon.
 
      Then we consider actual sequences corresponding to those IDs and partition them on those that are contained in other ones and those that are not. First ones are marked as discarded and the latter as accepted.
 
