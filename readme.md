@@ -100,36 +100,6 @@ Then you can use it in your `MG7Parameters` configuration as one of the `referen
 
 > **NOTE** everything below will go to code documentation
 
-We have developed various criteria and tuned them during long testing and manual review process to filter over *9 million sequences* of RNAcentral and retrieve only around **262 000** most representative and informative sequences. The source code in this repository allows us to make generation process of this database easily reproducible for any new release of RNAcentral.
-
-## Filtering routine overview
-
-Here goes an overview of the general filtering routine. For more details, check the code [documentation](docs/src/main/scala/). Filtering is split in several steps:
-
-- `pick16SCandidates`: filters out unrelated and uninformative *sequences*
-- `dropRedundantAssignments`: filters out uninformative *assignments*
-- `dropInconsistentAssignments`: filters out *wrong* assignments
-
-Some more details about each step.
-
-### `pick16SCandidates` filter
-
-This is an important filter, because out of the huge RNAcentral database it chooses only 16S sequences and filters out those that are badly classified or are not informative.
-To pass this filter sequences have to satisfy the following predicate:
-
-- the sequence ID is **not** in `blacklistedRNACentralIDs`
-- the corresponding sequence is longer than `minimum16SLength`
-- for each taxonomy association separately:
-  + annotated as an `rRNA`
-  + **not** one of those in `uninformativeTaxIDs`
-  + a descendant of either *Archaea* or *Bacteria*
-  + **not** a descendant of an *environmental* or *unclassified* taxon
-
-You can lookup the mentioned constants in the [`pick16SCandidates`](docs/src/main/scala/pick16SCandidates.scala.md) code.
-
-Only **~3.9%** of all RNAcentral sequences pass this filter.
-
-
 ### `dropRedundantAssignments` filter
 
 This step filters out assignments that are covered by bigger sequences. For example, if a sequence `S` has an assignment to taxon `A`, and a sequence `s` which is a subsequence of `S` has the same assignment, it gets discarded for `s`. If this was the only assignment for `s`, then the sequence gets discarded.
@@ -139,7 +109,6 @@ If a bigger sequence is matched, all its subsequences will be matched as well, b
 After this step a BLAST database is generated from the sequences that passed the filter.
 
 Around **72%** of the sequences from `pick16SCandidates` pass `dropInconsistentAssignments`. Among these sequences there are also some with a reduced number of assignments.
-
 
 ### `dropInconsistentAssignments` filter
 

@@ -1,3 +1,10 @@
+/*
+  # Pick 16S candidates
+
+  In this first step we pick those sequences which contain a 16S gene sequence, based on their length and annotations. From the taxonomical point of view, we are only interested in sequences with at least one assignment to (a descendant of) *Bacteria* or *Archaea* which is *not* a descendant of "unclassified" taxa.
+
+  The output of this step represents around `5%` of the sequences in RNACentral.
+*/
 package ohnosequences.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
@@ -8,14 +15,14 @@ import ohnosequences.statika._
 import com.github.tototoshi.csv._
 import better.files._
 
-
 case object pick16SCandidates extends FilterData(
   RNACentral5.table,
   RNACentral5.fasta,
   ohnosequences.db.rna16s.s3prefix
 )(
   deps = bio4j.taxonomyBundle
-) {
+)
+{
 
   /* We are using the ribosomal RNA type annotation on RNACentral as a first catch-all filter. We are aware of the existence of a gene annotation corresponding to 16S, that we are **not using** due to a significant amount of 16S sequences lacking the corresponding annotation. */
   val ribosomalRNAType = "rRNA"
@@ -23,11 +30,10 @@ case object pick16SCandidates extends FilterData(
   /* The sequence length threshold for a sequence to be admitted as 16S. */
   val minimum16SLength: Int = 1300
 
-  /* Taxa IDs for archaea and bacteria */
+  /* Taxon IDs for *Archaea*, *Bacteria* and the dreaded *Unclassified Bacteria* taxon */
   val bacteriaTaxonID        = "2"
   val archaeaTaxonID         = "2157"
   val unclassifiedBacteriaID = "2323"
-
 
   /* These are NCBI taxonomy IDs corresponding to taxa which are at best uniformative. The `String` value is the name of the corresponding taxon, for documentation purposes. */
   val uninformativeTaxIDsMap = Map(
@@ -82,9 +88,9 @@ case object pick16SCandidates extends FilterData(
   )
 
   /*
-    #### Database defining predicate
+    ## Predicate defining a 16S candidate
 
-    Sequences that satisfy this predicate (on themselves together with their annotation) are included in this database.
+    Sequences that satisfy this predicate (on themselves together with their annotation) are included in the output of this step.
   */
   private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
 
@@ -94,18 +100,18 @@ case object pick16SCandidates extends FilterData(
     /* - are annotated as rRNA */
     row.select(rna_type).contains(ribosomalRNAType) &&
     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
-    ( ! uninformativeTaxIDs.contains(taxID) ) && {
-
+    ( ! uninformativeTaxIDs.contains(taxID) )       &&
+    {
       taxonomyGraph.getNode(taxID).map(_.lineage) match {
         case None => false // not in the DB
         case Some(ancestors) =>
 
-          /* - is a descendant of either Archaea or Bacteria */
+    /* - is a descendant of either Archaea or Bacteria */
           ancestors.exists { ancestor =>
             ancestor.id == archaeaTaxonID ||
             ancestor.id == bacteriaTaxonID
           } &&
-          /* - is not a descendant of an environmental or unclassified taxon */
+    /* - and is not a descendant of an environmental or unclassified taxon */
           ancestors.filter { ancestor =>
             ancestor.name == "environmental samples" ||
             ancestor.name.contains("unclassified")   ||
@@ -149,5 +155,4 @@ case object pick16SCandidates extends FilterData(
       )
     }
   }
-
 }
