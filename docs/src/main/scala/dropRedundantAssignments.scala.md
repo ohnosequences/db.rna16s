@@ -1,4 +1,13 @@
 
+# Drop redundant assignments
+
+The goal of this step is reducing the number of both sequences and assignments in the database without losing information. For this, an assignment of a sequence `s` to a taxon `A` is considered redundant if there is a sequence `S` with an assignment to `A` such that `s` is a **subsequence** of `S`. Why? because when using these sequences as a reference, every alignment with `s` can be seen as one with `S`.
+
+This step is run here on the output of of the pick 16S candidates step, but it would work exactly the same on any other set of sequences (and assignments).
+
+The output of this step represents around `70%` of the pick 16S candidates output; there is also a significant number of sequences with *less* assignments.
+
+
 ```scala
 package ohnosequences.db.rna16s
 
@@ -7,11 +16,7 @@ import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 import com.github.tototoshi.csv._
 import better.files._
-```
 
-The general purpose of this filter is to drop redundant assignments. It will reduce the size of the database, while preserving the most informative assignments. By redundant we mean assignments `Seq1 -> Taxon0` such that there exists `Seq2 -> Taxon0` and `Seq1` is a subsequence of `Seq2`.
-
-```scala
 case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)() {
 
   type ID       = String
@@ -20,11 +25,14 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
   type Eith[X]  = Either[X, X]
 ```
 
-The idea of this implementation is to transpose the input assignment mapping (`id2taxas`) to get all sequence IDs assigned to a given taxon. 
 
-Then we consider actual sequences corresponding to those IDs and partition them on those that are contained in other ones and those that are not. First ones are marked as discarded and the latter as accepted.
+## Implementation
 
-By transposing this map again, we get for each sequence ID a set of accepted and discarded assignments. If a sequence doesn't have any accepted assignments left, it gets completely discarded from the database.
+The idea of this implementation is to transpose the input assignment mapping (`id2taxas`) to get all sequence IDs assigned to a given taxon.
+
+ Then we consider actual sequences corresponding to those IDs and partition them on those that are contained in other ones and those that are not. First ones are marked as discarded and the latter as accepted.
+
+ By transposing this map again, we get for each sequence ID a set of accepted and discarded assignments. If a sequence doesn't have any accepted assignments left, it gets completely discarded from the database.
 
 
 ```scala
