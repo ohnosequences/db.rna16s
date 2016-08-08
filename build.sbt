@@ -1,9 +1,7 @@
 
 name          := "db.rna16s"
-organization  := "era7bio"
-description   := "rna16s reference database based on RNAcentral"
-
-GithubRelease.repo := organization.value +"/"+ name.value
+organization  := "ohnosequences"
+description   := "A 16S reference database"
 
 scalaVersion := "2.11.8"
 
@@ -34,7 +32,6 @@ dependencyOverrides ++= Set(
 
 addFatArtifactPublishing(Test)
 
-// copied from bio4j-titan:
 mergeStrategy in assembly ~= { old => {
     case "log4j.properties"                       => MergeStrategy.filterDistinctLines
     case PathList("org", "apache", "commons", _*) => MergeStrategy.first

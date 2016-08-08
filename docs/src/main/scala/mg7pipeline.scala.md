@@ -1,6 +1,6 @@
 
 ```scala
-package era7bio.db.rna16s
+package ohnosequences.db.rna16s
 
 import ohnosequences.mg7._, loquats._, dataflows._
 import ohnosequences.datasets._, illumina._
@@ -24,24 +24,24 @@ import better.files._
 case object referenceDBPipeline {
 ```
 
-As the reference database we use the one generated from filter2
+As the reference database we use the one generated from dropRedundantAssignments
 
 ```scala
   case object rna16sRefDB extends ReferenceDB(
-    era7bio.db.rna16s.dbName,
-    filter2AndGenerate.s3,
-    filter2.output.table.s3
+    ohnosequences.db.rna16s.dbName,
+    dropRedundantAssignmentsAndGenerate.s3,
+    dropRedundantAssignments.output.table.s3
   )
 ```
 
-As input we use the FASTA accepted by filter2
+As input we use the FASTA accepted by dropRedundantAssignments
 
 ```scala
   val splitInputs: Map[ID, S3Resource] = Map(
-    "refdb" -> S3Resource(era7bio.db.rna16s.filter2.output.fasta.s3)
+    "refdb" -> S3Resource(ohnosequences.db.rna16s.dropRedundantAssignments.output.fasta.s3)
   )
 
-  def outputS3Folder(step: String): S3Folder = era7bio.db.rna16s.s3prefix / "mg7" / step /
+  def outputS3Folder(step: String): S3Folder = ohnosequences.db.rna16s.s3prefix / "mg7" / step /
 
   case object mg7parameters extends MG7Parameters(
     (_, step) => outputS3Folder(step),
@@ -121,7 +121,7 @@ These objects define the mg7 pipeline steps. You need to run them in the order t
 For running them, go to the scala console and run
 
 ```
-era7bio.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<yourUser>)
+ohnosequences.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<yourUser>)
 ```
 
 
@@ -173,11 +173,11 @@ era7bio.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<yourUse
 
 
 
-[main/scala/compats.scala]: compats.scala.md
-[main/scala/filter1.scala]: filter1.scala.md
-[main/scala/filter2.scala]: filter2.scala.md
-[main/scala/filter3.scala]: filter3.scala.md
+[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
 [main/scala/mg7pipeline.scala]: mg7pipeline.scala.md
 [main/scala/package.scala]: package.scala.md
+[main/scala/compats.scala]: compats.scala.md
 [main/scala/release.scala]: release.scala.md
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[main/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md

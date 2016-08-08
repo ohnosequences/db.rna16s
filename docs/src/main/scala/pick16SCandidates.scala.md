@@ -1,25 +1,30 @@
 
+# Pick 16S candidates
+
+In this first step we pick those sequences which contain a 16S gene sequence, based on their length and annotations. From the taxonomical point of view, we are only interested in sequences with at least one assignment to (a descendant of) *Bacteria* or *Archaea* which is *not* a descendant of "unclassified" taxa.
+
+The output of this step represents around `5%` of the sequences in RNACentral.
+
+
 ```scala
-package era7bio.db.rna16s
+package ohnosequences.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import era7bio.db.rnacentral._, RNACentral5._
-
 import ohnosequences.mg7._, bio4j.titanTaxonomyTree._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
-
 import com.github.tototoshi.csv._
 import better.files._
 
-
-case object filter1 extends FilterData(
+case object pick16SCandidates extends FilterData(
   RNACentral5.table,
   RNACentral5.fasta,
-  era7bio.db.rna16s.s3prefix
+  ohnosequences.db.rna16s.s3prefix
 )(
   deps = bio4j.taxonomyBundle
-) {
+)
+{
 ```
 
 We are using the ribosomal RNA type annotation on RNACentral as a first catch-all filter. We are aware of the existence of a gene annotation corresponding to 16S, that we are **not using** due to a significant amount of 16S sequences lacking the corresponding annotation.
@@ -34,7 +39,7 @@ The sequence length threshold for a sequence to be admitted as 16S.
   val minimum16SLength: Int = 1300
 ```
 
-Taxa IDs for archaea and bacteria
+Taxon IDs for *Archaea*, *Bacteria* and the dreaded *Unclassified Bacteria* taxon
 
 ```scala
   val bacteriaTaxonID        = "2"
@@ -101,9 +106,9 @@ and here we have RNACentral entries which we think are poorly assigned> This is 
 ```
 
 
-#### Database defining predicate
+## Predicate defining a 16S candidate
 
-Sequences that satisfy this predicate (on themselves together with their annotation) are included in this database.
+Sequences that satisfy this predicate (on themselves together with their annotation) are included in the output of this step.
 
 
 ```scala
@@ -122,8 +127,8 @@ Sequences that satisfy this predicate (on themselves together with their annotat
 - their taxonomy association is *not* one of those in `uninformativeTaxIDs`
 
 ```scala
-    ( ! uninformativeTaxIDs.contains(taxID) ) && {
-
+    ( ! uninformativeTaxIDs.contains(taxID) )       &&
+    {
       taxonomyGraph.getNode(taxID).map(_.lineage) match {
         case None => false // not in the DB
         case Some(ancestors) =>
@@ -138,7 +143,7 @@ Sequences that satisfy this predicate (on themselves together with their annotat
           } &&
 ```
 
-- is not a descendant of an environmental or unclassified taxon
+- and is not a descendant of an environmental or unclassified taxon
 
 ```scala
           ancestors.filter { ancestor =>
@@ -191,7 +196,7 @@ otherwise they are partitioned according to the predicate
           rows.partition(predicate)
         }
 
-      val extendedID: String = s"${commonID}|lcl|${era7bio.db.rna16s.dbName}"
+      val extendedID: String = s"${commonID}|lcl|${ohnosequences.db.rna16s.dbName}"
 
       writeOutput(
         extendedID,
@@ -201,7 +206,6 @@ otherwise they are partitioned according to the predicate
       )
     }
   }
-
 }
 
 ```
@@ -209,11 +213,11 @@ otherwise they are partitioned according to the predicate
 
 
 
-[main/scala/compats.scala]: compats.scala.md
-[main/scala/filter1.scala]: filter1.scala.md
-[main/scala/filter2.scala]: filter2.scala.md
-[main/scala/filter3.scala]: filter3.scala.md
+[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
 [main/scala/mg7pipeline.scala]: mg7pipeline.scala.md
 [main/scala/package.scala]: package.scala.md
+[main/scala/compats.scala]: compats.scala.md
 [main/scala/release.scala]: release.scala.md
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
+[main/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[main/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md

@@ -13,7 +13,7 @@ case object rna16s {
 
   // use `sbt test:console`:
   // > era7bio.db.test.rna16s.launch(...)
-  def launch[B <: AnyBundle](compat: era7bio.db.rna16s.compats.DefaultCompatible[B], user: AWSUser): List[String] =
+  def launch[B <: AnyBundle](compat: ohnosequences.db.rna16s.compats.DefaultCompatible[B], user: AWSUser): List[String] =
     EC2.create(user.profile)
       .runInstances(
         amount = 1,
@@ -25,10 +25,10 @@ case object rna16s {
       )
       .map { _.getInstanceId }
 
-  def filter1(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.filter1, user)
+  def pick16SCandidates(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.compats.pick16SCandidates, user)
 
-  def filter2AndGenerate(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.filter2AndGenerate, user)
-  def filter3AndGenerate(user: AWSUser): List[String] = launch(era7bio.db.rna16s.compats.filter3AndGenerate, user)
+  def dropRedundantAssignmentsAndGenerate(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.compats.dropRedundantAssignmentsAndGenerate, user)
+  def dropInconsistentAssignmentsAndGenerate(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.compats.dropInconsistentAssignmentsAndGenerate, user)
 }
 
 ```
@@ -36,11 +36,11 @@ case object rna16s {
 
 
 
-[main/scala/compats.scala]: ../../main/scala/compats.scala.md
-[main/scala/filter1.scala]: ../../main/scala/filter1.scala.md
-[main/scala/filter2.scala]: ../../main/scala/filter2.scala.md
-[main/scala/filter3.scala]: ../../main/scala/filter3.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md
+[main/scala/dropRedundantAssignments.scala]: ../../main/scala/dropRedundantAssignments.scala.md
 [main/scala/mg7pipeline.scala]: ../../main/scala/mg7pipeline.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
+[main/scala/compats.scala]: ../../main/scala/compats.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md
-[test/scala/runBundles.scala]: runBundles.scala.md
+[main/scala/dropInconsistentAssignments.scala]: ../../main/scala/dropInconsistentAssignments.scala.md
+[main/scala/pick16SCandidates.scala]: ../../main/scala/pick16SCandidates.scala.md
