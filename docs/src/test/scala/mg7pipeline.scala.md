@@ -1,6 +1,6 @@
 
 ```scala
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import ohnosequences.mg7._, loquats._, dataflows._
 import ohnosequences.datasets._, illumina._
@@ -16,8 +16,6 @@ import ohnosequences.awstools.regions.Region._
 
 import com.amazonaws.services.s3.transfer._
 import com.amazonaws.auth._, profile._
-
-// import era7.defaults.loquats._
 
 import better.files._
 
@@ -49,8 +47,8 @@ As input we use the FASTA accepted by dropRedundantAssignments
     splitChunkSize = 100,
     splitInputFormat = FastaInput,
     blastCommand = blastn,
-    blastOutRec  = defaultBlastOutRec,
-    blastOptions = defaultBlastnOptions.update(
+    blastOutRec  = defaults.blastnOutputRecord,
+    blastOptions = defaults.blastnOptions.update(
       num_threads(2)              ::
       word_size(150)              ::
       evalue(BigDecimal(1E-100))  ::
@@ -173,11 +171,11 @@ ohnosequences.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<y
 
 
 
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
-[main/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
-[main/scala/mg7pipeline.scala]: mg7pipeline.scala.md
-[main/scala/package.scala]: package.scala.md
-[main/scala/compats.scala]: compats.scala.md
-[main/scala/release.scala]: release.scala.md
-[main/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
-[main/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md
+[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[main/scala/package.scala]: ../../main/scala/package.scala.md
+[main/scala/release.scala]: ../../main/scala/release.scala.md

@@ -5,7 +5,7 @@
 
   The output of this step represents around `5%` of the sequences in RNACentral.
 */
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import era7bio.db.rnacentral._, RNACentral5._

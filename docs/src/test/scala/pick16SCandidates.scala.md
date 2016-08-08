@@ -7,11 +7,11 @@ The output of this step represents around `5%` of the sequences in RNACentral.
 
 
 ```scala
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import era7bio.db.rnacentral._, RNACentral5._
-import ohnosequences.mg7._, bio4j.titanTaxonomyTree._
+import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 import com.github.tototoshi.csv._
@@ -22,7 +22,7 @@ case object pick16SCandidates extends FilterData(
   RNACentral5.fasta,
   ohnosequences.db.rna16s.s3prefix
 )(
-  deps = bio4j.taxonomyBundle
+  deps = ncbiTaxonomyBundle
 )
 {
 ```
@@ -129,7 +129,7 @@ Sequences that satisfy this predicate (on themselves together with their annotat
 ```scala
     ( ! uninformativeTaxIDs.contains(taxID) )       &&
     {
-      taxonomyGraph.getNode(taxID).map(_.lineage) match {
+      taxonomyGraph.getTaxon(taxID).map(_.ancestors) match {
         case None => false // not in the DB
         case Some(ancestors) =>
 ```
@@ -213,11 +213,11 @@ otherwise they are partitioned according to the predicate
 
 
 
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
-[main/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
-[main/scala/mg7pipeline.scala]: mg7pipeline.scala.md
-[main/scala/package.scala]: package.scala.md
-[main/scala/compats.scala]: compats.scala.md
-[main/scala/release.scala]: release.scala.md
-[main/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
-[main/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md
+[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[main/scala/package.scala]: ../../main/scala/package.scala.md
+[main/scala/release.scala]: ../../main/scala/release.scala.md

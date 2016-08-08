@@ -1,6 +1,6 @@
 
 ```scala
-package era7bio.db.test
+package ohnosequences.db.rna16s.test
 
 import ohnosequences.statika._, aws._
 import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
@@ -36,11 +36,11 @@ case object rna16s {
 
 
 
+[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
 [test/scala/runBundles.scala]: runBundles.scala.md
-[main/scala/dropRedundantAssignments.scala]: ../../main/scala/dropRedundantAssignments.scala.md
-[main/scala/mg7pipeline.scala]: ../../main/scala/mg7pipeline.scala.md
+[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
-[main/scala/compats.scala]: ../../main/scala/compats.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md
-[main/scala/dropInconsistentAssignments.scala]: ../../main/scala/dropInconsistentAssignments.scala.md
-[main/scala/pick16SCandidates.scala]: ../../main/scala/pick16SCandidates.scala.md

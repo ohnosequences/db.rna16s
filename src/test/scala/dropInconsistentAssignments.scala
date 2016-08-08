@@ -69,7 +69,7 @@
 
   Almost all `99.8%` of the sequences from the drop redundant assignments step pass  this filter, because it's mostly about filtering out *wrong* assignments and there are not many sequences that get all assignments discarded.
 */
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import ohnosequences.ncbitaxonomy._, titan._

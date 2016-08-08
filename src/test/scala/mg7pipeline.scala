@@ -1,4 +1,4 @@
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import ohnosequences.mg7._, loquats._, dataflows._
 import ohnosequences.datasets._, illumina._

@@ -6,9 +6,10 @@ import ohnosequences.awstools.s3._
 
 case object release {
 
-  val fastaS3:    S3Object = dropInconsistentAssignments.output.fasta.s3
-  val id2taxasS3: S3Object = dropInconsistentAssignments.output.table.s3
-  val blastDBS3:  S3Folder = dropInconsistentAssignmentsAndGenerate.s3
+  // TODO these should have a value!
+  val fastaS3:    S3Object = ??? // dropInconsistentAssignments.output.fasta.s3
+  val id2taxasS3: S3Object = ??? // dropInconsistentAssignments.output.table.s3
+  val blastDBS3:  S3Folder = ??? // dropInconsistentAssignmentsAndGenerate.s3
 }
 
 ```
@@ -16,11 +17,11 @@ case object release {
 
 
 
+[test/scala/dropRedundantAssignments.scala]: ../../test/scala/dropRedundantAssignments.scala.md
 [test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
-[main/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
-[main/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/mg7pipeline.scala]: ../../test/scala/mg7pipeline.scala.md
+[test/scala/compats.scala]: ../../test/scala/compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: ../../test/scala/dropInconsistentAssignments.scala.md
+[test/scala/pick16SCandidates.scala]: ../../test/scala/pick16SCandidates.scala.md
 [main/scala/package.scala]: package.scala.md
-[main/scala/compats.scala]: compats.scala.md
 [main/scala/release.scala]: release.scala.md
-[main/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
-[main/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md

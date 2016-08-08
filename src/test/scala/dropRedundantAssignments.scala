@@ -7,7 +7,7 @@
 
   The output of this step represents around `70%` of the pick 16S candidates output; there is also a significant number of sequences with *less* assignments.
 */
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import ohnosequences.fastarious.fasta._
