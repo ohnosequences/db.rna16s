@@ -1,4 +1,3 @@
-
 name          := "db.rna16s"
 organization  := "ohnosequences"
 description   := "A 16S reference database"
@@ -13,15 +12,16 @@ resolvers := Seq(
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
-  "era7bio"       %% "db-rnacentral" % "0.6.0",
-  "ohnosequences" %% "fastarious"    % "0.6.0",
-  "ohnosequences" %% "blast-api"     % "0.7.0",
-  "ohnosequences" %% "statika"       % "2.0.0-M5",
-  "ohnosequences" %% "mg7"           % "1.0.0-M5-pr78",
-  "ohnosequences-bundles" %% "bio4j-dist" % "0.2.0",
+  "era7bio"               %% "db-rnacentral"  % "0.6.0",
+  "ohnosequences"         %% "fastarious"     % "0.6.0",
+  "ohnosequences"         %% "blast-api"      % "0.7.0",
+  "ohnosequences"         %% "statika"        % "2.0.0-M5",
+  "ohnosequences"         %% "ncbitaxonomy"   % "0.1.0",
+  "ohnosequences-bundles" %% "bio4j-dist"     % "0.2.0",
   // Test:
-  "era7bio"       %% "defaults"  % "0.2.0" % Test,
-  "org.scalatest" %% "scalatest" % "2.2.6" % Test
+  "era7bio"       %% "defaults"  % "0.2.0"                      % Test,
+  "ohnosequences" %% "mg7"       % "1.0.0-M5-pr78-64-gd886636"  % Test,
+  "org.scalatest" %% "scalatest" % "2.2.6"                      % Test
 )
 
 dependencyOverrides ++= Set(
@@ -29,6 +29,8 @@ dependencyOverrides ++= Set(
   "org.slf4j"                 % "slf4j-api"  % "1.7.7"
 )
 
+// NOTE should be reestablished
+wartremoverErrors in (Compile, compile) := Seq()
 
 addFatArtifactPublishing(Test)
 
