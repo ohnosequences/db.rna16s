@@ -1,6 +1,6 @@
 name          := "db.rna16s"
 organization  := "ohnosequences"
-description   := "A 16S reference database"
+description   := "A comprehensive, compact, and automatically curated 16S database"
 
 scalaVersion := "2.11.8"
 
