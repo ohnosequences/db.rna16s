@@ -15,8 +15,6 @@ import ohnosequences.awstools.regions.Region._
 import com.amazonaws.services.s3.transfer._
 import com.amazonaws.auth._, profile._
 
-// import era7.defaults.loquats._
-
 import better.files._
 
 case object referenceDBPipeline {
@@ -41,8 +39,8 @@ case object referenceDBPipeline {
     splitChunkSize = 100,
     splitInputFormat = FastaInput,
     blastCommand = blastn,
-    blastOutRec  = defaultBlastOutRec,
-    blastOptions = defaultBlastnOptions.update(
+    blastOutRec  = defaults.blastnOutputRecord,
+    blastOptions = defaults.blastnOptions.update(
       num_threads(2)              ::
       word_size(150)              ::
       evalue(BigDecimal(1E-100))  ::

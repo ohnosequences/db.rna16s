@@ -9,7 +9,7 @@ package ohnosequences.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import era7bio.db.rnacentral._, RNACentral5._
-import ohnosequences.mg7._, bio4j.titanTaxonomyTree._
+import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 import com.github.tototoshi.csv._
@@ -20,7 +20,7 @@ case object pick16SCandidates extends FilterData(
   RNACentral5.fasta,
   ohnosequences.db.rna16s.s3prefix
 )(
-  deps = bio4j.taxonomyBundle
+  deps = ncbiTaxonomyBundle
 )
 {
 
@@ -102,7 +102,7 @@ case object pick16SCandidates extends FilterData(
     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
     ( ! uninformativeTaxIDs.contains(taxID) )       &&
     {
-      taxonomyGraph.getNode(taxID).map(_.lineage) match {
+      taxonomyGraph.getTaxon(taxID).map(_.ancestors) match {
         case None => false // not in the DB
         case Some(ancestors) =>
 
