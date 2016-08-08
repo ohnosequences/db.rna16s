@@ -99,4 +99,4 @@ Then you can use it in your `MG7Parameters` configuration as one of the `referen
 [RNACentral]: https://rnacentral.org
 [RNACentral data sources]: https://rnacentral.org/expert-databases
 [MG7]: https://github.com/ohnosequences/mg7
-[code docs]: docs/src/main/scala/
+[code docs]: docs/src/test/scala/
