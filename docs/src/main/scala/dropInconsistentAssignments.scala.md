@@ -1,37 +1,87 @@
 
+# Drop inconsistent assignments
+
+Here we want to drop "wrong", in the sense of *inconsistent*, assignments from our database. But, what is a wrong assignment? Let's see first an example:
+
+## Example of a wrong assignment
+
+Let's consider the following fragment of the taxonomic tree:
+
+```
+tribeX
+├─ genusABC
+│  ├─ ...
+│  ...
+│  └─ subgenusABC
+│     ├─ speciesA
+│     │  ├─ subspeciesA1
+│     │  └─ subspeciesA2
+│     ├─ speciesB1
+│     ├─ speciesB2
+│     └─ speciesC
+...
+└─ ...
+   └─ ...
+      └─ speciesX
+```
+
+And a sequence with following taxonomic assignments:
+
+| ID   | Taxas                                |
+|:-----|:-------------------------------------|
+| seqA | subspeciesA1; subspeciesA2; speciesX |
+
+In this case `speciesX` is *likely* a wrong assignment, because it's completely *unrelated* with the other, more specific assignments. If we will leave it in the database, the LCA of these nodes will be `tribeX`, instead of `speciesA`.
+
+## The definition of wrong
+
+How could we detect something like the example before? if we have enough similar sequences in the database which are correctly assigned, we could
+
+1. calculate (by sequence similarity) to what this sequence gets assigned using all the other sequences as a reference
+2. see, for each of the original assignments, if they are "close" to the newly computed assignment; drop those which are "far" in the tree
+
+Continuing with the example before, we run MG7, and BLAST tells us that `seqA` is *very* similar to `seqB` and `seqC` with the following assignments:
+
+| ID   | Taxas                |
+|:-----|:---------------------|
+| seqB | speciesB1; speciesB2 |
+| seqC | speciesC             |
+
+We take their LCA which is `subgenusABC` and look at its parent: `genusABC`. Each of the `seqA`'s assignments has to be a descendant of `genusABC` and `speciesX`, obviously, is not, so we discard it:
+
+| ID   | Taxas                      |
+|:-----|:---------------------------|
+| seqA | subspeciesA1; subspeciesA2 |
+
+## How it works
+
+This step actually consists in two separate steps:
+
+1. We run MG7 with input the output from the drop redundant assignments step, and as reference database the same but the sequence we are using as query.
+2. For each sequence we check the relation of its assignments with the corresponding LCA that we've got from MG7. If some assignment is too far away from the LCA in the taxonomic tree, it is discarded.
+
+  Right now, if a sequence has only one (single) assignment, it is not tested with the described filter, because
+
+  + it may represent a rare organism that doesn't necessarily have relations with its taxonomic neighbors
+  + it can be an organism that was originally misclassified and put in the taxonomy far away from its real relatives (that could be discovered later, for example)
+
+  After this step BLAST database is generated again.
+
+Almost all `99.8%` of the sequences from the drop redundant assignments step pass  this filter, because it's mostly about filtering out *wrong* assignments and there are not many sequences that get all assignments discarded.
+
+
 ```scala
 package ohnosequences.db.rna16s
 
 import era7bio.db._, csvUtils._, collectionUtils._
-
 import ohnosequences.mg7._, bio4j.taxonomyTree._, bio4j.titanTaxonomyTree._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 import ohnosequences.awstools.s3._
-
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
 import com.github.tototoshi.csv._
 import better.files._
-```
-
-This bundle just downloads the output of the MG7 run of the results of dropRedundantAssignments
-
-```scala
-case object mg7results extends Bundle() {
-
-  lazy val s3location: S3Object = referenceDBPipeline.outputS3Folder("merge") / "refdb.lca.csv"
-  lazy val lcaTable: File = File(s3location.key)
-
-  def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
-
-    transferManager.download(
-      s3location.bucket, s3location.key,
-      lcaTable.toJava
-    ).waitForCompletion
-  }
-}
 
 case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(deps = mg7results, bio4j.taxonomyBundle) {
 
@@ -120,12 +170,30 @@ Here we discard those taxa whose lineage does **not** contain the *parent* of th
   }
 }
 
-
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
   ohnosequences.db.rna16s.dbType,
   ohnosequences.db.rna16s.dropInconsistentAssignments
 )
+```
+
+This bundle just downloads the output of the MG7 run of the results of the drop redundant assignments step
+
+```scala
+case object mg7results extends Bundle() {
+
+  lazy val s3location: S3Object = referenceDBPipeline.outputS3Folder("merge") / "refdb.lca.csv"
+  lazy val lcaTable: File = File(s3location.key)
+
+  def instructions: AnyInstructions = LazyTry {
+    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+
+    transferManager.download(
+      s3location.bucket, s3location.key,
+      lcaTable.toJava
+    ).waitForCompletion
+  }
+}
 
 ```
 
