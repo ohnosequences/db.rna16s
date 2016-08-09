@@ -1,6 +1,4 @@
-
-```scala
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import ohnosequences.mg7._, loquats._, dataflows._
 import ohnosequences.datasets._, illumina._
@@ -17,28 +15,20 @@ import ohnosequences.awstools.regions.Region._
 import com.amazonaws.services.s3.transfer._
 import com.amazonaws.auth._, profile._
 
-// import era7.defaults.loquats._
-
 import better.files._
 
 case object referenceDBPipeline {
-```
 
-As the reference database we use the one generated from dropRedundantAssignments
-
-```scala
+  /* As the reference database we use the one generated from dropRedundantAssignments */
   case object rna16sRefDB extends ReferenceDB(
     ohnosequences.db.rna16s.dbName,
     dropRedundantAssignmentsAndGenerate.s3,
     dropRedundantAssignments.output.table.s3
   )
-```
 
-As input we use the FASTA accepted by dropRedundantAssignments
-
-```scala
+  /* As input we use the FASTA accepted by dropRedundantAssignments */
   val splitInputs: Map[ID, S3Resource] = Map(
-    "refdb" -> S3Resource(ohnosequences.db.rna16s.dropRedundantAssignments.output.fasta.s3)
+    "refdb" -> S3Resource(ohnosequences.db.rna16s.test.dropRedundantAssignments.output.fasta.s3)
   )
 
   def outputS3Folder(step: String): S3Folder = ohnosequences.db.rna16s.s3prefix / "mg7" / step /
@@ -49,8 +39,8 @@ As input we use the FASTA accepted by dropRedundantAssignments
     splitChunkSize = 100,
     splitInputFormat = FastaInput,
     blastCommand = blastn,
-    blastOutRec  = defaultBlastOutRec,
-    blastOptions = defaultBlastnOptions.update(
+    blastOutRec  = defaults.blastnOutputRecord,
+    blastOptions = defaults.blastnOptions.update(
       num_threads(2)              ::
       word_size(150)              ::
       evalue(BigDecimal(1E-100))  ::
@@ -61,27 +51,17 @@ As input we use the FASTA accepted by dropRedundantAssignments
     referenceDBs = Set(rna16sRefDB)
   )
   {
-```
 
-The only basic thing we require is at least 100% **query** coverage. If we miss sequences this way, this should be solved through trimming/quality filtering
-
-```scala
+    /* The only basic thing we require is at least 100% **query** coverage. If we miss sequences this way, this should be solved through trimming/quality filtering */
     override def blastFilter(row: csv.Row[BlastOutRecKeys]): Boolean =
       ( row.select(outputFields.qcovs).toDouble >= 100 ) &&
-```
-
-IMPORTANT: exclude the query from the results
-
-```scala
+      /* IMPORTANT: exclude the query from the results */
       ( row.select(outputFields.qseqid) != row.select(outputFields.sseqid) )
   }
 
   lazy val dataflow = NoFlashDataflow(mg7parameters)(splitInputs)
-```
 
-This class is a default loquat configuration for this pipeline
-
-```scala
+  /* This class is a default loquat configuration for this pipeline */
   abstract class RefDBLoquatConfig(
     val loquatName: String,
     val dataMappings: List[AnyDataMapping],
@@ -111,21 +91,19 @@ This class is a default loquat configuration for this pipeline
       terminateAfterInitialDataMappings = true
     )
   }
-```
 
+  /*
+    ### mg7 steps
 
-### mg7 steps
+    These objects define the mg7 pipeline steps. You need to run them in the order they are written here.
 
-These objects define the mg7 pipeline steps. You need to run them in the order they are written here.
+    For running them, go to the scala console and run
 
-For running them, go to the scala console and run
+    ```
+    ohnosequences.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<yourUser>)
+    ```
+  */
 
-```
-ohnosequences.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<yourUser>)
-```
-
-
-```scala
   case object splitConfig extends RefDBLoquatConfig("split", dataflow.splitDataMappings)
   case object splitLoquat extends Loquat(splitConfig, splitDataProcessing(mg7parameters))
 
@@ -167,17 +145,3 @@ ohnosequences.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<y
   }
   case object mergeLoquat extends Loquat(mergeConfig, mergeDataProcessing)
 }
-
-```
-
-
-
-
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
-[main/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
-[main/scala/mg7pipeline.scala]: mg7pipeline.scala.md
-[main/scala/package.scala]: package.scala.md
-[main/scala/compats.scala]: compats.scala.md
-[main/scala/release.scala]: release.scala.md
-[main/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
-[main/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md

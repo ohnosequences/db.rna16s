@@ -58,38 +58,32 @@ We take their LCA which is `subgenusABC` and look at its parent: `genusABC`. Eac
 This step actually consists in two separate steps:
 
 1. We run MG7 with input the output from the drop redundant assignments step, and as reference database the same but the sequence we are using as query.
-2. For each sequence we check the relation of its assignments with the corresponding LCA that we've got from MG7. If some assignment is too far away from the LCA in the taxonomic tree, it is discarded.
-
-  Right now, if a sequence has only one (single) assignment, it is not tested with the described filter, because
-
-  + it may represent a rare organism that doesn't necessarily have relations with its taxonomic neighbors
-  + it can be an organism that was originally misclassified and put in the taxonomy far away from its real relatives (that could be discovered later, for example)
-
-  After this step BLAST database is generated again.
+2. For each sequence we check the relation of its assignments with the corresponding LCA that we've got from MG7. If some assignment is too far away from the LCA in the taxonomic tree, it is discarded. After this step the BLAST database is generated again.
 
 Almost all `99.8%` of the sequences from the drop redundant assignments step pass  this filter, because it's mostly about filtering out *wrong* assignments and there are not many sequences that get all assignments discarded.
 
 
 ```scala
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import era7bio.db._, csvUtils._, collectionUtils._
-import ohnosequences.mg7._, bio4j.taxonomyTree._, bio4j.titanTaxonomyTree._
+import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
+import ohnosequences.mg7._
 import ohnosequences.awstools.s3._
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
 import com.github.tototoshi.csv._
 import better.files._
 
-case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(deps = mg7results, bio4j.taxonomyBundle) {
+case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(deps = mg7results, ncbiTaxonomyBundle) {
 
   type ID     = String
   type Taxa   = String
   type Fasta  = FASTA.Value
 
-  private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
+  private lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
 
   def filterData(): Unit = {
 ```
@@ -110,19 +104,10 @@ Then we process the source table and compare assignments with LCA from MG7. We k
       case (row, fasta) => {
 
         val (id, taxas) = idTaxasFromRow(row)
-```
 
-If there's only one assignment we don't touch it
-
-```scala
-        // NOTE: see https://github.com/ohnosequences/db.rna16s/pull/32#discussion_r71972097 for the reasons
-        if (taxas.length == 1)
-          accept(id, taxas, fasta)
-        else {
-
-          id2mg7lca.get(id)
-            .flatMap(taxonomyGraph.getNode)
-            .flatMap(_.parent)
+        id2mg7lca.get(id)
+          .flatMap(taxonomyGraph.getTaxon)
+          .flatMap(_.parent)
 ```
 
 
@@ -133,28 +118,27 @@ Note that the previous filters guarantee that the mg7 LCA IDs *are* in the NCBI 
 
 
 ```scala
-            .fold( accept(id, taxas, fasta) ) {
-              lcaParent => {
+          .fold( accept(id, taxas, fasta) ) {
+            lcaParent => {
 ```
 
 Here we discard those taxa whose lineage does **not** contain the *parent* of the lca assignment.
 
 ```scala
-                val (acceptedTaxas, rejectedTaxas) =
-                  taxas.partition { taxa => (taxonomyGraph getNode taxa).fold(false)( lcaParent isInLineageOf _ ) }
+              val (acceptedTaxas, rejectedTaxas) =
+                taxas.partition { taxa => (taxonomyGraph getTaxon taxa).fold(false)( lcaParent isInLineageOf _ ) }
 
-                writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
-              }
+              writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
             }
-        }
+          }
       }
     }
   }
 
   val mg7LCAfromFile: File => Map[ID,Taxa] =
     file =>
-      (csv newReader file)
-        .allWithHeaders.map { row => ( row(csv.columnNames.ReadID) -> row(csv.columnNames.TaxID) ) }
+      csv.Reader(csv.assignment.columns)(file)
+        .rows.map { row => ( row select csv.columns.ReadID ) -> ( row select csv.columns.Taxa ) }
         .toMap
 
   val idTaxasFromRow: Seq[String] => (ID,Seq[Taxa]) =
@@ -163,10 +147,10 @@ Here we discard those taxa whose lineage does **not** contain the *parent* of th
   val accept: (ID, Seq[Taxa], Fasta) => Unit =
     (id, taxas, fasta) => writeOutput(id, taxas, Seq(), fasta)
 
-  implicit final class nodeOps(val node: TitanTaxonNode) {
+  implicit final class nodeOps(val node: TitanNode) extends AnyVal {
 
-    def isInLineageOf(other: TitanTaxonNode): Boolean =
-      other.lineage.exists { _.id == node.id }
+    def isInLineageOf(other: TitanNode): Boolean =
+      other.ancestors.exists { _.id == node.id }
   }
 }
 
@@ -200,11 +184,11 @@ case object mg7results extends Bundle() {
 
 
 
-[test/scala/runBundles.scala]: ../../test/scala/runBundles.scala.md
-[main/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
-[main/scala/mg7pipeline.scala]: mg7pipeline.scala.md
-[main/scala/package.scala]: package.scala.md
-[main/scala/compats.scala]: compats.scala.md
-[main/scala/release.scala]: release.scala.md
-[main/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
-[main/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md
+[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[main/scala/package.scala]: ../../main/scala/package.scala.md
+[main/scala/release.scala]: ../../main/scala/release.scala.md

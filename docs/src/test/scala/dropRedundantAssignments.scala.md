@@ -1,13 +1,15 @@
-/*
-  # Drop redundant assignments
 
-  The goal of this step is reducing the number of both sequences and assignments in the database without losing information. For this, an assignment of a sequence `s` to a taxon `A` is considered redundant if there is a sequence `S` with an assignment to `A` such that `s` is a **subsequence** of `S`. Why? because when using these sequences as a reference, every alignment with `s` can be seen as one with `S`.
+# Drop redundant assignments
 
-  This step is run here on the output of of the pick 16S candidates step, but it would work exactly the same on any other set of sequences (and assignments).
+The goal of this step is reducing the number of both sequences and assignments in the database without losing information. For this, an assignment of a sequence `s` to a taxon `A` is considered redundant if there is a sequence `S` with an assignment to `A` such that `s` is a **subsequence** of `S`. Why? because when using these sequences as a reference, every alignment with `s` can be seen as one with `S`.
 
-  The output of this step represents around `70%` of the pick 16S candidates output; there is also a significant number of sequences with *less* assignments.
-*/
-package ohnosequences.db.rna16s
+This step is run here on the output of of the pick 16S candidates step, but it would work exactly the same on any other set of sequences (and assignments).
+
+The output of this step represents around `70%` of the pick 16S candidates output; there is also a significant number of sequences with *less* assignments.
+
+
+```scala
+package ohnosequences.db.rna16s.test
 
 import era7bio.db._, csvUtils._, collectionUtils._
 import ohnosequences.fastarious.fasta._
@@ -21,19 +23,25 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
   type Taxa     = String
   type Fasta    = FASTA.Value
   type Eith[X]  = Either[X, X]
+```
 
-  /*
-    ## Implementation
 
-    The idea of this implementation is to transpose the input assignment mapping (`id2taxas`) to get all sequence IDs assigned to a given taxon.
+## Implementation
 
-     Then we consider actual sequences corresponding to those IDs and partition them on those that are contained in other ones and those that are not. First ones are marked as discarded and the latter as accepted.
+The idea of this implementation is to transpose the input assignment mapping (`id2taxas`) to get all sequence IDs assigned to a given taxon.
 
-     By transposing this map again, we get for each sequence ID a set of accepted and discarded assignments. If a sequence doesn't have any accepted assignments left, it gets completely discarded from the database.
-  */
+ Then we consider actual sequences corresponding to those IDs and partition them on those that are contained in other ones and those that are not. First ones are marked as discarded and the latter as accepted.
+
+ By transposing this map again, we get for each sequence ID a set of accepted and discarded assignments. If a sequence doesn't have any accepted assignments left, it gets completely discarded from the database.
+
+
+```scala
   def filterData(): Unit = {
+```
 
-    /* Mapping of sequence IDs to corresponding FASTA sequences */
+Mapping of sequence IDs to corresponding FASTA sequences
+
+```scala
     // id1 -> fasta1
     // id2 -> fasta2
     // ...
@@ -44,8 +52,11 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
           fasta
         )
       }
+```
 
-    /* Mapping of sequence IDs to the list of their taxonomic assignments */
+Mapping of sequence IDs to the list of their taxonomic assignments
+
+```scala
     // id1 -> taxa1, taxa2, taxa3
     // id2 -> taxa2, taxa4
     // ...
@@ -56,18 +67,24 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
           row(1).split(';').map(_.trim).toSeq
         )
       }
+```
 
-    /* Transposed mapping of taxas to the sequence IDs that have this assignment */
+Transposed mapping of taxas to the sequence IDs that have this assignment
+
+```scala
     // taxa1 -> id1
     // taxa2 -> id1, id2
     // taxa3 -> id1
     // taxa4 -> id2
     // ...
     val taxa2ids: Map[Taxa, Seq[ID]] = id2taxas.trans
+```
 
-    /* Now we arrange values of taxa2ids map to distinguish its ID _values_:
-       we get corresponding fastas and _partition_ those that are contained in others.
-       Lefts are contained in another ones, Rights are not contained */
+Now we arrange values of taxa2ids map to distinguish its ID _values_:
+we get corresponding fastas and _partition_ those that are contained in others.
+Lefts are contained in another ones, Rights are not contained
+
+```scala
     // taxa2 -> Left(id1), Right(id2), Left(id3), ...
     val taxa2partitionedIDs: Map[Taxa, Seq[Eith[ID]]] = taxa2ids.map { case (taxa, ids) =>
 
@@ -82,17 +99,23 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
         notContained.map { f => Right(f.getV(header).id): Eith[ID] }
       }
     }
+```
 
-    /* Now we transpose taxa2partitionedIDs map to have the opposite correspondence
-       between sequence IDs and the taxonomic assignments:
-       Lefts are discarded assignments; Rights are accepted. */
+Now we transpose taxa2partitionedIDs map to have the opposite correspondence
+between sequence IDs and the taxonomic assignments:
+Lefts are discarded assignments; Rights are accepted.
+
+```scala
     // id1 -> Left(taxa1), Right(taxa2), ...
     val id2partitionedTaxas: Map[ID, Seq[Eith[Taxa]]] = taxa2partitionedIDs.trans {
       case (taxa, Left(id)) => (Left(taxa), id)
       case (taxa, Right(id)) => (Right(taxa), id)
     }
+```
 
-    /* And finally we just write the results */
+And finally we just write the results
+
+```scala
     id2partitionedTaxas.foreach { case (id, partTaxas) =>
 
       val rejectedTaxas: Seq[Taxa] = partTaxas.collect { case Left(t) => t }
@@ -101,9 +124,12 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
       writeOutput(id, acceptedTaxas, rejectedTaxas, id2fasta(id))
     }
   }
+```
 
-  /* Filters out those sequences that are contained in any other ones.
-     Returns a pair: contained seq-s and not-contained. */
+Filters out those sequences that are contained in any other ones.
+Returns a pair: contained seq-s and not-contained.
+
+```scala
   def partitionContained[T](seq: Seq[T])(content: T => String): (Seq[T], Seq[T]) = {
     // from long to short:
     val sorted = seq.sortBy{ t => content(t).length }(Ordering.Int.reverse)
@@ -135,3 +161,17 @@ case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB
   ohnosequences.db.rna16s.dbType,
   ohnosequences.db.rna16s.dropRedundantAssignments
 )
+
+```
+
+
+
+
+[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md
+[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[main/scala/package.scala]: ../../main/scala/package.scala.md
+[main/scala/release.scala]: ../../main/scala/release.scala.md

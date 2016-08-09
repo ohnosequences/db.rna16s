@@ -58,37 +58,30 @@
   This step actually consists in two separate steps:
 
   1. We run MG7 with input the output from the drop redundant assignments step, and as reference database the same but the sequence we are using as query.
-  2. For each sequence we check the relation of its assignments with the corresponding LCA that we've got from MG7. If some assignment is too far away from the LCA in the taxonomic tree, it is discarded.
-
-    Right now, if a sequence has only one (single) assignment, it is not tested with the described filter, because
-
-    + it may represent a rare organism that doesn't necessarily have relations with its taxonomic neighbors
-    + it can be an organism that was originally misclassified and put in the taxonomy far away from its real relatives (that could be discovered later, for example)
-
-    After this step BLAST database is generated again.
+  2. For each sequence we check the relation of its assignments with the corresponding LCA that we've got from MG7. If some assignment is too far away from the LCA in the taxonomic tree, it is discarded. After this step the BLAST database is generated again.
 
   Almost all `99.8%` of the sequences from the drop redundant assignments step pass  this filter, because it's mostly about filtering out *wrong* assignments and there are not many sequences that get all assignments discarded.
 */
-
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import era7bio.db._, csvUtils._, collectionUtils._
-import ohnosequences.mg7._, bio4j.taxonomyTree._, bio4j.titanTaxonomyTree._
+import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
+import ohnosequences.mg7._
 import ohnosequences.awstools.s3._
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
 import com.github.tototoshi.csv._
 import better.files._
 
-case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(deps = mg7results, bio4j.taxonomyBundle) {
+case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(deps = mg7results, ncbiTaxonomyBundle) {
 
   type ID     = String
   type Taxa   = String
   type Fasta  = FASTA.Value
 
-  private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
+  private lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
 
   def filterData(): Unit = {
 
@@ -104,39 +97,32 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 
         val (id, taxas) = idTaxasFromRow(row)
 
-        /* If there's only one assignment we don't touch it */
-        // NOTE: see https://github.com/ohnosequences/db.rna16s/pull/32#discussion_r71972097 for the reasons
-        if (taxas.length == 1)
-          accept(id, taxas, fasta)
-        else {
+        id2mg7lca.get(id)
+          .flatMap(taxonomyGraph.getTaxon)
+          .flatMap(_.parent)
+          /*
+            Note that the previous filters guarantee that the mg7 LCA IDs *are* in the NCBI taxonomy graph; thus this option will be None if either
 
-          id2mg7lca.get(id)
-            .flatMap(taxonomyGraph.getNode)
-            .flatMap(_.parent)
-            /*
-              Note that the previous filters guarantee that the mg7 LCA IDs *are* in the NCBI taxonomy graph; thus this option will be None if either
+            1. this id is not in the MG7 lca output, so that this query sequence has no hits with anything but itself. In that case we need to consider its assignment correct, thus the base case of the fold.
+            2. If the lca has no parent = is the root node, then we can already accept it: it will be in the lineage of every node
+          */
+          .fold( accept(id, taxas, fasta) ) {
+            lcaParent => {
+              /* Here we discard those taxa whose lineage does **not** contain the *parent* of the lca assignment. */
+              val (acceptedTaxas, rejectedTaxas) =
+                taxas.partition { taxa => (taxonomyGraph getTaxon taxa).fold(false)( lcaParent isInLineageOf _ ) }
 
-              1. this id is not in the MG7 lca output, so that this query sequence has no hits with anything but itself. In that case we need to consider its assignment correct, thus the base case of the fold.
-              2. If the lca has no parent = is the root node, then we can already accept it: it will be in the lineage of every node
-            */
-            .fold( accept(id, taxas, fasta) ) {
-              lcaParent => {
-                /* Here we discard those taxa whose lineage does **not** contain the *parent* of the lca assignment. */
-                val (acceptedTaxas, rejectedTaxas) =
-                  taxas.partition { taxa => (taxonomyGraph getNode taxa).fold(false)( lcaParent isInLineageOf _ ) }
-
-                writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
-              }
+              writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
             }
-        }
+          }
       }
     }
   }
 
   val mg7LCAfromFile: File => Map[ID,Taxa] =
     file =>
-      (csv newReader file)
-        .allWithHeaders.map { row => ( row(csv.columnNames.ReadID) -> row(csv.columnNames.TaxID) ) }
+      csv.Reader(csv.assignment.columns)(file)
+        .rows.map { row => ( row select csv.columns.ReadID ) -> ( row select csv.columns.Taxa ) }
         .toMap
 
   val idTaxasFromRow: Seq[String] => (ID,Seq[Taxa]) =
@@ -145,17 +131,17 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
   val accept: (ID, Seq[Taxa], Fasta) => Unit =
     (id, taxas, fasta) => writeOutput(id, taxas, Seq(), fasta)
 
-  implicit final class nodeOps(val node: TitanTaxonNode) {
+  implicit final class nodeOps(val node: TitanNode) extends AnyVal {
 
-    def isInLineageOf(other: TitanTaxonNode): Boolean =
-      other.lineage.exists { _.id == node.id }
+    def isInLineageOf(other: TitanNode): Boolean =
+      other.ancestors.exists { _.id == node.id }
   }
 }
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
   ohnosequences.db.rna16s.dbType,
-  ohnosequences.db.rna16s.dropInconsistentAssignments
+  ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
 
 /* This bundle just downloads the output of the MG7 run of the results of the drop redundant assignments step */

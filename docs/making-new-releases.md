@@ -7,7 +7,7 @@ Here is the sequence of bundles you have to launch to repeat the whole DB genera
 1. First of all you need to publish an fat-jar artifact with `sbt publish`
 2. Then launch `sbt test:console` and run commands in it; for each bundle you can choose EC2 instance type in [`src/test/scala/runBundles.scala`](src/test/scala/runBundles.scala)
 
-> **NOTE** To make it a bit shorter I assume that you first do `import ohnosequences.db._` in the `test:console`
+> **NOTE** To make it a bit shorter I assume that you first do `import ohnosequences.db.test._` in the `test:console`
 
 1. `pick16SCandidates`
   - Recommended EC2 instance type: `r3.x2large`, it has 60GB RAM
