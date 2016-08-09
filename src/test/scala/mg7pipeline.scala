@@ -28,7 +28,7 @@ case object referenceDBPipeline {
 
   /* As input we use the FASTA accepted by dropRedundantAssignments */
   val splitInputs: Map[ID, S3Resource] = Map(
-    "refdb" -> S3Resource(ohnosequences.db.rna16s.dropRedundantAssignments.output.fasta.s3)
+    "refdb" -> S3Resource(ohnosequences.db.rna16s.test.dropRedundantAssignments.output.fasta.s3)
   )
 
   def outputS3Folder(step: String): S3Folder = ohnosequences.db.rna16s.s3prefix / "mg7" / step /
