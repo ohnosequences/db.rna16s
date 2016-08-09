@@ -141,7 +141,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
   ohnosequences.db.rna16s.dbType,
-  ohnosequences.db.rna16s.dropInconsistentAssignments
+  ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
 
 /* This bundle just downloads the output of the MG7 run of the results of the drop redundant assignments step */

@@ -133,5 +133,5 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
 case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
   ohnosequences.db.rna16s.dbType,
-  ohnosequences.db.rna16s.dropRedundantAssignments
+  ohnosequences.db.rna16s.test.dropRedundantAssignments
 )

@@ -59,33 +59,7 @@ case object pick16SCandidates extends FilterData(
     115414  -> "uncultured marine alpha proteobacterium"
   )
 
-  val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keySet.map(_.toString)
-
-  /* and here we have RNACentral entries which we think are poorly assigned> This is list is by no means exhaustive, though its value can hardly be understimated. */
-  val blacklistedRNACentralIDs = Set(
-    "URS00008CD63B",  // claims to be Lactobacilus plantarum, it is an Enterococcus
-    "URS00008CCF2E",  // claims to be Candidatus Hepatobacter penaei, it is a Pseudomonas
-    "URS00007EE21F",  // claims to be Pseudomonas sp. NT 6-08, it is a Staph aureus
-    "URS00008C61AD",  // claims to be Yersinia pestis biovar Orientalis str. AS200901509, it is a Staph aureus
-    "URS00008E71FD",  // claims to be Staphylococcus sciuri, it is a Pseudomonas
-    "URS000089CEEE",  // claims to be Bacillus sp. W4(2008), it is a Pseudomonas
-    "URS0000974DB8",  // claims to be Pseudomonas sp. CL3.1, it is a Bacillus
-    "URS00008E9E3B",  // claims to be Pantoea sp. CR30, it is a Bacillus
-    "URS00008DEF63",  // claims to be Microbacterium oxydans, it is a (fragment of) Bacillus
-    "URS000082C8CF",  // claims to be Streptococcus pneumoniae, it is a Bacillus plus some chimeric sequence
-    "URS0000874571",  // claims to be Bordetella, it is a Pseudomonas aeruginosa
-    "URS00008A3994",  // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
-    "URS00008898AD",  // claims to be Rhodococcus, it is a Pseudomonas aeruginosa
-    "URS0000215B45",  // claims to be Vibrio cholerae HC-02A1, it is an Enterococcus faecalis
-    "URS00008239BE",  // claims to be Mycobacterium abscessus, it is an Acinetobacter
-    "URS000074A9F2",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
-    "URS0000735DC4",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
-    "URS00005BB216",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
-    "URS0000590E49",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
-    "URS0000865688",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
-    "URS000085F838",  // claims to be Prolinoborus fasciculus, it is an Acinetobacter
-    "URS000074A9F2"   // claims to be Prolinoborus fasciculus, it is an Acinetobacter
-  )
+  lazy val uninformativeTaxIDs: Set[String] = uninformativeTaxIDsMap.keySet.map(_.toString)
 
   /*
     ## Predicate defining a 16S candidate
@@ -133,17 +107,12 @@ case object pick16SCandidates extends FilterData(
         sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
 
       val (acceptedRows, rejectedRows) =
-        if (/* the common ID is blacklisted */
-            (blacklistedRNACentralIDs contains commonID) ||
-            /* or the corresponding sequence is shorter than the threshold */
-            (fasta.getV(sequence).value.length < minimum16SLength)
-        ) {
-          /* then all rows are rejected */
+        /* if the corresponding sequence is shorter than the threshold then all rows are rejected */
+        if ( fasta.getV(sequence).value.length < minimum16SLength ) {
           (Seq[Row](), rows)
-        } else {
-          /* otherwise they are partitioned according to the predicate */
+        /* otherwise they are partitioned according to the predicate */
+        } else
           rows.partition(predicate)
-        }
 
       val extendedID: String = s"${commonID}|lcl|${ohnosequences.db.rna16s.dbName}"
 
