@@ -157,5 +157,7 @@ case object mg7results extends Bundle() {
       s3location.bucket, s3location.key,
       lcaTable.toJava
     ).waitForCompletion
+
+    transferManager.shutdownNow()
   }
 }
