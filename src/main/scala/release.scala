@@ -4,7 +4,7 @@ import ohnosequences.awstools.s3._
 
 case object data {
 
-  lazy val metadata = generated.metadata.db.rna16s
+  lazy val metadata = ohnosequences.generated.metadata.db_rna16s
 
   lazy val prefix: S3Folder =
     S3Folder("resources.ohnosequences.com", metadata.organization)/metadata.artifact/metadata.version/

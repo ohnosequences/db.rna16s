@@ -32,8 +32,6 @@ dependencyOverrides ++= Set(
 // NOTE should be reestablished
 wartremoverErrors in (Test, compile) := Seq()
 
-addFatArtifactPublishing(Test)
-
 mergeStrategy in assembly ~= { old => {
     case "log4j.properties"                       => MergeStrategy.filterDistinctLines
     case PathList("org", "apache", "commons", _*) => MergeStrategy.first
@@ -41,13 +39,4 @@ mergeStrategy in assembly ~= { old => {
   }
 }
 
-enablePlugins(BuildInfoPlugin)
-buildInfoPackage := "generated.metadata.db"
-buildInfoObject  := "rna16s"
-buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
-buildInfoKeys    := Seq[BuildInfoKey](
-  organization,
-  version,
-  "artifact" -> name.value.toLowerCase,
-  "artifactUrl" -> fatArtifactUrl.value
-)
+generateStatikaMetadataIn(Compile)

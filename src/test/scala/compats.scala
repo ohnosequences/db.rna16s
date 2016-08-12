@@ -9,7 +9,7 @@ case object compats {
   class DefaultCompatible[B <: AnyBundle](bundle: B, javaHeap: Int) extends Compatible(
     amznAMIEnv(AmazonLinuxAMI(Ireland, HVM, InstanceStore), javaHeap),
     bundle,
-    generated.metadata.db.rna16s
+    ohnosequences.generated.metadata.db_rna16s
   )
 
   case object pick16SCandidates extends DefaultCompatible(ohnosequences.db.rna16s.test.pick16SCandidates, javaHeap = 40)
