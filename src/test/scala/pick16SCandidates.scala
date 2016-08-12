@@ -7,8 +7,8 @@
 */
 package ohnosequences.db.rna16s.test
 
-import era7bio.db._, csvUtils._, collectionUtils._
-import era7bio.db.rnacentral._, RNACentral5._
+import ohnosequences.db._, csvUtils._, collectionUtils._
+import ohnosequences.db.rnacentral._, RNACentral5._
 import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._

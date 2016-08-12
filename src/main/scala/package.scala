@@ -13,7 +13,9 @@ package object rna16s {
   val dbName = "ohnosequences.db.rna16s"
   val dbType = BlastDBType.nucl
 
-  val s3prefix: S3Folder = S3Folder("resources.ohnosequences.com", generated.metadata.db.rna16s.organization) /
-    generated.metadata.db.rna16s.artifact /
-    generated.metadata.db.rna16s.version.stripSuffix("-SNAPSHOT") /
+  private val metadata = ohnosequences.generated.metadata.db_rna16s
+
+  val s3prefix: S3Folder = S3Folder("resources.ohnosequences.com", metadata.organization) /
+    metadata.artifact /
+    metadata.version /
 }

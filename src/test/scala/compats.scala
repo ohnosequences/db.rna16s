@@ -1,6 +1,5 @@
 package ohnosequences.db.rna16s.test
 
-import era7bio.db._
 import ohnosequences.statika._, aws._
 import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
 
@@ -9,7 +8,7 @@ case object compats {
   class DefaultCompatible[B <: AnyBundle](bundle: B, javaHeap: Int) extends Compatible(
     amznAMIEnv(AmazonLinuxAMI(Ireland, HVM, InstanceStore), javaHeap),
     bundle,
-    generated.metadata.db.rna16s
+    ohnosequences.generated.metadata.db_rna16s
   )
 
   case object pick16SCandidates extends DefaultCompatible(ohnosequences.db.rna16s.test.pick16SCandidates, javaHeap = 40)

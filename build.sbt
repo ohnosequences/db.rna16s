@@ -12,16 +12,13 @@ resolvers := Seq(
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
-  "era7bio"               %% "db-rnacentral"  % "0.6.0",
-  "ohnosequences"         %% "fastarious"     % "0.6.0",
-  "ohnosequences"         %% "blast-api"      % "0.7.0",
-  "ohnosequences"         %% "statika"        % "2.0.0-M5",
-  "ohnosequences"         %% "ncbitaxonomy"   % "0.1.0",
-  "ohnosequences-bundles" %% "bio4j-dist"     % "0.2.0",
+  "ohnosequences" %% "db-rnacentral" % "0.7.0",
+  "ohnosequences" %% "fastarious"    % "0.6.0",
+  "ohnosequences" %% "blast-api"     % "0.7.0",
+  "ohnosequences" %% "ncbitaxonomy"  % "0.1.0",
   // Test:
-  "era7bio"       %% "defaults"  % "0.2.0"                      % Test,
-  "ohnosequences" %% "mg7"       % "1.0.0-M5-pr78-64-gd886636"  % Test,
-  "org.scalatest" %% "scalatest" % "2.2.6"                      % Test
+  "era7bio"       %% "defaults" % "0.2.0"                     % Test,
+  "ohnosequences" %% "mg7"      % "1.0.0-M5-pr78-64-gd886636" % Test
 )
 
 dependencyOverrides ++= Set(
@@ -32,8 +29,6 @@ dependencyOverrides ++= Set(
 // NOTE should be reestablished
 wartremoverErrors in (Test, compile) := Seq()
 
-addFatArtifactPublishing(Test)
-
 mergeStrategy in assembly ~= { old => {
     case "log4j.properties"                       => MergeStrategy.filterDistinctLines
     case PathList("org", "apache", "commons", _*) => MergeStrategy.first
@@ -41,13 +36,4 @@ mergeStrategy in assembly ~= { old => {
   }
 }
 
-enablePlugins(BuildInfoPlugin)
-buildInfoPackage := "generated.metadata.db"
-buildInfoObject  := "rna16s"
-buildInfoOptions := Seq(BuildInfoOption.Traits("ohnosequences.statika.AnyArtifactMetadata"))
-buildInfoKeys    := Seq[BuildInfoKey](
-  organization,
-  version,
-  "artifact" -> name.value.toLowerCase,
-  "artifactUrl" -> fatArtifactUrl.value
-)
+generateStatikaMetadataIn(Compile)

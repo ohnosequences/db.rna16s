@@ -68,7 +68,7 @@ case object referenceDBPipeline {
     val workersNumber: Int = 1
   ) extends AnyLoquatConfig {
 
-    val metadata: AnyArtifactMetadata = generated.metadata.db.rna16s
+    val metadata: AnyArtifactMetadata = ohnosequences.generated.metadata.db_rna16s
 
     // TODO: we should probably have a restricted role for this:
     val iamRoleName: String = "era7-projects"
