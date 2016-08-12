@@ -9,7 +9,7 @@
 */
 package ohnosequences.db.rna16s.test
 
-import era7bio.db._, csvUtils._, collectionUtils._
+import ohnosequences.db._, csvUtils._, collectionUtils._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 import com.github.tototoshi.csv._

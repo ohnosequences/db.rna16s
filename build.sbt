@@ -12,13 +12,13 @@ resolvers := Seq(
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
-  "era7bio"       %% "db-rnacentral" % "0.6.0",
+  "ohnosequences" %% "db-rnacentral" % "0.7.0",
   "ohnosequences" %% "fastarious"    % "0.6.0",
   "ohnosequences" %% "blast-api"     % "0.7.0",
   "ohnosequences" %% "ncbitaxonomy"  % "0.1.0",
   // Test:
-  "era7bio"       %% "defaults"  % "0.2.0"                      % Test,
-  "ohnosequences" %% "mg7"       % "1.0.0-M5-pr78-64-gd886636"  % Test
+  "era7bio"       %% "defaults" % "0.2.0"                     % Test,
+  "ohnosequences" %% "mg7"      % "1.0.0-M5-pr78-64-gd886636" % Test
 )
 
 dependencyOverrides ++= Set(

@@ -1,6 +1,5 @@
 package ohnosequences.db.rna16s.test
 
-import era7bio.db._
 import ohnosequences.statika._, aws._
 import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
 
