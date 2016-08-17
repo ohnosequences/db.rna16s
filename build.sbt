@@ -26,6 +26,8 @@ dependencyOverrides ++= Set(
   "org.slf4j"                 % "slf4j-api"  % "1.7.7"
 )
 
+generateStatikaMetadataIn(Compile)
+
 // NOTE should be reestablished
 wartremoverErrors in (Test, compile) := Seq()
 
@@ -36,4 +38,8 @@ mergeStrategy in assembly ~= { old => {
   }
 }
 
-generateStatikaMetadataIn(Compile)
+// This includes tests sources in the assembled fat-jar:
+fullClasspath in assembly := (fullClasspath in Test).value
+
+// This turns on fat-jar publishing during release process:
+publishFatArtifact in Release := true
