@@ -25,7 +25,6 @@ case object releaseData {
 
     copyData(transferManager)(
       (dropInconsistentAssignments.output.fasta.s3 -> db.rna16s.data.fastaS3) ::
-      (dropInconsistentAssignments.output.fasta.s3 -> db.rna16s.data.fastaS3) ::
       (dropInconsistentAssignments.output.table.s3 -> db.rna16s.data.id2taxasS3) ::
       blastdbMap
     )
