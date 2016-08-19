@@ -122,5 +122,5 @@ Filtered out.
 ## Conclusions
 
 1. We should be less stringent with the query coverage restriction here, and take something like 99%, even 99.5% would help (if `qcovs` has that precision)
-2. A good filter to add, maybe after this one, would be to exclude those which yield no hits when there are several sequences with the same assignment in the database.
+2. A good filter to add, maybe after this one, would be to exclude those which yield no hits when there are several sequences with the same assignment in the database. How? take the results of this MG7 run, and start looking at the assignments of sequences with no hits. For each of those, take all the sequences assigned to that, and if they have an OK MG7 assignment (they were not filtered out), drop this assignment.
 3. Previous to all this, we should also drop sequences with a number of `N`s over a threshold. the `lots-of-Ns.grep` file is the result of `cat ohnosequences.db.rna16s.fasta | grep -C 20 'NNNNNNNNNN'`, which yields around 1000 sequences; this is a lower bound for the number of sequences with at least 10 contiguous `N`s.
