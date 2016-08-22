@@ -52,9 +52,9 @@ case object referenceDBPipeline {
   )
   {
 
-    /* The only basic thing we require is at least 100% **query** coverage. If we miss sequences this way, this should be solved through trimming/quality filtering */
+    /* The only basic thing we require is at least 99% **query** coverage. */
     override def blastFilter(row: csv.Row[BlastOutRecKeys]): Boolean =
-      ( row.select(outputFields.qcovs).toDouble >= 100 ) &&
+      ( row.select(outputFields.qcovs).toDouble >= 99 ) &&
       /* IMPORTANT: exclude the query from the results */
       ( row.select(outputFields.qseqid) != row.select(outputFields.sseqid) )
   }
