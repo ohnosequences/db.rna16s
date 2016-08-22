@@ -115,10 +115,10 @@ case object pick16SCandidates extends FilterData(
 
       val (acceptedRows, rejectedRows) =
         if ( sequenceIsOK(fasta.getV(sequence).value) ) {
+          /* if the sequence is OK, we partition the rows based on the predicate */
           rows.partition(predicate)
         }
-        else {        
-          /* otherwise they are partitioned according to the predicate */
+        else {
           (Seq[Row](), rows)
         }
 
