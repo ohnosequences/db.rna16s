@@ -106,13 +106,21 @@ case object pick16SCandidates extends FilterData(
       if (commonID != fasta.getV(header).id)
         sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
 
+      /* This predicate determines whether the *sequence* value is OK, and will be kept. */
+      val sequenceIsOK: String => Boolean =
+        seq: String =>
+          ( seq.length >= minimum16SLength )              &&
+          ( (seq.count(_ == 'N') / seq.length) <= 0.01 )  &&
+          ( !(seq containsSlice "NNNNNNNN") )
+
       val (acceptedRows, rejectedRows) =
-        /* if the corresponding sequence is shorter than the threshold then all rows are rejected */
-        if ( fasta.getV(sequence).value.length < minimum16SLength ) {
-          (Seq[Row](), rows)
-        /* otherwise they are partitioned according to the predicate */
-        } else
+        if ( sequenceIsOK(fasta.getV(sequence).value) ) {
           rows.partition(predicate)
+        }
+        else {        
+          /* otherwise they are partitioned according to the predicate */
+          (Seq[Row](), rows)
+        }
 
       val extendedID: String = s"${commonID}|lcl|${ohnosequences.db.rna16s.dbName}"
 
