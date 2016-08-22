@@ -64,7 +64,7 @@
 */
 package ohnosequences.db.rna16s.test
 
-import era7bio.db._, csvUtils._, collectionUtils._
+import ohnosequences.db._, csvUtils._, collectionUtils._
 import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
@@ -157,5 +157,7 @@ case object mg7results extends Bundle() {
       s3location.bucket, s3location.key,
       lcaTable.toJava
     ).waitForCompletion
+
+    transferManager.shutdownNow()
   }
 }
