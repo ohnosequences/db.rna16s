@@ -123,7 +123,7 @@ case object pick16SCandidates extends FilterData(
           (Seq[Row](), rows)
         }
 
-      val extendedID: String = s"${commonID}|lcl|${ohnosequences.db.rna16s.dbName}"
+      val extendedID: String = s"gnl|${ohnosequences.db.rna16s.dbName}|${commonID}"
 
       writeOutput(
         extendedID,
