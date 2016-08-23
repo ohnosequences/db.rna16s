@@ -114,7 +114,7 @@ case object pick16SCandidates extends FilterData(
         } else
           rows.partition(predicate)
 
-      val extendedID: String = s"${commonID}|lcl|${ohnosequences.db.rna16s.dbName}"
+      val extendedID: String = s"gnl|${ohnosequences.db.rna16s.dbName}|${commonID}"
 
       writeOutput(
         extendedID,
