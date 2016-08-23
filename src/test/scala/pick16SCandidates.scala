@@ -100,8 +100,8 @@ case object pick16SCandidates extends FilterData(
     val seq = fastaSeq.value
 
     ( seq.length >= minimum16SLength )              &&
-    ( (seq.count(_ == 'N') / seq.length) <= 0.01 )  &&
-    ( !(seq containsSlice "NNNNNNNN") )
+    ( !(seq containsSlice "NNNNNNNN") )             &&
+    ( (seq.count(_ == 'N') / seq.length) <= 0.01 )
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
