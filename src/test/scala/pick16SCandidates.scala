@@ -68,7 +68,7 @@ case object pick16SCandidates extends FilterData(
   */
   private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
 
-  def predicate(row: Row): Boolean = {
+  def rowPredicate(row: Row): Boolean = {
     val taxID = row.select(tax_id)
 
     /* - are annotated as rRNA */
@@ -95,6 +95,15 @@ case object pick16SCandidates extends FilterData(
     }
   }
 
+  /* This predicate determines whether the *sequence* value is OK, and will be kept. */
+  def sequencePredicate(fastaSeq: FastaSequence): Boolean = {
+    val seq = fastaSeq.value
+
+    ( seq.length >= minimum16SLength )              &&
+    ( !(seq containsSlice "NNNNNNNN") )             &&
+    ( (seq.count(_ == 'N') / seq.length) <= 0.01 )
+  }
+
   // bundle to generate the DB (see the runBundles file in tests)
   def filterData(): Unit = {
 
@@ -107,12 +116,12 @@ case object pick16SCandidates extends FilterData(
         sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
 
       val (acceptedRows, rejectedRows) =
-        /* if the corresponding sequence is shorter than the threshold then all rows are rejected */
-        if ( fasta.getV(sequence).value.length < minimum16SLength ) {
+        if ( sequencePredicate(fasta.getV(sequence)) ) {
+          /* if the sequence is OK, we partition the rows based on the predicate */
+          rows.partition(rowPredicate)
+        } else {
           (Seq[Row](), rows)
-        /* otherwise they are partitioned according to the predicate */
-        } else
-          rows.partition(predicate)
+        }
 
       val extendedID: String = s"${commonID}|lcl|${ohnosequences.db.rna16s.dbName}"
 
