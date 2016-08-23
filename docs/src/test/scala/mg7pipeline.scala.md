@@ -36,7 +36,7 @@ As input we use the FASTA accepted by dropRedundantAssignments
 
 ```scala
   val splitInputs: Map[ID, S3Resource] = Map(
-    "refdb" -> S3Resource(ohnosequences.db.rna16s.dropRedundantAssignments.output.fasta.s3)
+    "refdb" -> S3Resource(ohnosequences.db.rna16s.test.dropRedundantAssignments.output.fasta.s3)
   )
 
   def outputS3Folder(step: String): S3Folder = ohnosequences.db.rna16s.s3prefix / "mg7" / step /
@@ -61,11 +61,11 @@ As input we use the FASTA accepted by dropRedundantAssignments
   {
 ```
 
-The only basic thing we require is at least 100% **query** coverage. If we miss sequences this way, this should be solved through trimming/quality filtering
+The only basic thing we require is at least 99% **query** coverage.
 
 ```scala
     override def blastFilter(row: csv.Row[BlastOutRecKeys]): Boolean =
-      ( row.select(outputFields.qcovs).toDouble >= 100 ) &&
+      ( row.select(outputFields.qcovs).toDouble >= 99 ) &&
 ```
 
 IMPORTANT: exclude the query from the results
@@ -86,7 +86,7 @@ This class is a default loquat configuration for this pipeline
     val workersNumber: Int = 1
   ) extends AnyLoquatConfig {
 
-    val metadata: AnyArtifactMetadata = generated.metadata.db.rna16s
+    val metadata: AnyArtifactMetadata = ohnosequences.generated.metadata.db_rna16s
 
     // TODO: we should probably have a restricted role for this:
     val iamRoleName: String = "era7-projects"
@@ -177,5 +177,6 @@ ohnosequences.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<y
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
 [test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/releaseData.scala]: releaseData.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md

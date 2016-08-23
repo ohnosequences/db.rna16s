@@ -4,31 +4,36 @@ package ohnosequences.db.rna16s.test
 
 import ohnosequences.statika._, aws._
 import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
-
-import era7bio.db._
 import era7.defaults._
-
 
 case object rna16s {
 
   // use `sbt test:console`:
   // > era7bio.db.test.rna16s.launch(...)
-  def launch[B <: AnyBundle](compat: ohnosequences.db.rna16s.compats.DefaultCompatible[B], user: AWSUser): List[String] =
-    EC2.create(user.profile)
-      .runInstances(
-        amount = 1,
-        compat.instanceSpecs(
-          r3.large,
-          user.keypair.name,
-          Some(ec2Roles.projects.name)
-        )
+  def launch[
+    B <: AnyBundle,
+    T <: AnyInstanceType
+  ](compat: compats.DefaultCompatible[B],
+    instanceType: T
+  )(user: AWSUser)(implicit
+    supportsAMI: T SupportsAMI compats.DefaultAMI
+  ): List[String] = {
+
+    EC2.create(user.profile).runInstances(amount = 1,
+      compat.instanceSpecs(
+        instanceType,
+        user.keypair.name,
+        Some(ec2Roles.projects.name)
       )
-      .map { _.getInstanceId }
+    ).map { _.getInstanceId }
+  }
 
-  def pick16SCandidates(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.compats.pick16SCandidates, user)
+  def pick16SCandidates(user: AWSUser): List[String] =
+    launch(ohnosequences.db.rna16s.test.compats.pick16SCandidates, r3.x4large)(user)
 
-  def dropRedundantAssignmentsAndGenerate(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.compats.dropRedundantAssignmentsAndGenerate, user)
-  def dropInconsistentAssignmentsAndGenerate(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.compats.dropInconsistentAssignmentsAndGenerate, user)
+  def dropRedundantAssignmentsAndGenerate(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.test.compats.dropRedundantAssignmentsAndGenerate, r3.large)(user)
+
+  def dropInconsistentAssignmentsAndGenerate(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.test.compats.dropInconsistentAssignmentsAndGenerate, r3.large)(user)
 }
 
 ```
@@ -42,5 +47,6 @@ case object rna16s {
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
 [test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/releaseData.scala]: releaseData.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md

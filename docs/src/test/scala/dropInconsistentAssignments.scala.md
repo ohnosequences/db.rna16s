@@ -66,7 +66,7 @@ Almost all `99.8%` of the sequences from the drop redundant assignments step pas
 ```scala
 package ohnosequences.db.rna16s.test
 
-import era7bio.db._, csvUtils._, collectionUtils._
+import ohnosequences.db._, csvUtils._, collectionUtils._
 import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
@@ -157,7 +157,7 @@ Here we discard those taxa whose lineage does **not** contain the *parent* of th
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
   ohnosequences.db.rna16s.dbType,
-  ohnosequences.db.rna16s.dropInconsistentAssignments
+  ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
 ```
 
@@ -176,6 +176,8 @@ case object mg7results extends Bundle() {
       s3location.bucket, s3location.key,
       lcaTable.toJava
     ).waitForCompletion
+
+    transferManager.shutdownNow()
   }
 }
 
@@ -190,5 +192,6 @@ case object mg7results extends Bundle() {
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
 [test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/releaseData.scala]: releaseData.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md

@@ -11,7 +11,7 @@ The output of this step represents around `70%` of the pick 16S candidates outpu
 ```scala
 package ohnosequences.db.rna16s.test
 
-import era7bio.db._, csvUtils._, collectionUtils._
+import ohnosequences.db._, csvUtils._, collectionUtils._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
 import com.github.tototoshi.csv._
@@ -159,7 +159,7 @@ Returns a pair: contained seq-s and not-contained.
 case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
   ohnosequences.db.rna16s.dbType,
-  ohnosequences.db.rna16s.dropRedundantAssignments
+  ohnosequences.db.rna16s.test.dropRedundantAssignments
 )
 
 ```
@@ -173,5 +173,6 @@ case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
 [test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/releaseData.scala]: releaseData.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md
