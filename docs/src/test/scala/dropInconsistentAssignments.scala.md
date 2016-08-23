@@ -122,7 +122,7 @@ Note that the previous filters guarantee that the mg7 LCA IDs *are* in the NCBI 
             lcaParent => {
 ```
 
-Here we discard those taxa whose lineage does **not** contain the *parent* of the lca assignment.
+### Here we discard (from the query sequence data) those taxa assigned whose lineage does **not** contain the *parent* of the lca assignment (obtained in the MG7 test).
 
 ```scala
               val (acceptedTaxas, rejectedTaxas) =
