@@ -104,19 +104,44 @@ case object pick16SCandidates extends FilterData(
     ( (seq.count(_ == 'N') / seq.length) <= 0.01 )
   }
 
+  // TODO: move it to db.rnacentral
+  implicit class IteratorOps[V](val iterator: Iterator[V]) extends AnyVal {
+
+    /* Similar to the Stream's .groupBy, but assuming that groups are contiguous. Another difference is that it returns the key corresponding to each group. */
+    def groupBy[K](getKey: V => K): Iterator[(K, Seq[V])] = new Iterator[(K, Seq[V])] {
+      /* The definition is very straightforward: we keep the `rest` of values (it's the state of the iterator) and on each `.next()` call bite off the prefix with the same key and keep the tail as the new `rest` */
+
+      // NOTE: Buffered iterator has .head which doesn't pop it as .next
+      private var rest: BufferedIterator[V] = iterator.buffered
+
+      def hasNext: Boolean = rest.hasNext
+
+      def next(): (K, Seq[V]) = {
+
+        val key = getKey(rest.head)
+        val (prefix, suffix) = rest.span { getKey(_) == key }
+        rest = suffix.buffered
+
+        key -> prefix.toSeq
+      }
+    }
+  }
+
   // bundle to generate the DB (see the runBundles file in tests)
   def filterData(): Unit = {
 
-    val groupedRows: Stream[(String, Stream[Row])] =
-      source.table.tsvReader.iterator.toStream.group{ _.select(id) }
+    val groupedRows: Iterator[(String, Seq[Row])] =
+      source.table.tsvReader.iterator.groupBy { _.select(id) }
 
-    (groupedRows zip source.fasta.stream) foreach { case ((commonID, rows), fasta) =>
+    val fastas: Iterator[FASTA.Value] = source.fasta.stream.toIterator
+
+    (groupedRows zip fastas) foreach { case ((commonID, rows), fasta) =>
 
       if (commonID != fasta.getV(header).id)
         sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
 
       val (acceptedRows, rejectedRows) =
-        if ( sequencePredicate(fasta.getV(sequence)) ) {
+        if ( sequencePredicate(fasta.get(ohnosequences.fastarious.fasta.sequence).value) ) {
           /* if the sequence is OK, we partition the rows based on the predicate */
           rows.partition(rowPredicate)
         } else {
