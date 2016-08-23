@@ -60,7 +60,7 @@
   1. We run MG7 with input the output from the drop redundant assignments step, and as reference database the same but the sequence we are using as query.
   2. For each sequence we check the relation of its assignments with the corresponding LCA that we've got from MG7. If some assignment is too far away from the LCA in the taxonomic tree, it is discarded. After this step the BLAST database is generated again.
 
-  Almost all `99.8%` of the sequences from the drop redundant assignments step pass  this filter, because it's mostly about filtering out *wrong* assignments and there are not many sequences that get all assignments discarded.
+  Almost all `99.8%` of the sequences from the drop redundant assignments step pass this filter, because it's mostly about filtering out *wrong* assignments and there are not many sequences that get all assignments discarded.
 */
 package ohnosequences.db.rna16s.test
 
