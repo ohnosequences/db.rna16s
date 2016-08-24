@@ -1,0 +1,7 @@
+This release changes both the data generated and its structure.
+
+- #52 FASTA headers now are `gnl|${db_name}|${id}`, following NCBI conventions
+- #49 sequences with a significant number of `N`s are excluded
+- #50 down to requiring 99% of query coverage in the drop inconsistent assignments step
+
+Apart from this there are various documentation improvements.
