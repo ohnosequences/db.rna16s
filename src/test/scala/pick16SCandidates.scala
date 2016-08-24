@@ -109,20 +109,24 @@ case object pick16SCandidates extends FilterData(
 
     /* Similar to the Stream's .groupBy, but assuming that groups are contiguous. Another difference is that it returns the key corresponding to each group. */
     def groupBy[K](getKey: V => K): Iterator[(K, Seq[V])] = new Iterator[(K, Seq[V])] {
-      /* The definition is very straightforward: we keep the `rest` of values (it's the state of the iterator) and on each `.next()` call bite off the prefix with the same key and keep the tail as the new `rest` */
+      /* The definition is very straightforward: we keep the `rest` of values and on each `.next()` call bite off the longest prefix with the same key */
 
       // NOTE: Buffered iterator has .head which doesn't pop it as .next
-      private var rest: BufferedIterator[V] = iterator.buffered
+      private val rest: BufferedIterator[V] = iterator.buffered
+
+      @annotation.tailrec
+      private def longestPrefix(key: K, acc: Seq[V]): Seq[V] = {
+        if ( rest.hasNext && getKey(rest.head) == key )
+          longestPrefix(key, rest.next() +: acc)
+        else acc
+      }
 
       def hasNext: Boolean = rest.hasNext
 
       def next(): (K, Seq[V]) = {
-
         val key = getKey(rest.head)
-        val (prefix, suffix) = rest.span { getKey(_) == key }
-        rest = suffix.buffered
 
-        key -> prefix.toSeq
+        key -> longestPrefix(key, Seq())
       }
     }
   }
