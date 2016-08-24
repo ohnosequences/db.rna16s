@@ -108,10 +108,11 @@ case object pick16SCandidates extends FilterData(
   implicit class IteratorOps[V](val iterator: Iterator[V]) extends AnyVal {
 
     /* Similar to the Stream's .groupBy, but assuming that groups are contiguous. Another difference is that it returns the key corresponding to each group. */
+    // NOTE: The original iterator should be discarded after calling this method
     def groupBy[K](getKey: V => K): Iterator[(K, Seq[V])] = new Iterator[(K, Seq[V])] {
       /* The definition is very straightforward: we keep the `rest` of values and on each `.next()` call bite off the longest prefix with the same key */
 
-      // NOTE: Buffered iterator has .head which doesn't pop it as .next
+      /* Buffered iterator allows to loo ahead without removing the next element */
       private val rest: BufferedIterator[V] = iterator.buffered
 
       @annotation.tailrec
