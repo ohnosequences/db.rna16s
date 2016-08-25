@@ -23,5 +23,6 @@ data/out/
 *.fasta
 *.tsv
 
+refdb.blast.csv
 ohnosequences.db.rna16s.csv
 blastdb/
