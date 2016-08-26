@@ -149,7 +149,7 @@ case object pick16SCandidates extends FilterData(
         sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
 
       val (acceptedRows, rejectedRows) =
-        if ( sequencePredicate(fasta.get(ohnosequences.fastarious.fasta.sequence).value) ) {
+        if ( sequencePredicate(fasta.get(sequence).value) ) {
           /* if the sequence is OK, we partition the rows based on the predicate */
           rows.partition(rowPredicate)
         } else {
