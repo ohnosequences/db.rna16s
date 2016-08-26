@@ -115,21 +115,23 @@ case object pick16SCandidates extends FilterData(
       /* Buffered iterator allows to look ahead without removing the next element */
       private val rest: BufferedIterator[V] = iterator.buffered
 
-      @annotation.tailrec
-      private def longestPrefix(key: K, acc: Seq[V]): Seq[V] = {
-        if ( rest.hasNext && getKey(rest.head) == key )
-          longestPrefix(key, rest.next() +: acc)
-        else acc
-      }
-
       // NOTE: this is so simple, because of the contiguous grouping assumpltion
       def hasNext: Boolean = rest.hasNext
 
       def next(): (K, Seq[V]) = {
         val key = getKey(rest.head)
 
-        key -> longestPrefix(key, Seq())
+        key -> groupOf(key)
       }
+
+      @annotation.tailrec
+      private def groupOf_rec(key: K, acc: Seq[V]): Seq[V] = {
+        if ( rest.hasNext && getKey(rest.head) == key )
+          groupOf_rec(key, rest.next() +: acc)
+        else acc
+      }
+
+      private def groupOf(key: K): Seq[V] = groupOf_rec(key, Seq())
     }
   }
 
