@@ -112,7 +112,7 @@ case object pick16SCandidates extends FilterData(
     def groupBy[K](getKey: V => K): Iterator[(K, Seq[V])] = new Iterator[(K, Seq[V])] {
       /* The definition is very straightforward: we keep the `rest` of values and on each `.next()` call bite off the longest prefix with the same key */
 
-      /* Buffered iterator allows to loo ahead without removing the next element */
+      /* Buffered iterator allows to look ahead without removing the next element */
       private val rest: BufferedIterator[V] = iterator.buffered
 
       @annotation.tailrec
@@ -122,6 +122,7 @@ case object pick16SCandidates extends FilterData(
         else acc
       }
 
+      // NOTE: this is so simple, because of the contiguous grouping assumpltion
       def hasNext: Boolean = rest.hasNext
 
       def next(): (K, Seq[V]) = {
