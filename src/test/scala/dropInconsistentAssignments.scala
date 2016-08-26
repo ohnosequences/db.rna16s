@@ -147,7 +147,8 @@ case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlas
 /* This bundle just downloads the output of the MG7 run of the results of the drop redundant assignments step */
 case object mg7results extends Bundle() {
 
-  lazy val s3location: S3Object = referenceDBPipeline.outputS3Folder("merge") / "refdb.lca.csv"
+  // TODO: get results from the blast step
+  lazy val s3location: S3Object = mg7.pipeline.outputS3Folder("", "merge") / "refdb.lca.csv"
   lazy val lcaTable: File = File(s3location.key)
 
   def instructions: AnyInstructions = LazyTry {

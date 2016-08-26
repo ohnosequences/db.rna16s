@@ -19,9 +19,12 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "blast-api"     % "0.7.0",
   "ohnosequences" %% "ncbitaxonomy"  % "0.1.0",
   // Test:
-  "era7bio"       %% "defaults" % "0.2.0"                     % Test,
-  "ohnosequences" %% "mg7"      % "1.0.0-M5-pr78-64-gd886636" % Test
+  "era7bio"       %% "defaults" % "0.2.0"                      % Test,
+  "ohnosequences" %% "mg7"      % "1.0.0-M5-pr78-139-g91401e1" % Test
 )
+
+// FIXME: update era7bio/defaults after loquat M9 release and remove this line:
+dependencyOverrides += "ohnosequences" %% "loquat" % "2.0.0-M8-11-g820cfe6"
 
 dependencyOverrides ++= Set(
   "org.apache.httpcomponents" % "httpclient" % "4.5.1",

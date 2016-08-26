@@ -66,7 +66,7 @@ case object pick16SCandidates extends FilterData(
 
     Sequences that satisfy this predicate (on themselves together with their annotation) are included in the output of this step.
   */
-  private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
+  private lazy val taxonomyGraph = ohnosequences.ncbitaxonomy.ncbiTaxonomyBundle.graph
 
   def rowPredicate(row: Row): Boolean = {
     val taxID = row.select(tax_id)
