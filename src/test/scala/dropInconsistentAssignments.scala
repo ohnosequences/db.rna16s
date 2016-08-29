@@ -75,7 +75,9 @@ import com.amazonaws.services.s3.transfer._
 import com.github.tototoshi.csv._
 import better.files._
 
-case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(deps = mg7results, ncbiTaxonomyBundle) {
+case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(
+  deps = mg7BlastResults, ncbiTaxonomyBundle
+) {
 
   type ID     = String
   type Taxa   = String
@@ -86,7 +88,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
   def filterData(): Unit = {
 
     /* First we read what we've got from MG7 */
-    val id2mg7lca: Map[ID, Taxa] = mg7LCAfromFile(mg7results.lcaTable)
+    val id2mg7lca: Map[ID, Taxa] = ??? //mg7LCAfromFile(mg7results.lcaTable)
 
     /* Then we process the source table and compare assignments with LCA from MG7. We know that in the output of dropRedundantAssignments table and fasta IDs are synchronized, so we can just zip them. */
     ( source.table.csvReader.iterator zip
@@ -144,21 +146,25 @@ case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlas
   ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
 
-/* This bundle just downloads the output of the MG7 run of the results of the drop redundant assignments step */
-case object mg7results extends Bundle() {
+/* This bundle just downloads the output of the MG7 Blast step and merges the chunks */
+case object mg7BlastResults extends Bundle() {
 
-  // TODO: get results from the blast step
-  lazy val s3location: S3Object = mg7.pipeline.outputS3Folder("", "merge") / "refdb.lca.csv"
-  lazy val lcaTable: File = File(s3location.key)
+  lazy val s3location: S3Object = mg7.pipeline.outputS3Folder("", "blast") / "chunks" /
+
+  lazy val blastChunks: File = File(s3location.key)
+  lazy val blastResult: File = (blastChunks.parent / "blastResult.csv").createIfNotExists()
 
   def instructions: AnyInstructions = LazyTry {
     val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
 
     transferManager.download(
       s3location.bucket, s3location.key,
-      lcaTable.toJava
+      blastChunks.toJava
     ).waitForCompletion
 
     transferManager.shutdownNow()
+  } -&- LazyTry {
+
+    loquats.mergeDataProcessing().mergeChunks(blastChunks, blastResult)
   }
 }
