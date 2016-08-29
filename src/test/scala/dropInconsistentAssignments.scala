@@ -72,6 +72,7 @@ import ohnosequences.mg7._
 import ohnosequences.awstools.s3._
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
+import ohnosequences.blast.api._, outputFields._
 import com.github.tototoshi.csv._
 import better.files._
 
@@ -79,65 +80,91 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
   deps = mg7BlastResults, ncbiTaxonomyBundle
 ) {
 
-  type ID     = String
-  type Taxa   = String
-  type Fasta  = FASTA.Value
+  // type Fasta  = FASTA.Value
 
   private lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
 
+  type BlastRow = csv.Row[mg7.parameters.blastOutRec.Keys]
+
+  /* Mapping of sequence IDs to the list of their taxonomic assignments */
+  private lazy val referenceMap: Map[ID, Seq[Taxon]] = source.table.csvReader.iterator
+    .foldLeft(Map[ID, Seq[Taxon]]()) { (acc, row) =>
+      acc.updated(
+        row(0),
+        row(1).split(';').map(_.trim).toSeq
+      )
+    }
+
+  private def referenceTaxaFor(id: ID): Seq[Taxon] = referenceMap.get(id).getOrElse(Seq())
+
+  // TODO: this should be a piece of reusable code in MG7
+  private def getAccumulatedCounts(taxa: Seq[Taxon]): Map[Taxon, (Int, Seq[Taxon])] = {
+    // NOTE: this mutable map is used in getLineage for memoization of the results that we get from the DB
+    val lineageMap: scala.collection.mutable.Map[Taxon, Taxa] = scala.collection.mutable.Map()
+
+    def getLineage(id: Taxon): Taxa = lineageMap.get(id).getOrElse {
+      val lineage = taxonomyGraph.getTaxon(id)
+        .map{ _.ancestors }.getOrElse( Seq() )
+        .map{ _.id }
+      lineageMap.update(id, lineage)
+      lineage
+    }
+
+    val counter = loquats.countDataProcessing()
+
+    val directMap      = counter.directCounts(taxa, getLineage)
+    val accumulatedMap = counter.accumulatedCounts(directMap, getLineage)
+
+    accumulatedMap
+  }
+
+  /* This constant determines how many levels up from the considered node will be the ancestor that we want to take for comparing their cumulative counts */
+  // FIXME: this constant needs a review
+  val ancestorLevel: Int = 1 // i.e. direct parent by default
+
+  /* This threshold determines minimum percentage of the cumulative count of the considered taxon from its ancestor's count */
+  // FIXME: this constant needs a review
+  val countsPercentageMinimum: Double = 42.75
+
+  /* This predicate discards those taxons that are underrepresented by comparing its cumulative count to its ancestor's count */
+  private def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])]): Taxon => Boolean = { taxon =>
+
+    countsMap.get(taxon).flatMap { case (count, lineage) =>
+
+      val ancestorOpt = lineage.drop(ancestorLevel).headOption
+
+      ancestorOpt.flatMap(countsMap.get).map { case (ancestorCount, _) =>
+
+        ((count: Double) / ancestorCount * 100) >= countsPercentageMinimum
+      }
+    }.getOrElse(false)
+  }
+
   def filterData(): Unit = {
 
-    /* First we read what we've got from MG7 */
-    val id2mg7lca: Map[ID, Taxa] = ??? //mg7LCAfromFile(mg7results.lcaTable)
+    lazy val blastReader = csv.Reader(mg7.parameters.blastOutRec.keys)(mg7BlastResults.blastResult)
 
-    /* Then we process the source table and compare assignments with LCA from MG7. We know that in the output of dropRedundantAssignments table and fasta IDs are synchronized, so we can just zip them. */
-    ( source.table.csvReader.iterator zip
-      source.fasta.stream.iterator
-    ).foreach {
+    blastReader.rows
+      // grouping rows by the query sequence id
+      .contiguousGroupBy { _.select(qseqid) }
+      .foreach { case (qseq: ID, hits: Seq[BlastRow]) =>
 
-      case (row, fasta) => {
+        val hitsTaxa: Seq[Taxon] = hits.flatMap { row => referenceTaxaFor(row.select(sseqid)) }
+        val accumulatedCountsMap = getAccumulatedCounts(hitsTaxa)
 
-        val (id, taxas) = idTaxasFromRow(row)
+        // checking each assignment of the query sequence
+        val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(qseq).partition( predicate(accumulatedCountsMap) )
 
-        id2mg7lca.get(id)
-          .flatMap(taxonomyGraph.getTaxon)
-          .flatMap(_.parent)
-          /*
-            Note that the previous filters guarantee that the mg7 LCA IDs *are* in the NCBI taxonomy graph; thus this option will be None if either
-
-            1. this id is not in the MG7 lca output, so that this query sequence has no hits with anything but itself. In that case we need to consider its assignment correct, thus the base case of the fold.
-            2. If the lca has no parent = is the root node, then we can already accept it: it will be in the lineage of every node
-          */
-          .fold( accept(id, taxas, fasta) ) {
-            lcaParent => {
-              /* Here we discard those taxa whose lineage does **not** contain the *parent* of the lca assignment. */
-              val (acceptedTaxas, rejectedTaxas) =
-                taxas.partition { taxa => (taxonomyGraph getTaxon taxa).fold(false)( lcaParent isInLineageOf _ ) }
-
-              writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
-            }
-          }
+        writeOutput(
+          qseq,
+          acceptedTaxa,
+          rejectedTaxa,
+          ??? // TODO: need to pass fasta here, even though we dont' consider it in the filtering
+        )
       }
-    }
+
   }
 
-  val mg7LCAfromFile: File => Map[ID,Taxa] =
-    file =>
-      csv.Reader(csv.assignment.columns)(file)
-        .rows.map { row => ( row select csv.columns.ReadID ) -> ( row select csv.columns.Taxa ) }
-        .toMap
-
-  val idTaxasFromRow: Seq[String] => (ID,Seq[Taxa]) =
-    row => ( row(0), row(1).split(';').map(_.trim).toSeq )
-
-  val accept: (ID, Seq[Taxa], Fasta) => Unit =
-    (id, taxas, fasta) => writeOutput(id, taxas, Seq(), fasta)
-
-  implicit final class nodeOps(val node: TitanNode) extends AnyVal {
-
-    def isInLineageOf(other: TitanNode): Boolean =
-      other.ancestors.exists { _.id == node.id }
-  }
 }
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
