@@ -27,7 +27,7 @@ case object rna16s {
   }
 
   def pick16SCandidates(user: AWSUser): List[String] =
-    launch(ohnosequences.db.rna16s.test.compats.pick16SCandidates, r3.x4large)(user)
+    launch(ohnosequences.db.rna16s.test.compats.pick16SCandidates, r3.large)(user)
 
   def dropRedundantAssignmentsAndGenerate(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.test.compats.dropRedundantAssignmentsAndGenerate, r3.large)(user)
 
