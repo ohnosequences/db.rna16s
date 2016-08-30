@@ -1,6 +1,12 @@
 package ohnosequences.db.rna16s
 
+import ohnosequences.fastarious.fasta._
+
 package object test {
+
+  type ID    = String
+  type Taxon = String
+  type Fasta = FASTA.Value
 
   // TODO: move it to db.rnacentral
   implicit class IteratorOps[V](val iterator: Iterator[V]) extends AnyVal {

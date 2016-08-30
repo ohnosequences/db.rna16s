@@ -80,8 +80,6 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
   deps = mg7BlastResults, ncbiTaxonomyBundle
 ) {
 
-  // type Fasta  = FASTA.Value
-
   private lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
 
   type BlastRow = csv.Row[mg7.parameters.blastOutRec.Keys]
@@ -92,6 +90,15 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
       acc.updated(
         row(0),
         row(1).split(';').map(_.trim).toSeq
+      )
+    }
+
+  /* Mapping of sequence IDs to corresponding FASTA sequences */
+  private lazy val id2fasta: Map[ID, Fasta] = source.fasta.stream
+    .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
+      acc.updated(
+        fasta.getV(header).id,
+        fasta
       )
     }
 
@@ -142,7 +149,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 
   def filterData(): Unit = {
 
-    lazy val blastReader = csv.Reader(mg7.parameters.blastOutRec.keys)(mg7BlastResults.blastResult)
+    val blastReader = csv.Reader(mg7.parameters.blastOutRec.keys)(mg7BlastResults.blastResult)
 
     blastReader.rows
       // grouping rows by the query sequence id
@@ -159,7 +166,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
           qseq,
           acceptedTaxa,
           rejectedTaxa,
-          ??? // TODO: need to pass fasta here, even though we dont' consider it in the filtering
+          id2fasta(qseq)
         )
       }
 
