@@ -134,15 +134,15 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
   val countsPercentageMinimum: Double = 42.75
 
   /* This predicate discards those taxons that are underrepresented by comparing its cumulative count to its ancestor's count */
-  private def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])]): Taxon => Boolean = { taxon =>
+  private def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])], totalCount: Int): Taxon => Boolean = { taxon =>
 
-    countsMap.get(taxon).flatMap { case (count, lineage) =>
+    countsMap.get(taxon).flatMap { case (_, lineage) =>
 
       val ancestorOpt = lineage.drop(ancestorLevel).headOption
 
       ancestorOpt.flatMap(countsMap.get).map { case (ancestorCount, _) =>
 
-        ((count: Double) / ancestorCount * 100) >= countsPercentageMinimum
+        ((ancestorCount: Double) / totalCount * 100) >= countsPercentageMinimum
       }
     }.getOrElse(false)
   }
@@ -158,9 +158,12 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 
         val hitsTaxa: Seq[Taxon] = hits.flatMap { row => referenceTaxaFor(row.select(sseqid)) }
         val accumulatedCountsMap = getAccumulatedCounts(hitsTaxa)
+        val totalCount = hitsTaxa.length
 
         // checking each assignment of the query sequence
-        val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(qseq).partition( predicate(accumulatedCountsMap) )
+        val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(qseq).partition(
+          predicate(accumulatedCountsMap, totalCount)
+        )
 
         writeOutput(
           qseq,
