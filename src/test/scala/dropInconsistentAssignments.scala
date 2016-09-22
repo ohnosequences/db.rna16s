@@ -183,7 +183,7 @@ case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlas
 /* This bundle just downloads the output of the MG7 Blast step and merges the chunks */
 case object mg7BlastResults extends Bundle() {
 
-  lazy val s3location: S3Object = mg7.pipeline.outputS3Folder("", "blast") / "chunks" /
+  lazy val s3location: S3Folder = mg7.pipeline.outputS3Folder("", "blast") / "chunks" /
 
   lazy val blastChunks: File = File(s3location.key)
   lazy val blastResult: File = (blastChunks.parent / "blastResult.csv").createIfNotExists()
@@ -191,9 +191,9 @@ case object mg7BlastResults extends Bundle() {
   def instructions: AnyInstructions = LazyTry {
     val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
 
-    transferManager.download(
+    transferManager.downloadDirectory(
       s3location.bucket, s3location.key,
-      blastChunks.toJava
+      File(".").toJava
     ).waitForCompletion
 
     transferManager.shutdownNow()
