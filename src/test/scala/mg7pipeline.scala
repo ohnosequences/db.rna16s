@@ -73,3 +73,26 @@ case object mg7 {
     val countConfig  = CountConfig(1)
   }
 }
+
+/* This bundle just downloads the output of the MG7 Blast step and merges the chunks */
+case object mg7BlastResults extends Bundle() {
+
+  lazy val s3location: S3Folder = mg7.pipeline.outputS3Folder("", "blast") / "chunks" /
+
+  lazy val blastChunks: File = File(s3location.key)
+  lazy val blastResult: File = (blastChunks.parent / "blastResult.csv").createIfNotExists()
+
+  def instructions: AnyInstructions = LazyTry {
+    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+
+    transferManager.downloadDirectory(
+      s3location.bucket, s3location.key,
+      File(".").toJava
+    ).waitForCompletion
+
+    transferManager.shutdownNow()
+  } -&- LazyTry {
+
+    loquats.mergeDataProcessing().mergeChunks(blastChunks, blastResult)
+  }
+}

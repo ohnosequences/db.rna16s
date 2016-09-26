@@ -77,7 +77,7 @@ import com.github.tototoshi.csv._
 import better.files._
 
 case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(
-  deps = mg7BlastResults, ncbiTaxonomyBundle
+  deps = mg7BlastResults, ncbiTaxonomyBundle //, clusterSequences
 ) {
 
   private lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
@@ -182,26 +182,3 @@ case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlas
   ohnosequences.db.rna16s.dbType,
   ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
-
-/* This bundle just downloads the output of the MG7 Blast step and merges the chunks */
-case object mg7BlastResults extends Bundle() {
-
-  lazy val s3location: S3Folder = mg7.pipeline.outputS3Folder("", "blast") / "chunks" /
-
-  lazy val blastChunks: File = File(s3location.key)
-  lazy val blastResult: File = (blastChunks.parent / "blastResult.csv").createIfNotExists()
-
-  def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
-
-    transferManager.downloadDirectory(
-      s3location.bucket, s3location.key,
-      File(".").toJava
-    ).waitForCompletion
-
-    transferManager.shutdownNow()
-  } -&- LazyTry {
-
-    loquats.mergeDataProcessing().mergeChunks(blastChunks, blastResult)
-  }
-}
