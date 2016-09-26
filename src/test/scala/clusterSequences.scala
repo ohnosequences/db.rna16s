@@ -42,19 +42,18 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
 
   // TODO: tailrec
-  def addPair(qseq: ID, others: Seq[ID], acc: List[Set[ID]]): List[Set[ID]] = {
-    acc match {
-      case Nil => List( others.toSet + qseq )
-      case h :: t =>
-        if (h.contains(qseq)) (h ++ others) :: t
-        else h :: addPair(qseq, others, t)
-    }
+  def addCluster(cluster: Set[ID], acc: List[Set[ID]]): List[Set[ID]] = {
+
+    val (related, rest) = acc.partition { _.intersect(cluster).nonEmpty }
+    val newCluster = (cluster :: related).reduce { _ union _ }
+
+    newCluster :: rest
   }
 
-  def clusters(correspondences: Iterator[(ID, Seq[ID])]): List[Set[ID]] =
+  def clusters(correspondences: Iterator[Set[ID]]): List[Set[ID]] =
     correspondences.foldLeft(List[Set[ID]]()) {
-      case (acc: List[Set[ID]], (qseq: ID, others: Seq[ID])) =>
-        addPair(qseq, others, acc)
+      case (acc: List[Set[ID]], (ids: Set[ID])) =>
+        addCluster(ids, acc)
     }
 
   type BlastRow = csv.Row[mg7.parameters.blastOutRec.Keys]
@@ -65,12 +64,12 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
       val blastReader = csv.Reader(mg7.parameters.blastOutRec.keys)(mg7BlastResults.blastResult)
 
-      val correspondences: Iterator[(ID, Seq[ID])] = blastReader.rows
+      val correspondences: Iterator[Set[ID]] = blastReader.rows
         // grouping rows by the query sequence id
         .contiguousGroupBy { _.select(qseqid) }
         .map { case (qseq: ID, hits: Seq[BlastRow]) =>
 
-          qseq -> hits.map { _.select(sseqid) }
+          hits.map{ _.select(sseqid) }.toSet + qseq
         }
 
       clusters(correspondences).foreach { ids => output.csv.writeRow(ids.toSeq) }
@@ -84,4 +83,42 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
   }
 
+}
+
+
+case object ClusteringTestCtx {
+
+  val hits: List[Set[ID]] = List(
+    Set("a1", "a2", "a3"),
+    Set("a2", "a1", "a4"),
+    Set("a3", "a2"),
+    Set("a4"),
+
+    Set("b1", "b2"),
+    Set("b2", "b1"),
+
+    Set("c1"),
+    Set("c3"),
+    Set("c2", "c1", "c3")
+  )
+}
+
+class ClusteringTest extends org.scalatest.FunSuite {
+  import ClusteringTestCtx._
+  import clusterSequences._
+
+  test("clustering") {
+
+    val abc = clusters(hits.toIterator)
+    info(abc.mkString("\n"))
+
+    assertResult( List() ) {
+
+      abc diff List(
+        Set("a1", "a2", "a3", "a4"),
+        Set("b1", "b2"),
+        Set("c1", "c2", "c3")
+      )
+    }
+  }
 }
