@@ -153,17 +153,27 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
       .foreach { line =>
 
         val ids: Seq[ID] = line.split(',')
+        println(s"Processing cluster: ${ids.mkString(", ")}")
 
         val taxa: Seq[Taxon] = ids.flatMap { id => referenceTaxaFor(id) }
+        println(s"Corresponding taxa: ${taxa.mkString(", ")}")
+
         val accumulatedCountsMap = getAccumulatedCounts(taxa)
+        println(s"Accumulated counts: ${accumulatedCountsMap.mkString(", ")}")
+
         val totalCount = taxa.length
+        println(s"Total count:        ${totalCount}")
 
         // checking each assignment of the query sequence
         ids.foreach { id =>
 
+          print(s"\n  * id${id}")
+
           val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(id).partition(
             predicate(accumulatedCountsMap, totalCount)
           )
+          println(s"    - accepted: ${acceptedTaxa}")
+          println(s"    - rejected: ${rejectedTaxa}")
 
           writeOutput(
             id,

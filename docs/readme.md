@@ -42,7 +42,7 @@ Here is the sequence of bundles you have to launch to repeat the whole DB genera
 
 6. `clusterSequences`:
    - Recommended EC2 instance type: `r3.large` or `m3.medium` (doesn't require much resources)
-   - Approximate run time:
+   - Approximate run time: ~1 hour 20-40 minutes
    - Command:  
       ```scala
       ohnosequences.db.rna16s.test.rna16s.clusterSequences(your_user.AWSUser)
