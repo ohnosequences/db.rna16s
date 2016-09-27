@@ -14,8 +14,15 @@ case object compats {
     ohnosequences.generated.metadata.db_rna16s
   )
 
-  case object pick16SCandidates extends DefaultCompatible(ohnosequences.db.rna16s.test.pick16SCandidates, javaHeap = 50)
+  case object pick16SCandidates extends
+    DefaultCompatible(ohnosequences.db.rna16s.test.pick16SCandidates, javaHeap = 50)
 
-  case object dropRedundantAssignmentsAndGenerate extends DefaultCompatible(ohnosequences.db.rna16s.test.dropRedundantAssignmentsAndGenerate, javaHeap = 10)
-  case object dropInconsistentAssignmentsAndGenerate extends DefaultCompatible(ohnosequences.db.rna16s.test.dropInconsistentAssignmentsAndGenerate, javaHeap = 10)
+  case object dropRedundantAssignmentsAndGenerate extends
+    DefaultCompatible(ohnosequences.db.rna16s.test.dropRedundantAssignmentsAndGenerate, javaHeap = 10)
+
+  case object clusterSequences extends
+    DefaultCompatible(ohnosequences.db.rna16s.test.clusterSequences, javaHeap = 10)
+
+  case object dropInconsistentAssignmentsAndGenerate extends
+    DefaultCompatible(ohnosequences.db.rna16s.test.dropInconsistentAssignmentsAndGenerate, javaHeap = 10)
 }

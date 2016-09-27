@@ -29,7 +29,12 @@ case object rna16s {
   def pick16SCandidates(user: AWSUser): List[String] =
     launch(ohnosequences.db.rna16s.test.compats.pick16SCandidates, r3.x2large)(user)
 
-  def dropRedundantAssignmentsAndGenerate(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.test.compats.dropRedundantAssignmentsAndGenerate, r3.large)(user)
+  def dropRedundantAssignmentsAndGenerate(user: AWSUser): List[String] =
+    launch(ohnosequences.db.rna16s.test.compats.dropRedundantAssignmentsAndGenerate, r3.large)(user)
 
-  def dropInconsistentAssignmentsAndGenerate(user: AWSUser): List[String] = launch(ohnosequences.db.rna16s.test.compats.dropInconsistentAssignmentsAndGenerate, r3.large)(user)
+  def clusterSequences(user: AWSUser): List[String] =
+    launch(ohnosequences.db.rna16s.test.compats.clusterSequences, r3.large)(user)
+
+  def dropInconsistentAssignmentsAndGenerate(user: AWSUser): List[String] =
+    launch(ohnosequences.db.rna16s.test.compats.dropInconsistentAssignmentsAndGenerate, r3.large)(user)
 }
