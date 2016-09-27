@@ -80,12 +80,10 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
   deps = clusteringResults, ncbiTaxonomyBundle
 ) {
 
-  private lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
-
-  // type BlastRow = csv.Row[mg7.parameters.blastOutRec.Keys]
+  lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
 
   /* Mapping of sequence IDs to the list of their taxonomic assignments */
-  private lazy val referenceMap: Map[ID, Seq[Taxon]] = source.table.csvReader.iterator
+  lazy val referenceMap: Map[ID, Seq[Taxon]] = source.table.csvReader.iterator
     .foldLeft(Map[ID, Seq[Taxon]]()) { (acc, row) =>
       acc.updated(
         row(0),
@@ -94,7 +92,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
     }
 
   /* Mapping of sequence IDs to corresponding FASTA sequences */
-  private lazy val id2fasta: Map[ID, Fasta] = source.fasta.stream
+  lazy val id2fasta: Map[ID, Fasta] = source.fasta.stream
     .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
       acc.updated(
         fasta.getV(header).id,
@@ -102,10 +100,10 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
       )
     }
 
-  private def referenceTaxaFor(id: ID): Seq[Taxon] = referenceMap.get(id).getOrElse(Seq())
+  def referenceTaxaFor(id: ID): Seq[Taxon] = referenceMap.get(id).getOrElse(Seq())
 
   // TODO: this should be a piece of reusable code in MG7
-  private def getAccumulatedCounts(taxa: Seq[Taxon]): Map[Taxon, (Int, Seq[Taxon])] = {
+  def getAccumulatedCounts(taxa: Seq[Taxon]): Map[Taxon, (Int, Seq[Taxon])] = {
     // NOTE: this mutable map is used in getLineage for memoization of the results that we get from the DB
     val lineageMap: scala.collection.mutable.Map[Taxon, Taxa] = scala.collection.mutable.Map()
 
@@ -134,7 +132,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
   val countsPercentageMinimum: Double = 42.75
 
   /* This predicate discards those taxons that are underrepresented by comparing its cumulative count to its ancestor's count */
-  private def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])], totalCount: Int): Taxon => Boolean = { taxon =>
+  def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])], totalCount: Int): Taxon => Boolean = { taxon =>
 
     countsMap.get(taxon).flatMap { case (_, lineage) =>
 
