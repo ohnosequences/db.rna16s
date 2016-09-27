@@ -85,6 +85,24 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
 }
 
+case object clusteringResults extends Bundle() {
+
+  lazy val s3location: S3Object = clusterSequences.output.s3
+  lazy val clusters: File = File(s3location.key).createIfNotExists()
+
+  def instructions: AnyInstructions = LazyTry {
+    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+
+    transferManager.download(
+      s3location.bucket, s3location.key,
+      clusters.toJava
+    ).waitForCompletion
+
+    transferManager.shutdownNow()
+  } -&-
+  say(s"Clusters downloaded to ${clusters}")
+}
+
 
 case object ClusteringTestCtx {
 

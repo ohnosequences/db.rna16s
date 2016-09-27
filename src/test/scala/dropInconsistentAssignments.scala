@@ -77,12 +77,12 @@ import com.github.tototoshi.csv._
 import better.files._
 
 case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(
-  deps = mg7BlastResults, ncbiTaxonomyBundle //, clusterSequences
+  deps = clusteringResults, ncbiTaxonomyBundle
 ) {
 
   private lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
 
-  type BlastRow = csv.Row[mg7.parameters.blastOutRec.Keys]
+  // type BlastRow = csv.Row[mg7.parameters.blastOutRec.Keys]
 
   /* Mapping of sequence IDs to the list of their taxonomic assignments */
   private lazy val referenceMap: Map[ID, Seq[Taxon]] = source.table.csvReader.iterator
@@ -149,28 +149,29 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 
   def filterData(): Unit = {
 
-    val blastReader = csv.Reader(mg7.parameters.blastOutRec.keys)(mg7BlastResults.blastResult)
+    clusteringResults.clusters.lines
+      .foreach { line =>
 
-    blastReader.rows
-      // grouping rows by the query sequence id
-      .contiguousGroupBy { _.select(qseqid) }
-      .foreach { case (qseq: ID, hits: Seq[BlastRow]) =>
+        val ids: Seq[ID] = line.split(',')
 
-        val hitsTaxa: Seq[Taxon] = hits.flatMap { row => referenceTaxaFor(row.select(sseqid)) }
-        val accumulatedCountsMap = getAccumulatedCounts(hitsTaxa)
-        val totalCount = hitsTaxa.length
+        val taxa: Seq[Taxon] = ids.flatMap { id => referenceTaxaFor(id) }
+        val accumulatedCountsMap = getAccumulatedCounts(taxa)
+        val totalCount = taxa.length
 
         // checking each assignment of the query sequence
-        val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(qseq).partition(
-          predicate(accumulatedCountsMap, totalCount)
-        )
+        ids.foreach { id =>
 
-        writeOutput(
-          qseq,
-          acceptedTaxa,
-          rejectedTaxa,
-          id2fasta(qseq)
-        )
+          val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(id).partition(
+            predicate(accumulatedCountsMap, totalCount)
+          )
+
+          writeOutput(
+            id,
+            acceptedTaxa,
+            rejectedTaxa,
+            id2fasta(id)
+          )
+        }
       }
 
   }
