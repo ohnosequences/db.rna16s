@@ -12,7 +12,32 @@ import com.github.tototoshi.csv._
 import better.files._
 
 
+/*
+  # Sequences clustering
 
+  The idea of this procedure is to split all sequences on equivalence classes based on their BLAST-similarity. So we take the results of MG7-BLAST run on the DB itself and then process the hits constructing a reflecsive, symmetric and transitive relation.
+
+  For example, we have following hits:
+
+  | Sequence | Hits       |
+  |:--------:|:-----------|
+  |   `a3`   | `a2`       |
+  |   `b1`   |            |
+  |   `a2`   | `a1`       |
+  |   `a1`   | `a2`, `a3` |
+  |   `b3`   |            |
+  |   `b2`   | `b1`, `b3` |
+
+  Then we consider every hit as the evidence of relation between the given elements:
+
+  * `a3 → a2` therefore `a2 → a3` (symmetry)
+  * also `a2 → a1`, so `a3 → a1` (transitivity)
+
+  So the clasters that we should get from this are
+
+  * `{ a1, a2, a3 }`
+  * `{ b1, b2, b3 }`
+*/
 case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
   lazy val name: String = "clusters"
@@ -41,7 +66,18 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
   }
 
 
-  // TODO: tailrec
+  /* This is the key method for the clustring pocedure.
+     If we already have some clusters
+
+     * `{ b1 }
+     * `{ a3, a2 }`
+     * `{ b3, b4 }`
+
+     and want to add a new set of equivalent elements `{b2, b1, b3}`, then we need to filter out all clusters that intersect with this set (`{ b1 }` and `{ b3, b4 }`), union them all in one new class and add to the rest of the clusters:
+
+     * `{ b1, b2, b3, b4 }`
+     * `{ a3, a3 }`
+  */
   def addCluster(cluster: Set[ID], acc: List[Set[ID]]): List[Set[ID]] = {
 
     val (related, rest) = acc.partition { _.intersect(cluster).nonEmpty }
@@ -50,6 +86,7 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
     newCluster :: rest
   }
 
+  /* This method folds over the hits applyin `addCluster` */
   def clusters(correspondences: Iterator[Set[ID]]): List[Set[ID]] =
     correspondences.foldLeft(List[Set[ID]]()) {
       case (acc: List[Set[ID]], (ids: Set[ID])) =>
@@ -79,12 +116,13 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
       println("Uploading the results...")
       output.upload()
     } -&-
-    say(s"Clastered sequences uploaded to [${output.s3}]")
+    say(s"Clustered sequences uploaded to [${output.s3}]")
 
   }
 
 }
 
+/* This bundle just downloads the results of the `clusterSequences` bundle work */
 case object clusteringResults extends Bundle() {
 
   lazy val s3location: S3Object = clusterSequences.output.s3
@@ -104,6 +142,7 @@ case object clusteringResults extends Bundle() {
 }
 
 
+/* ## Tests */
 case object ClusteringTestCtx {
 
   val hits: List[Set[ID]] = List(
