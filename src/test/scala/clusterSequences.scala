@@ -86,7 +86,7 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
     newCluster :: rest
   }
 
-  /* This method folds over the hits applyin `addCluster` */
+  /* This method folds over the hits applying `addCluster` */
   def clusters(correspondences: Iterator[Set[ID]]): List[Set[ID]] =
     correspondences.foldLeft(List[Set[ID]]()) {
       case (acc: List[Set[ID]], (ids: Set[ID])) =>
