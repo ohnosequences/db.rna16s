@@ -73,7 +73,7 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 This is the key method for the clustring pocedure.
 If we already have some clusters
 
-* `{ b1 }
+* `{ b1 }`
 * `{ a3, a2 }`
 * `{ b3, b4 }`
 
@@ -154,7 +154,7 @@ case object clusteringResults extends Bundle() {
 }
 ```
 
-## Tests
+## A little test
 
 ```scala
 case object ClusteringTestCtx {
