@@ -71,7 +71,7 @@ case class inconsistentAssignmentsFilter(
 
     countsMap.get(taxon)
       /* First we find `taxon`'s ancestor ID (2 levels up) */
-      .flatMap { case (_, lineage) => lineage.reverse.drop(2).headOption }
+      .flatMap { case (_, lineage) => lineage.reverse.drop(3).headOption }
       /* then we find out its count */
       .flatMap { ancestorId => countsMap.get(ancestorId) }
       /* and compare it with the total: it has to be more than `countsPercentageMinimum`% for `taxon` to pass */
