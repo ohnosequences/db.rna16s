@@ -69,14 +69,14 @@ case class inconsistentAssignmentsFilter(
   /* This predicate determines whether to drop the taxon or to keep it */
   def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])], totalCount: Int): Taxon => Boolean = { taxon =>
 
-    taxonomyGraph.getTaxon(taxon)
-      /* First we find `taxon`'s parent */
-      .flatMap { _.parent }
+    countsMap.get(taxon)
+      /* First we find `taxon`'s ancestor ID (2 levels up) */
+      .flatMap { case (_, lineage) => lineage.reverse.drop(2).headOption }
       /* then we find out its count */
-      .flatMap { parentNode => countsMap.get(parentNode.id) }
+      .flatMap { ancestorId => countsMap.get(ancestorId) }
       /* and compare it with the total: it has to be more than `countsPercentageMinimum`% for `taxon` to pass */
-      .map { case (parentCount, _) =>
-        ((parentCount: Double) / totalCount) >= (countsPercentageMinimum / 100)
+      .map { case (ancestorCount, _) =>
+        ((ancestorCount: Double) / totalCount) >= (countsPercentageMinimum / 100)
       }
       .getOrElse(false)
   }
