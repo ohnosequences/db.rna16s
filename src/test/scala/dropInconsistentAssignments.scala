@@ -64,7 +64,7 @@ case class inconsistentAssignmentsFilter(
 
   /* This threshold determines minimum percentage of the taxon's parent's count compared to the total count */
   // FIXME: this constant needs a review
-  val countsPercentageMinimum: Double = 42.75 // % minimum
+  val countsPercentageMinimum: Double = 75.0 // % minimum
 
   /* This predicate determines whether to drop the taxon or to keep it */
   def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])], totalCount: Int): Taxon => Boolean = { taxon =>
