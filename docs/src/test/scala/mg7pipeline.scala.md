@@ -63,7 +63,7 @@ IMPORTANT: exclude the query from the results
 
   case object pipeline extends MG7Pipeline(parameters) {
 
-    val metadata: AnyArtifactMetadata = ohnosequences.generated.metadata.db_rna16s
+    val metadata: AnyArtifactMetadata = ohnosequences.db.generated.metadata.rna16s
     // TODO: we should probably have a restricted role for this:
     val iamRoleName: String = "era7-projects"
     val logsBucketName: String = "era7-projects-loquats"

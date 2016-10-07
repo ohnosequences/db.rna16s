@@ -22,36 +22,25 @@ import com.amazonaws.services.s3.transfer._
 import ohnosequences.blast.api._, outputFields._
 import com.github.tototoshi.csv._
 import better.files._
+import com.bio4j.titan.model.ncbiTaxonomy.TitanNCBITaxonomyGraph
 
-case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(
-  deps = clusteringResults, ncbiTaxonomyBundle
+case class inconsistentAssignmentsFilter(
+  val taxonomyGraph: TitanNCBITaxonomyGraph,
+  val assignmentsTable: File
 ) {
-
-  lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
 ```
 
 Mapping of sequence IDs to the list of their taxonomic assignments
 
 ```scala
-  lazy val referenceMap: Map[ID, Seq[Taxon]] = source.table.csvReader.iterator
-    .foldLeft(Map[ID, Seq[Taxon]]()) { (acc, row) =>
-      acc.updated(
-        row(0),
-        row(1).split(';').map(_.trim).toSeq
-      )
-    }
-```
-
-Mapping of sequence IDs to corresponding FASTA sequences
-
-```scala
-  lazy val id2fasta: Map[ID, Fasta] = source.fasta.stream
-    .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
-      acc.updated(
-        fasta.getV(header).id,
-        fasta
-      )
-    }
+  lazy val referenceMap: Map[ID, Seq[Taxon]] =
+    CSVReader.open(assignmentsTable.toJava)(csvUtils.UnixCSVFormat).iterator
+      .foldLeft(Map[ID, Seq[Taxon]]()) { (acc, row) =>
+        acc.updated(
+          row(0),
+          row(1).split(';').map(_.trim).toSeq
+        )
+      }
 
   def referenceTaxaFor(id: ID): Seq[Taxon] = referenceMap.get(id).getOrElse(Seq())
 ```
@@ -89,7 +78,7 @@ This threshold determines minimum percentage of the taxon's parent's count compa
 
 ```scala
   // FIXME: this constant needs a review
-  val countsPercentageMinimum: Double = 42.75 // % minimum
+  val countsPercentageMinimum: Double = 75.0 // % minimum
 
 ```
 
@@ -97,90 +86,94 @@ This predicate determines whether to drop the taxon or to keep it
 
 ```scala
   def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])], totalCount: Int): Taxon => Boolean = { taxon =>
+
+    countsMap.get(taxon)
 ```
 
-First we find `taxon` in the `countsMap` to get its lineage
+First we find `taxon`'s ancestor ID (2 levels up)
 
 ```scala
-    countsMap.get(taxon).flatMap { case (_, lineage) =>
-```
-
-and take its direct parent
-
-```scala
-      val ancestorOpt = lineage.drop(1).headOption
+      .flatMap { case (_, lineage) => lineage.reverse.drop(3).headOption }
 ```
 
 then we find out its count
 
 ```scala
-      ancestorOpt.flatMap(countsMap.get).map { case (ancestorCount, _) =>
+      .flatMap { ancestorId => countsMap.get(ancestorId) }
 ```
 
 and compare it with the total: it has to be more than `countsPercentageMinimum`% for `taxon` to pass
 
 ```scala
+      .map { case (ancestorCount, _) =>
         ((ancestorCount: Double) / totalCount) >= (countsPercentageMinimum / 100)
       }
-    }.getOrElse(false)
+      .getOrElse(false)
   }
 
-  def filterData(): Unit = {
-
-    clusteringResults.clusters.lines
-      .foreach { line =>
-```
-
-Sequence IDs of the cluster
-
-```scala
-        val ids: Seq[ID] = line.split(',')
-        // println(s"Processing cluster: ${ids.mkString(", ")}")
-
+  def partitionAssignments(cluster: Seq[ID]): Seq[(ID, Seq[Taxon], Seq[Taxon])] = {
 ```
 
 Corresponding taxa (to all sequence in the cluster together)
 
 ```scala
-        val taxa: Seq[Taxon] = ids.flatMap { id => referenceTaxaFor(id) }
-        // println(s"Corresponding taxa: ${taxa.mkString(", ")}")
-
+    val taxa: Seq[Taxon] = cluster.flatMap { id => referenceTaxaFor(id) }
+    val totalCount = taxa.length
 ```
 
 Counts (and lineages) for the taxa
 
 ```scala
-        val accumulatedCountsMap: Map[Taxon, (Int, Seq[Taxon])] = getAccumulatedCounts(taxa)
-        // println(s"Accumulated counts: ${accumulatedCountsMap.mkString(", ")}")
-
-        val totalCount = taxa.length
-        // println(s"Total count:        ${totalCount}")
-
+    val accumulatedCountsMap: Map[Taxon, (Int, Seq[Taxon])] = getAccumulatedCounts(taxa)
 ```
 
 Checking each assignment of the query sequence
 
 ```scala
-        ids.foreach { id =>
+    cluster.map { id =>
 
-          // println(s"\n  * ${id}")
+      val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(id).partition(
+        predicate(accumulatedCountsMap, totalCount)
+      )
+      // println(s"* ${id}")
+      // if (rejectedTaxa.nonEmpty) {
+      //   println(s"    - accepted: ${acceptedTaxa.mkString(", ")}")
+      //   println(s"    - rejected: ${rejectedTaxa.mkString(", ")}")
+      // }
 
-          val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(id).partition(
-            predicate(accumulatedCountsMap, totalCount)
-          )
-          // println(s"    - accepted: ${acceptedTaxa}")
-          // println(s"    - rejected: ${rejectedTaxa}")
-
-          writeOutput(
-            id,
-            acceptedTaxa,
-            rejectedTaxa,
-            id2fasta(id)
-          )
-        }
-      }
+      (id, acceptedTaxa, rejectedTaxa)
+    }
   }
 
+}
+
+case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(
+  deps = clusteringResults, ncbiTaxonomyBundle
+) {
+```
+
+Mapping of sequence IDs to corresponding FASTA sequences
+
+```scala
+  lazy val id2fasta: Map[ID, Fasta] = source.fasta.stream
+    .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
+      acc.updated(
+        fasta.getV(header).id,
+        fasta
+      )
+    }
+
+  lazy val filter = inconsistentAssignmentsFilter(
+    ncbiTaxonomyBundle.graph,
+    source.table.file
+  )
+
+  def filterData(): Unit = clusteringResults.clusters.lines
+    .flatMap { line => filter.partitionAssignments( line.split(',') ) }
+    .foreach { case (id, accepted, rejected) =>
+
+      writeOutput(id, accepted, rejected, id2fasta(id))
+    }
 }
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
@@ -188,6 +181,38 @@ case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlas
   ohnosequences.db.rna16s.dbType,
   ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
+```
+
+This object provides some context for further testing in REPL
+
+```scala
+case object inconsistentAssignmentsTest {
+
+  import ohnosequencesBundles.statika._
+  import com.thinkaurelius.titan.core.TitanFactory
+  import com.bio4j.titan.util.DefaultTitanGraph
+  import org.apache.commons.configuration.Configuration
+
+  // You need to download some files for testing
+  case object local {
+
+    lazy val configuration: Configuration = DefaultBio4jTitanConfig(file"data/in/bio4j-taxonomy-titandb".toJava)
+
+    lazy val taxonomyGraph =
+      new TitanNCBITaxonomyGraph(
+        new DefaultTitanGraph(TitanFactory.open(configuration))
+      )
+
+    val assignmentsTable = file"data/in/table.csv"
+  }
+
+  // val testCluster: Seq[ID] = file"data/in/URS00008E71FD-cluster.csv".lines.next.split(',')
+
+  val filter = inconsistentAssignmentsFilter(
+    local.taxonomyGraph,
+    local.assignmentsTable
+  )
+}
 
 ```
 
