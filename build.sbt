@@ -22,7 +22,7 @@ libraryDependencies ++= Seq(
 )
 
 // FIXME: update era7bio/defaults after loquat M9 release and remove this line:
-dependencyOverrides += "ohnosequences" %% "loquat" % "2.0.0-M8-11-g820cfe6"
+dependencyOverrides += "ohnosequences" %% "loquat" % "2.0.0-M8-11-g820cfe6" % Test
 
 dependencyOverrides ++= Set(
   "org.apache.httpcomponents" % "httpclient" % "4.5.1",
