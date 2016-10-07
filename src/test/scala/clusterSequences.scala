@@ -52,7 +52,7 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
     lazy val csv = CSVWriter.open(this.file.toJava, append = true)(csvUtils.UnixCSVFormat)
 
-    def upload() = {
+    def upload(): Unit = {
 
       val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
 
