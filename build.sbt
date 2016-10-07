@@ -9,8 +9,6 @@ resolvers := Seq(
   "Era7 private maven snapshots" at s3("private.snapshots.era7.com").toHttps(s3region.value.toString)
 ) ++ resolvers.value
 
-GithubRelease.repo := "ohnosequences/db.rna16s"
-
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
