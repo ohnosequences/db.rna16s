@@ -9,7 +9,7 @@ Here is the sequence of bundles you have to launch to repeat the whole DB genera
 
 3. `pick16SCandidates`
    - Recommended EC2 instance type: `r3.x4large`, it has over 100GB RAM (we need a lot for the GC, because we load _everything_ in memory; see [#47](https://github.com/ohnosequences/db.rna16s/issues/47))
-   - Approximate running time: several hours
+   - Approximate running time: ~30 minutes
    - Command:
 
       ```scala
@@ -19,7 +19,7 @@ Here is the sequence of bundles you have to launch to repeat the whole DB genera
 
 4. `dropRedundantAssignments`
    - Recommended EC2 instance type: `r3.large` or `m3.xlarge`
-   - Approximate run time: 10-20 minutes
+   - Approximate run time: ~5 minutes
    - Command:
 
      ```scala
@@ -51,7 +51,7 @@ Here is the sequence of bundles you have to launch to repeat the whole DB genera
 
 7. `dropInconsistentAssignments`:
    - Recommended EC2 instance type: `r3.large` or `m3.xlarge`
-   - Approximate run time: 10-20 minutes
+   - Approximate run time: ~10 minutes
    - Command:  
       ```scala
       ohnosequences.db.rna16s.test.rna16s.dropInconsistentAssignmentsAndGenerate(your_user.AWSUser)
