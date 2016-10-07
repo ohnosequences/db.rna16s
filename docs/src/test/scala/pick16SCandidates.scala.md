@@ -83,7 +83,7 @@ Sequences that satisfy this predicate (on themselves together with their annotat
 
 
 ```scala
-  private lazy val taxonomyGraph = ohnosequences.mg7.bio4j.taxonomyBundle.graph
+  private lazy val taxonomyGraph = ohnosequences.ncbitaxonomy.ncbiTaxonomyBundle.graph
 
   def rowPredicate(row: Row): Boolean = {
     val taxID = row.select(tax_id)
@@ -141,16 +141,18 @@ This predicate determines whether the *sequence* value is OK, and will be kept.
   // bundle to generate the DB (see the runBundles file in tests)
   def filterData(): Unit = {
 
-    val groupedRows: Stream[(String, Stream[Row])] =
-      source.table.tsvReader.iterator.toStream.group{ _.select(id) }
+    val groupedRows: Iterator[(String, Seq[Row])] =
+      source.table.tsvReader.iterator.contiguousGroupBy { _.select(id) }
 
-    (groupedRows zip source.fasta.stream) foreach { case ((commonID, rows), fasta) =>
+    val fastas: Iterator[FASTA.Value] = source.fasta.stream.toIterator
+
+    (groupedRows zip fastas) foreach { case ((commonID, rows), fasta) =>
 
       if (commonID != fasta.getV(header).id)
         sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
 
       val (acceptedRows, rejectedRows) =
-        if ( sequencePredicate(fasta.getV(sequence)) ) {
+        if ( sequencePredicate(fasta.get(sequence).value) ) {
 ```
 
 if the sequence is OK, we partition the rows based on the predicate
@@ -161,7 +163,7 @@ if the sequence is OK, we partition the rows based on the predicate
           (Seq[Row](), rows)
         }
 
-      val extendedID: String = s"${commonID}|lcl|${ohnosequences.db.rna16s.dbName}"
+      val extendedID: String = s"gnl|${ohnosequences.db.rna16s.dbName}|${commonID}"
 
       writeOutput(
         extendedID,
@@ -178,12 +180,14 @@ if the sequence is OK, we partition the rows based on the predicate
 
 
 
-[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
-[test/scala/runBundles.scala]: runBundles.scala.md
-[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
-[test/scala/compats.scala]: compats.scala.md
-[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
-[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
-[test/scala/releaseData.scala]: releaseData.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md
+[test/scala/clusterSequences.scala]: clusterSequences.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
+[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/package.scala]: package.scala.md
+[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/releaseData.scala]: releaseData.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md

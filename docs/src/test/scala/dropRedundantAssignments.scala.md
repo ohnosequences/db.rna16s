@@ -19,9 +19,6 @@ import better.files._
 
 case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)() {
 
-  type ID       = String
-  type Taxa     = String
-  type Fasta    = FASTA.Value
   type Eith[X]  = Either[X, X]
 ```
 
@@ -60,8 +57,8 @@ Mapping of sequence IDs to the list of their taxonomic assignments
     // id1 -> taxa1, taxa2, taxa3
     // id2 -> taxa2, taxa4
     // ...
-    val id2taxas: Map[ID, Seq[Taxa]] = source.table.csvReader.iterator
-      .foldLeft(Map[ID, Seq[Taxa]]()) { (acc, row) =>
+    val id2taxas: Map[ID, Seq[Taxon]] = source.table.csvReader.iterator
+      .foldLeft(Map[ID, Seq[Taxon]]()) { (acc, row) =>
         acc.updated(
           row(0),
           row(1).split(';').map(_.trim).toSeq
@@ -77,7 +74,7 @@ Transposed mapping of taxas to the sequence IDs that have this assignment
     // taxa3 -> id1
     // taxa4 -> id2
     // ...
-    val taxa2ids: Map[Taxa, Seq[ID]] = id2taxas.trans
+    val taxa2ids: Map[Taxon, Seq[ID]] = id2taxas.trans
 ```
 
 Now we arrange values of taxa2ids map to distinguish its ID _values_:
@@ -86,7 +83,7 @@ Lefts are contained in another ones, Rights are not contained
 
 ```scala
     // taxa2 -> Left(id1), Right(id2), Left(id3), ...
-    val taxa2partitionedIDs: Map[Taxa, Seq[Eith[ID]]] = taxa2ids.map { case (taxa, ids) =>
+    val taxa2partitionedIDs: Map[Taxon, Seq[Eith[ID]]] = taxa2ids.map { case (taxa, ids) =>
 
       val fastas: Seq[Fasta] = ids.map(id2fasta.apply)
 
@@ -107,7 +104,7 @@ Lefts are discarded assignments; Rights are accepted.
 
 ```scala
     // id1 -> Left(taxa1), Right(taxa2), ...
-    val id2partitionedTaxas: Map[ID, Seq[Eith[Taxa]]] = taxa2partitionedIDs.trans {
+    val id2partitionedTaxas: Map[ID, Seq[Eith[Taxon]]] = taxa2partitionedIDs.trans {
       case (taxa, Left(id)) => (Left(taxa), id)
       case (taxa, Right(id)) => (Right(taxa), id)
     }
@@ -118,8 +115,8 @@ And finally we just write the results
 ```scala
     id2partitionedTaxas.foreach { case (id, partTaxas) =>
 
-      val rejectedTaxas: Seq[Taxa] = partTaxas.collect { case Left(t) => t }
-      val acceptedTaxas: Seq[Taxa] = partTaxas.collect { case Right(t) => t }
+      val rejectedTaxas: Seq[Taxon] = partTaxas.collect { case Left(t) => t }
+      val acceptedTaxas: Seq[Taxon] = partTaxas.collect { case Right(t) => t }
 
       writeOutput(id, acceptedTaxas, rejectedTaxas, id2fasta(id))
     }
@@ -167,12 +164,14 @@ case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB
 
 
 
-[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
-[test/scala/runBundles.scala]: runBundles.scala.md
-[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
-[test/scala/compats.scala]: compats.scala.md
-[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
-[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
-[test/scala/releaseData.scala]: releaseData.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md
+[test/scala/clusterSequences.scala]: clusterSequences.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
+[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/package.scala]: package.scala.md
+[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/releaseData.scala]: releaseData.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md

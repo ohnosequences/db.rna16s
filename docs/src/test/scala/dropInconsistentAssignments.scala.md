@@ -1,66 +1,11 @@
 
 # Drop inconsistent assignments
 
-Here we want to drop "wrong", in the sense of *inconsistent*, assignments from our database. But, what is a wrong assignment? Let's see first an example:
+Here we want to drop *inconsistent* assignments from our database. The idea here is to determine it based on sequences equivalence classes (1) (the we got from the previous clustering step) and their assignments taxonomic similarity (2).
 
-## Example of a wrong assignment
+1. First we take the sequence clusters and for each of them (`C`) construct a common set of assignments (using the map we have from the previous steps): `Taxa(C)`.
 
-Let's consider the following fragment of the taxonomic tree:
-
-```
-tribeX
-├─ genusABC
-│  ├─ ...
-│  ...
-│  └─ subgenusABC
-│     ├─ speciesA
-│     │  ├─ subspeciesA1
-│     │  └─ subspeciesA2
-│     ├─ speciesB1
-│     ├─ speciesB2
-│     └─ speciesC
-...
-└─ ...
-   └─ ...
-      └─ speciesX
-```
-
-And a sequence with following taxonomic assignments:
-
-| ID   | Taxas                                |
-|:-----|:-------------------------------------|
-| seqA | subspeciesA1; subspeciesA2; speciesX |
-
-In this case `speciesX` is *likely* a wrong assignment, because it's completely *unrelated* with the other, more specific assignments. If we will leave it in the database, the LCA of these nodes will be `tribeX`, instead of `speciesA`.
-
-## The definition of wrong
-
-How could we detect something like the example before? if we have enough similar sequences in the database which are correctly assigned, we could
-
-1. calculate (by sequence similarity) to what this sequence gets assigned using all the other sequences as a reference
-2. see, for each of the original assignments, if they are "close" to the newly computed assignment; drop those which are "far" in the tree
-
-Continuing with the example before, we run MG7, and BLAST tells us that `seqA` is *very* similar to `seqB` and `seqC` with the following assignments:
-
-| ID   | Taxas                |
-|:-----|:---------------------|
-| seqB | speciesB1; speciesB2 |
-| seqC | speciesC             |
-
-We take their LCA which is `subgenusABC` and look at its parent: `genusABC`. Each of the `seqA`'s assignments has to be a descendant of `genusABC` and `speciesX`, obviously, is not, so we discard it:
-
-| ID   | Taxas                      |
-|:-----|:---------------------------|
-| seqA | subspeciesA1; subspeciesA2 |
-
-## How it works
-
-This step actually consists in two separate steps:
-
-1. We run MG7 with input the output from the drop redundant assignments step, and as reference database the same but the sequence we are using as query.
-2. For each sequence we check the relation of its assignments with the corresponding LCA that we've got from MG7. If some assignment is too far away from the LCA in the taxonomic tree, it is discarded. After this step the BLAST database is generated again.
-
-Almost all `99.8%` of the sequences from the drop redundant assignments step pass  this filter, because it's mostly about filtering out *wrong* assignments and there are not many sequences that get all assignments discarded.
+2. Then we consider each assignment `T` (from the old map) and decide wheter to drop it or to keep by comparing _its parent's_ cumulative count `Count(Parent(T))` with the total count (which is the size of `Taxa(C)`). If it's over some fixed threshold, we keep it, otherwise drop.
 
 
 ```scala
@@ -74,84 +19,168 @@ import ohnosequences.mg7._
 import ohnosequences.awstools.s3._
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.transfer._
+import ohnosequences.blast.api._, outputFields._
 import com.github.tototoshi.csv._
 import better.files._
 
-case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(deps = mg7results, ncbiTaxonomyBundle) {
+case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssignments)(
+  deps = clusteringResults, ncbiTaxonomyBundle
+) {
 
-  type ID     = String
-  type Taxa   = String
-  type Fasta  = FASTA.Value
+  lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
+```
 
-  private lazy val taxonomyGraph = ncbiTaxonomyBundle.graph
+Mapping of sequence IDs to the list of their taxonomic assignments
+
+```scala
+  lazy val referenceMap: Map[ID, Seq[Taxon]] = source.table.csvReader.iterator
+    .foldLeft(Map[ID, Seq[Taxon]]()) { (acc, row) =>
+      acc.updated(
+        row(0),
+        row(1).split(';').map(_.trim).toSeq
+      )
+    }
+```
+
+Mapping of sequence IDs to corresponding FASTA sequences
+
+```scala
+  lazy val id2fasta: Map[ID, Fasta] = source.fasta.stream
+    .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
+      acc.updated(
+        fasta.getV(header).id,
+        fasta
+      )
+    }
+
+  def referenceTaxaFor(id: ID): Seq[Taxon] = referenceMap.get(id).getOrElse(Seq())
+```
+
+This method for a given sequence of taxons (with repeats) returns their cumulative counts and lineages
+
+```scala
+  // TODO: this should be a piece of reusable code in MG7
+  def getAccumulatedCounts(taxa: Seq[Taxon]): Map[Taxon, (Int, Seq[Taxon])] = {
+    // NOTE: this mutable map is used in getLineage for memoization of the results that we get from the DB
+    val cacheMap: scala.collection.mutable.Map[Taxon, Taxa] = scala.collection.mutable.Map()
+```
+
+This method looks up the lineage in the cache or queries the DB and updates the cache
+
+```scala
+    def getLineage(id: Taxon): Taxa = cacheMap.get(id).getOrElse {
+      val lineage = taxonomyGraph.getTaxon(id)
+        .map{ _.ancestors }.getOrElse( Seq() )
+        .map{ _.id }
+      cacheMap.update(id, lineage)
+      lineage
+    }
+
+    val counter = loquats.countDataProcessing()
+
+    val directMap      = counter.directCounts(taxa, getLineage)
+    val accumulatedMap = counter.accumulatedCounts(directMap, getLineage)
+
+    accumulatedMap
+  }
+```
+
+This threshold determines minimum percentage of the taxon's parent's count compared to the total count
+
+```scala
+  // FIXME: this constant needs a review
+  val countsPercentageMinimum: Double = 42.75 // % minimum
+
+```
+
+This predicate determines whether to drop the taxon or to keep it
+
+```scala
+  def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])], totalCount: Int): Taxon => Boolean = { taxon =>
+```
+
+First we find `taxon` in the `countsMap` to get its lineage
+
+```scala
+    countsMap.get(taxon).flatMap { case (_, lineage) =>
+```
+
+and take its direct parent
+
+```scala
+      val ancestorOpt = lineage.drop(1).headOption
+```
+
+then we find out its count
+
+```scala
+      ancestorOpt.flatMap(countsMap.get).map { case (ancestorCount, _) =>
+```
+
+and compare it with the total: it has to be more than `countsPercentageMinimum`% for `taxon` to pass
+
+```scala
+        ((ancestorCount: Double) / totalCount) >= (countsPercentageMinimum / 100)
+      }
+    }.getOrElse(false)
+  }
 
   def filterData(): Unit = {
+
+    clusteringResults.clusters.lines
+      .foreach { line =>
 ```
 
-First we read what we've got from MG7
+Sequence IDs of the cluster
 
 ```scala
-    val id2mg7lca: Map[ID, Taxa] = mg7LCAfromFile(mg7results.lcaTable)
+        val ids: Seq[ID] = line.split(',')
+        // println(s"Processing cluster: ${ids.mkString(", ")}")
+
 ```
 
-Then we process the source table and compare assignments with LCA from MG7. We know that in the output of dropRedundantAssignments table and fasta IDs are synchronized, so we can just zip them.
+Corresponding taxa (to all sequence in the cluster together)
 
 ```scala
-    ( source.table.csvReader.iterator zip
-      source.fasta.stream.iterator
-    ).foreach {
+        val taxa: Seq[Taxon] = ids.flatMap { id => referenceTaxaFor(id) }
+        // println(s"Corresponding taxa: ${taxa.mkString(", ")}")
 
-      case (row, fasta) => {
-
-        val (id, taxas) = idTaxasFromRow(row)
-
-        id2mg7lca.get(id)
-          .flatMap(taxonomyGraph.getTaxon)
-          .flatMap(_.parent)
 ```
 
-
-Note that the previous filters guarantee that the mg7 LCA IDs *are* in the NCBI taxonomy graph; thus this option will be None if either
-
-1. this id is not in the MG7 lca output, so that this query sequence has no hits with anything but itself. In that case we need to consider its assignment correct, thus the base case of the fold.
-2. If the lca has no parent = is the root node, then we can already accept it: it will be in the lineage of every node
-
+Counts (and lineages) for the taxa
 
 ```scala
-          .fold( accept(id, taxas, fasta) ) {
-            lcaParent => {
+        val accumulatedCountsMap: Map[Taxon, (Int, Seq[Taxon])] = getAccumulatedCounts(taxa)
+        // println(s"Accumulated counts: ${accumulatedCountsMap.mkString(", ")}")
+
+        val totalCount = taxa.length
+        // println(s"Total count:        ${totalCount}")
+
 ```
 
-Here we discard those taxa whose lineage does **not** contain the *parent* of the lca assignment.
+Checking each assignment of the query sequence
 
 ```scala
-              val (acceptedTaxas, rejectedTaxas) =
-                taxas.partition { taxa => (taxonomyGraph getTaxon taxa).fold(false)( lcaParent isInLineageOf _ ) }
+        ids.foreach { id =>
 
-              writeOutput(id, acceptedTaxas, rejectedTaxas, fasta)
-            }
-          }
+          // println(s"\n  * ${id}")
+
+          val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(id).partition(
+            predicate(accumulatedCountsMap, totalCount)
+          )
+          // println(s"    - accepted: ${acceptedTaxa}")
+          // println(s"    - rejected: ${rejectedTaxa}")
+
+          writeOutput(
+            id,
+            acceptedTaxa,
+            rejectedTaxa,
+            id2fasta(id)
+          )
+        }
       }
-    }
   }
 
-  val mg7LCAfromFile: File => Map[ID,Taxa] =
-    file =>
-      csv.Reader(csv.assignment.columns)(file)
-        .rows.map { row => ( row select csv.columns.ReadID ) -> ( row select csv.columns.Taxa ) }
-        .toMap
-
-  val idTaxasFromRow: Seq[String] => (ID,Seq[Taxa]) =
-    row => ( row(0), row(1).split(';').map(_.trim).toSeq )
-
-  val accept: (ID, Seq[Taxa], Fasta) => Unit =
-    (id, taxas, fasta) => writeOutput(id, taxas, Seq(), fasta)
-
-  implicit final class nodeOps(val node: TitanNode) extends AnyVal {
-
-    def isInLineageOf(other: TitanNode): Boolean =
-      other.ancestors.exists { _.id == node.id }
-  }
 }
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
@@ -159,39 +188,20 @@ case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlas
   ohnosequences.db.rna16s.dbType,
   ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
-```
-
-This bundle just downloads the output of the MG7 run of the results of the drop redundant assignments step
-
-```scala
-case object mg7results extends Bundle() {
-
-  lazy val s3location: S3Object = referenceDBPipeline.outputS3Folder("merge") / "refdb.lca.csv"
-  lazy val lcaTable: File = File(s3location.key)
-
-  def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
-
-    transferManager.download(
-      s3location.bucket, s3location.key,
-      lcaTable.toJava
-    ).waitForCompletion
-
-    transferManager.shutdownNow()
-  }
-}
 
 ```
 
 
 
 
-[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
-[test/scala/runBundles.scala]: runBundles.scala.md
-[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
-[test/scala/compats.scala]: compats.scala.md
-[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
-[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
-[test/scala/releaseData.scala]: releaseData.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md
+[test/scala/clusterSequences.scala]: clusterSequences.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
+[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/package.scala]: package.scala.md
+[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/releaseData.scala]: releaseData.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md

@@ -17,9 +17,6 @@ import better.files._
 
 case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)() {
 
-  type ID       = String
-  type Taxa     = String
-  type Fasta    = FASTA.Value
   type Eith[X]  = Either[X, X]
 
   /*
@@ -49,8 +46,8 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
     // id1 -> taxa1, taxa2, taxa3
     // id2 -> taxa2, taxa4
     // ...
-    val id2taxas: Map[ID, Seq[Taxa]] = source.table.csvReader.iterator
-      .foldLeft(Map[ID, Seq[Taxa]]()) { (acc, row) =>
+    val id2taxas: Map[ID, Seq[Taxon]] = source.table.csvReader.iterator
+      .foldLeft(Map[ID, Seq[Taxon]]()) { (acc, row) =>
         acc.updated(
           row(0),
           row(1).split(';').map(_.trim).toSeq
@@ -63,13 +60,13 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
     // taxa3 -> id1
     // taxa4 -> id2
     // ...
-    val taxa2ids: Map[Taxa, Seq[ID]] = id2taxas.trans
+    val taxa2ids: Map[Taxon, Seq[ID]] = id2taxas.trans
 
     /* Now we arrange values of taxa2ids map to distinguish its ID _values_:
        we get corresponding fastas and _partition_ those that are contained in others.
        Lefts are contained in another ones, Rights are not contained */
     // taxa2 -> Left(id1), Right(id2), Left(id3), ...
-    val taxa2partitionedIDs: Map[Taxa, Seq[Eith[ID]]] = taxa2ids.map { case (taxa, ids) =>
+    val taxa2partitionedIDs: Map[Taxon, Seq[Eith[ID]]] = taxa2ids.map { case (taxa, ids) =>
 
       val fastas: Seq[Fasta] = ids.map(id2fasta.apply)
 
@@ -87,7 +84,7 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
        between sequence IDs and the taxonomic assignments:
        Lefts are discarded assignments; Rights are accepted. */
     // id1 -> Left(taxa1), Right(taxa2), ...
-    val id2partitionedTaxas: Map[ID, Seq[Eith[Taxa]]] = taxa2partitionedIDs.trans {
+    val id2partitionedTaxas: Map[ID, Seq[Eith[Taxon]]] = taxa2partitionedIDs.trans {
       case (taxa, Left(id)) => (Left(taxa), id)
       case (taxa, Right(id)) => (Right(taxa), id)
     }
@@ -95,8 +92,8 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
     /* And finally we just write the results */
     id2partitionedTaxas.foreach { case (id, partTaxas) =>
 
-      val rejectedTaxas: Seq[Taxa] = partTaxas.collect { case Left(t) => t }
-      val acceptedTaxas: Seq[Taxa] = partTaxas.collect { case Right(t) => t }
+      val rejectedTaxas: Seq[Taxon] = partTaxas.collect { case Left(t) => t }
+      val acceptedTaxas: Seq[Taxon] = partTaxas.collect { case Right(t) => t }
 
       writeOutput(id, acceptedTaxas, rejectedTaxas, id2fasta(id))
     }

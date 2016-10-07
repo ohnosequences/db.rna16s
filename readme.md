@@ -16,11 +16,12 @@ All data comes from the latest [RNACentral][RNACentral] release, the most compre
 
 We can divide this into three steps:
 
-1. **Pick 16S candidate sequences** take all sequences which contain the full sequence of a 16S gene
-2. **Drop redundant assignments and sequences** if a sequence `S` has an assignment to taxon `A`, and a sequence `s` which is a subsequence of `S` has the same assignment, we drop this assignment from `s`; sequences with no assignments left are dropped
-3. **Drop inconsistent assignments** run MG7 with both input and reference the output of 2, and drop the original assignments which are far from the one obtained through MG7
+1. **Pick 16S candidate sequences**: take all sequences which contain the full sequence of a 16S gene
+2. **Drop redundant assignments and sequences**: if a sequence `S` has an assignment to taxon `A`, and a sequence `s` which is a subsequence of `S` has the same assignment, we drop this assignment from `s`; sequences with no assignments left are dropped
+3. **Cluster sequences**: run MG7 with both input and reference the output of the step 2 and split all sequences on equivalence classes based on their BLAST-similarity
+4. **Drop inconsistent assignments**: filter out those assignments from the step 2 that appear to be outliers in the corresponding similarity-clusters from the step 3
 
-For more details read the corresponding [code documentation][code docs].
+For more details read the corresponding [code documentation](docs/src/test/scala/).
 
 ## Database files and formats
 
@@ -29,7 +30,7 @@ The output of each step is in S3, at `s3://resources.ohnosequences.com/ohnoseque
 
 ``` shell
 <step>/
-├── blastdb/                       # BLAST db files
+├── blastdb/                      # BLAST db files
 │   └── ohnosequences.db.rna16s.fasta.*
 ├── output/
 │   ├── <step>.csv                # assignments
@@ -42,21 +43,21 @@ The output of each step is in S3, at `s3://resources.ohnosequences.com/ohnoseque
 All csv files are *comma-separated* files with *Unix line endings* `\n`. Their structure:
 
 1. **Assignments** `output/<step>.csv` has **2 columns**:
-    1. Extended sequence ID, with format `<RNAcentral_ID>|lcl|ohnosequences.db.rna16s`
+    1. Extended sequence ID, with format `gnl|ohnosequences.db.rna16s|<RNAcentral_ID>`
     2. List of taxonomic assignments IDs, separated by `;`
 
     Sample row:
     ``` csv
-    URS0123213|lcl|ohnosequences.db.rna16s, 1234;45123;43131
+    gnl|ohnosequences.db.rna16s|URS0123213, 1234;45123;43131
     ```
 2. **Summary** `summary/<step>.csv` has **3 columns**:
-    1. Extended sequence ID, with format `<RNAcentral_ID>|lcl|ohnosequences.db.rna16s`
+    1. Extended sequence ID, with format `gnl|ohnosequences.db.rna16s|<RNAcentral_ID>`
     2. List of taxonomic assignments IDs, separated by `;`
     3. List of taxonomic assignments IDs **dropped** by this step, separated by `;`
 
     Sample row:
     ``` csv
-    URS0123213|lcl|ohnosequences.db.rna16s, 1234;3424, 45123;43131
+    gnl|ohnosequences.db.rna16s|URS0123213, 1234;3424, 45123;43131
     ```
 
 ## Usage
@@ -71,11 +72,11 @@ Add this library as a dependency in your `build.sbt`:
 libraryDependencies += "ohnosequences" %% "db-rna16s" % "<version>"
 ```
 
-Then in the code you can refer to various constants from the `ohnosequences.db.rna16s` namespace. The most useful are defined as shortcuts in the `release` object:
+Then in the code you can refer to various constants from the `ohnosequences.db.rna16s` namespace. The most useful are defined as shortcuts in the `data` object:
 
-- `release.fastaS3` is the S3 address of FASTA file with the database sequences
-- `release.id2taxasS3` is the S3 address of the assignments table
-- `release.blastDBS3` is the S3 address of the BLAST DB folder (S3 prefix)
+- `data.fastaS3` is the S3 address of FASTA file with the database sequences
+- `data.id2taxasS3` is the S3 address of the assignments table
+- `data.blastDBS3` is the S3 address of the BLAST DB folder (S3 prefix)
 
 You can then use any S3 API to get these files and do whatever you feel like with them.
 
@@ -99,4 +100,3 @@ Then you can use it in your `MG7Parameters` configuration as one of the `referen
 [RNACentral]: https://rnacentral.org
 [RNACentral data sources]: https://rnacentral.org/expert-databases
 [MG7]: https://github.com/ohnosequences/mg7
-[code docs]: docs/src/test/scala/

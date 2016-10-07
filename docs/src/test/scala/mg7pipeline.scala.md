@@ -2,7 +2,7 @@
 ```scala
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.mg7._, loquats._, dataflows._
+import ohnosequences.mg7._, loquats._
 import ohnosequences.datasets._, illumina._
 import ohnosequences.cosas._, types._, klists._
 import ohnosequences.loquat._, utils._
@@ -19,7 +19,7 @@ import com.amazonaws.auth._, profile._
 
 import better.files._
 
-case object referenceDBPipeline {
+case object mg7 {
 ```
 
 As the reference database we use the one generated from dropRedundantAssignments
@@ -30,20 +30,8 @@ As the reference database we use the one generated from dropRedundantAssignments
     dropRedundantAssignmentsAndGenerate.s3,
     dropRedundantAssignments.output.table.s3
   )
-```
 
-As input we use the FASTA accepted by dropRedundantAssignments
-
-```scala
-  val splitInputs: Map[ID, S3Resource] = Map(
-    "refdb" -> S3Resource(ohnosequences.db.rna16s.test.dropRedundantAssignments.output.fasta.s3)
-  )
-
-  def outputS3Folder(step: String): S3Folder = ohnosequences.db.rna16s.s3prefix / "mg7" / step /
-
-  case object mg7parameters extends MG7Parameters(
-    (_, step) => outputS3Folder(step),
-    readsLength = bp250, // NOTE: this does not have any influence
+  case object parameters extends MG7Parameters(
     splitChunkSize = 100,
     splitInputFormat = FastaInput,
     blastCommand = blastn,
@@ -57,8 +45,7 @@ As input we use the FASTA accepted by dropRedundantAssignments
       *[AnyDenotation]
     ).value,
     referenceDBs = Set(rna16sRefDB)
-  )
-  {
+  ) {
 ```
 
 The only basic thing we require is at least 99% **query** coverage.
@@ -74,96 +61,58 @@ IMPORTANT: exclude the query from the results
       ( row.select(outputFields.qseqid) != row.select(outputFields.sseqid) )
   }
 
-  lazy val dataflow = NoFlashDataflow(mg7parameters)(splitInputs)
-```
-
-This class is a default loquat configuration for this pipeline
-
-```scala
-  abstract class RefDBLoquatConfig(
-    val loquatName: String,
-    val dataMappings: List[AnyDataMapping],
-    val workersNumber: Int = 1
-  ) extends AnyLoquatConfig {
+  case object pipeline extends MG7Pipeline(parameters) {
 
     val metadata: AnyArtifactMetadata = ohnosequences.generated.metadata.db_rna16s
-
     // TODO: we should probably have a restricted role for this:
     val iamRoleName: String = "era7-projects"
     val logsBucketName: String = "era7-projects-loquats"
-
-    val defaultAMI = AmazonLinuxAMI(Ireland, HVM, InstanceStore)
-
-    val managerConfig: AnyManagerConfig = ManagerConfig(
-      InstanceSpecs(defaultAMI, m3.medium),
-      purchaseModel = Spot(maxPrice = Some(0.01))
-    )
-
-    val workersConfig: AnyWorkersConfig = WorkersConfig(
-      instanceSpecs = InstanceSpecs(defaultAMI, m3.medium),
-      purchaseModel = Spot(maxPrice = Some(0.02)),
-      groupSize = AutoScalingGroupSize(0, workersNumber, workersNumber*2)
-    )
-
-    val terminationConfig = TerminationConfig(
-      terminateAfterInitialDataMappings = true
-    )
-  }
 ```
 
-
-### mg7 steps
-
-These objects define the mg7 pipeline steps. You need to run them in the order they are written here.
-
-For running them, go to the scala console and run
-
-```
-ohnosequences.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<yourUser>)
-```
-
+As input we use the FASTA accepted by dropRedundantAssignments
 
 ```scala
-  case object splitConfig extends RefDBLoquatConfig("split", dataflow.splitDataMappings)
-  case object splitLoquat extends Loquat(splitConfig, splitDataProcessing(mg7parameters))
-
-  case object blastConfig extends RefDBLoquatConfig("blast", dataflow.blastDataMappings, 100) {
-    // NOTE: we don't want to check input objects here because they are too many and
-    //   checking them one by one will take too long and likely fail
-    override val checkInputObjects = false
-
-    override val workersConfig: AnyWorkersConfig = WorkersConfig(
-      instanceSpecs = InstanceSpecs(defaultAMI, c3.large),
-      purchaseModel = Spot(maxPrice = Some(0.03)),
-      groupSize = AutoScalingGroupSize(0, workersNumber, workersNumber)
+    lazy val inputSamples: Map[ID, S3Resource] = Map(
+      "refdb" -> S3Resource(ohnosequences.db.rna16s.test.dropRedundantAssignments.output.fasta.s3)
     )
+
+    lazy val outputS3Folder: (SampleID, StepName) => S3Folder = { (_, stepName) =>
+      ohnosequences.db.rna16s.s3prefix / "mg7" / stepName /
+    }
+
+    val splitConfig  = SplitConfig(1)
+    val blastConfig  = BlastConfig(100)
+    // these steps are not needed:
+    val assignConfig = AssignConfig(10)
+    val mergeConfig  = MergeConfig(1)
+    val countConfig  = CountConfig(1)
   }
-  case object blastLoquat extends Loquat(blastConfig, blastDataProcessing(mg7parameters))
+}
+```
 
+This bundle just downloads the output of the MG7 Blast step and merges the chunks
 
-  case object assignConfig extends RefDBLoquatConfig("assign", dataflow.assignDataMappings, 10) {
-    override val checkInputObjects = false
+```scala
+case object mg7BlastResults extends Bundle() {
 
-    override lazy val amiEnv = amznAMIEnv(ami, javaHeap = 10)
+  lazy val s3location: S3Folder = mg7.pipeline.outputS3Folder("", "blast") / "chunks" /
 
-    override val workersConfig: AnyWorkersConfig = WorkersConfig(
-      instanceSpecs = InstanceSpecs(defaultAMI, m3.xlarge),
-      purchaseModel = Spot(maxPrice = Some(0.03)),
-      groupSize = AutoScalingGroupSize(0, workersNumber, workersNumber)
-    )
+  lazy val blastChunks: File = File(s3location.key)
+  lazy val blastResult: File = (blastChunks.parent / "blastResult.csv").createIfNotExists()
+
+  def instructions: AnyInstructions = LazyTry {
+    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+
+    transferManager.downloadDirectory(
+      s3location.bucket, s3location.key,
+      File(".").toJava
+    ).waitForCompletion
+
+    transferManager.shutdownNow()
+  } -&- LazyTry {
+
+    loquats.mergeDataProcessing().mergeChunks(blastChunks, blastResult)
   }
-  case object assignLoquat extends Loquat(assignConfig, assignDataProcessing(mg7parameters))
-
-  case object mergeConfig extends RefDBLoquatConfig("merge", dataflow.mergeDataMappings) {
-    override val skipEmptyResults = false
-
-    override val workersConfig: AnyWorkersConfig = WorkersConfig(
-      instanceSpecs = InstanceSpecs(defaultAMI, c3.large),
-      purchaseModel = Spot(maxPrice = Some(0.03)),
-      groupSize = AutoScalingGroupSize(0, workersNumber, workersNumber*2)
-    )
-  }
-  case object mergeLoquat extends Loquat(mergeConfig, mergeDataProcessing)
 }
 
 ```
@@ -171,12 +120,14 @@ ohnosequences.db.rna16s.referenceDBPipeline.<name>Loquat.deploy(era7.defaults.<y
 
 
 
-[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
-[test/scala/runBundles.scala]: runBundles.scala.md
-[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
-[test/scala/compats.scala]: compats.scala.md
-[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
-[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
-[test/scala/releaseData.scala]: releaseData.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
 [main/scala/release.scala]: ../../main/scala/release.scala.md
+[test/scala/clusterSequences.scala]: clusterSequences.scala.md
+[test/scala/compats.scala]: compats.scala.md
+[test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
+[test/scala/dropRedundantAssignments.scala]: dropRedundantAssignments.scala.md
+[test/scala/mg7pipeline.scala]: mg7pipeline.scala.md
+[test/scala/package.scala]: package.scala.md
+[test/scala/pick16SCandidates.scala]: pick16SCandidates.scala.md
+[test/scala/releaseData.scala]: releaseData.scala.md
+[test/scala/runBundles.scala]: runBundles.scala.md
