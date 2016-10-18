@@ -97,20 +97,17 @@ case class inconsistentAssignmentsFilter(
         predicate(accumulatedCountsMap, totalCount)
       )
 
-      /* Collecting all ancestor of accepted taxa together */
-      val ancestors: Set[Taxon] = acceptedTaxa.flatMap { taxon =>
-
+      /* Among previously rejected we pick those that are descendants of the accepted taxa and keep them too */
+      val (acceptedDescendants, rejectedRest) = rejectedTaxa.partition { taxon =>
         accumulatedCountsMap.get(taxon)
           .map { case (_, lineage) =>
-            lineage.toSet
+            // at least one ancestor is among accepted ones:
+            (lineage.toSet intersect acceptedTaxa).nonEmpty
           }
-          .getOrElse(Set())
+          .getOrElse(false)
       }
 
-      /* Among previously rejected we pick those that are ancestors of the accepted taxa and keep them too */
-      val (acceptedAncestors, rejectedUnrelated) = rejectedTaxa.partition(ancestors.contains)
-
-      (id, acceptedTaxa ++ acceptedAncestors, rejectedUnrelated)
+      (id, acceptedTaxa ++ acceptedDescendants, rejectedRest)
     }
   }
 
