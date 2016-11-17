@@ -73,6 +73,8 @@ case object pick16SCandidates extends FilterData(
 
     /* - are annotated as rRNA */
     row.select(rna_type).contains(ribosomalRNAType) &&
+    /* - are *not* from the SILVA database */
+    ( row.select(db).trim.toLowerCase != "silva" )  &&
     /* - their taxonomy association is *not* one of those in `uninformativeTaxIDs` */
     ( ! uninformativeTaxIDs.contains(taxID) )       &&
     {
