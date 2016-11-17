@@ -26,27 +26,28 @@ case class inconsistentAssignmentsFilter(
   val taxonomyGraph: TitanNCBITaxonomyGraph,
   val assignmentsTable: File
 ) {
+  type Lineage = Seq[Taxon]
 
   /* Mapping of sequence IDs to the list of their taxonomic assignments */
-  lazy val referenceMap: Map[ID, Seq[Taxon]] =
+  lazy val referenceMap: Map[ID, Set[Taxon]] =
     CSVReader.open(assignmentsTable.toJava)(csvUtils.UnixCSVFormat).iterator
-      .foldLeft(Map[ID, Seq[Taxon]]()) { (acc, row) =>
+      .foldLeft(Map[ID, Set[Taxon]]()) { (acc, row) =>
         acc.updated(
           row(0),
-          row(1).split(';').map(_.trim).toSeq
+          row(1).split(';').map(_.trim).toSet
         )
       }
 
-  def referenceTaxaFor(id: ID): Seq[Taxon] = referenceMap.get(id).getOrElse(Seq())
+  def referenceTaxaFor(id: ID): Set[Taxon] = referenceMap.get(id).getOrElse(Set())
 
   /* This method for a given sequence of taxons (with repeats) returns their cumulative counts and lineages */
   // TODO: this should be a piece of reusable code in MG7
-  def getAccumulatedCounts(taxa: Seq[Taxon]): Map[Taxon, (Int, Seq[Taxon])] = {
+  def getAccumulatedCounts(taxa: Seq[Taxon]): Map[Taxon, (Int, Lineage)] = {
     // NOTE: this mutable map is used in getLineage for memoization of the results that we get from the DB
-    val cacheMap: scala.collection.mutable.Map[Taxon, Taxa] = scala.collection.mutable.Map()
+    val cacheMap: scala.collection.mutable.Map[Taxon, Lineage] = scala.collection.mutable.Map()
 
     /* This method looks up the lineage in the cache or queries the DB and updates the cache */
-    def getLineage(id: Taxon): Taxa = cacheMap.get(id).getOrElse {
+    def getLineage(id: Taxon): Lineage = cacheMap.get(id).getOrElse {
       val lineage = taxonomyGraph.getTaxon(id)
         .map{ _.ancestors }.getOrElse( Seq() )
         .map{ _.id }
@@ -63,11 +64,10 @@ case class inconsistentAssignmentsFilter(
   }
 
   /* This threshold determines minimum percentage of the taxon's parent's count compared to the total count */
-  // FIXME: this constant needs a review
-  val countsPercentageMinimum: Double = 75.0 // % minimum
+  val countsPercentageMinimum: Double = 0.75 // 75% minimum
 
   /* This predicate determines whether to drop the taxon or to keep it */
-  def predicate(countsMap: Map[Taxon, (Int, Seq[Taxon])], totalCount: Int): Taxon => Boolean = { taxon =>
+  def predicate(countsMap: Map[Taxon, (Int, Lineage)], totalCount: Int): Taxon => Boolean = { taxon =>
 
     countsMap.get(taxon)
       /* First we find `taxon`'s ancestor ID (2 levels up) */
@@ -76,19 +76,19 @@ case class inconsistentAssignmentsFilter(
       .flatMap { ancestorId => countsMap.get(ancestorId) }
       /* and compare it with the total: it has to be more than `countsPercentageMinimum`% for `taxon` to pass */
       .map { case (ancestorCount, _) =>
-        ((ancestorCount: Double) / totalCount) >= (countsPercentageMinimum / 100)
+        ((ancestorCount: Double) / totalCount) >= countsPercentageMinimum
       }
       .getOrElse(false)
   }
 
-  def partitionAssignments(cluster: Seq[ID]): Seq[(ID, Seq[Taxon], Seq[Taxon])] = {
+  def partitionAssignments(cluster: Seq[ID]): Seq[(ID, Set[Taxon], Set[Taxon])] = {
 
     /* Corresponding taxa (to all sequence in the cluster together) */
     val taxa: Seq[Taxon] = cluster.flatMap { id => referenceTaxaFor(id) }
     val totalCount = taxa.length
 
     /* Counts (and lineages) for the taxa */
-    val accumulatedCountsMap: Map[Taxon, (Int, Seq[Taxon])] = getAccumulatedCounts(taxa)
+    val accumulatedCountsMap: Map[Taxon, (Int, Lineage)] = getAccumulatedCounts(taxa)
 
     /* Checking each assignment of the query sequence */
     cluster.map { id =>
@@ -96,13 +96,21 @@ case class inconsistentAssignmentsFilter(
       val (acceptedTaxa, rejectedTaxa) = referenceTaxaFor(id).partition(
         predicate(accumulatedCountsMap, totalCount)
       )
-      // println(s"* ${id}")
-      // if (rejectedTaxa.nonEmpty) {
-      //   println(s"    - accepted: ${acceptedTaxa.mkString(", ")}")
-      //   println(s"    - rejected: ${rejectedTaxa.mkString(", ")}")
-      // }
 
-      (id, acceptedTaxa, rejectedTaxa)
+      /* Collecting all ancestor of accepted taxa together */
+      val ancestors: Set[Taxon] = acceptedTaxa.flatMap { taxon =>
+
+        accumulatedCountsMap.get(taxon)
+          .map { case (_, lineage) =>
+            lineage.toSet
+          }
+          .getOrElse(Set())
+      }
+
+      /* Among previously rejected we pick those that are ancestors of the accepted taxa and keep them too */
+      val (acceptedAncestors, rejectedUnrelated) = rejectedTaxa.partition(ancestors.contains)
+
+      (id, acceptedTaxa ++ acceptedAncestors, rejectedUnrelated)
     }
   }
 
@@ -130,7 +138,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
     .flatMap { line => filter.partitionAssignments( line.split(',') ) }
     .foreach { case (id, accepted, rejected) =>
 
-      writeOutput(id, accepted, rejected, id2fasta(id))
+      writeOutput(id, accepted.toSeq, rejected.toSeq, id2fasta(id))
     }
 }
 
