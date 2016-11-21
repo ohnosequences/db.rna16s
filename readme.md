@@ -103,6 +103,6 @@ Then you can use it in your `MG7Parameters` configuration as one of the `referen
 
 ## License
 
-The *database* **db.rna16s** is made available under the Open Database License: http://opendatacommons.org/licenses/odbl/1.0/. The **contents** are available under its respective licenses. As far as we can tell all data included in **db.rna16s** could be considered free for any use; do note that sequences and annotations coming from SILVA, which has a restrictive license, are excluded from db.rna16s.
+The *database* **db.rna16s** is made available under the Open Database Attribution license: http://opendatacommons.org/licenses/by/1.0/. The **contents** are available under their respective licenses. As far as we can tell all data included in **db.rna16s** could be considered free for any use; do note that sequences and annotations coming from SILVA, which has a restrictive license, are excluded from db.rna16s.
 
 See the [open data commons FAQ](http://opendatacommons.org/faq/licenses/#db-versus-contents) for more on this distinction between database and contents.
