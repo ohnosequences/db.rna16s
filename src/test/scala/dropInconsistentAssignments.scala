@@ -24,7 +24,11 @@ import com.bio4j.titan.model.ncbiTaxonomy.TitanNCBITaxonomyGraph
 
 case class inconsistentAssignmentsFilter(
   val taxonomyGraph: TitanNCBITaxonomyGraph,
-  val assignmentsTable: File
+  val assignmentsTable: File,
+  /* This threshold determines minimum ratio of the taxon's parent's count compared to the total count */
+  val minimumRatio: Double = 0.75 // 75%
+  /* This determines how many levels up we're going to take the ancestor to check the counts ratio */
+  val ancestryLevel: Int = 2 // grandparent
 ) {
   type Lineage = Seq[Taxon]
 
@@ -63,20 +67,17 @@ case class inconsistentAssignmentsFilter(
     accumulatedMap
   }
 
-  /* This threshold determines minimum percentage of the taxon's parent's count compared to the total count */
-  val countsPercentageMinimum: Double = 0.75 // 75% minimum
-
   /* This predicate determines whether to drop the taxon or to keep it */
   def predicate(countsMap: Map[Taxon, (Int, Lineage)], totalCount: Int): Taxon => Boolean = { taxon =>
 
     countsMap.get(taxon)
-      /* First we find `taxon`'s ancestor ID (2 levels up) */
-      .flatMap { case (_, lineage) => lineage.reverse.drop(3).headOption }
+      /* First we find `taxon`'s ancestor ID */
+      .flatMap { case (_, lineage) => lineage.reverse.drop(ancestryLevel + 1).headOption }
       /* then we find out its count */
       .flatMap { ancestorId => countsMap.get(ancestorId) }
-      /* and compare it with the total: it has to be more than `countsPercentageMinimum`% for `taxon` to pass */
+      /* and compare it with the total: it has to be more than `minimumRatio` for `taxon` to pass */
       .map { case (ancestorCount, _) =>
-        ((ancestorCount: Double) / totalCount) >= countsPercentageMinimum
+        ((ancestorCount: Double) / totalCount) >= minimumRatio
       }
       .getOrElse(false)
   }
