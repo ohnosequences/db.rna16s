@@ -34,7 +34,7 @@ generateStatikaMetadataIn(Compile)
 // NOTE should be reestablished
 wartremoverErrors in (Test, compile) := Seq()
 
-mergeStrategy in assembly ~= { old => {
+assemblyMergeStrategy in assembly ~= { old => {
     case "log4j.properties"                       => MergeStrategy.filterDistinctLines
     case PathList("org", "apache", "commons", _*) => MergeStrategy.first
     case x                                        => old(x)
