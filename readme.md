@@ -97,6 +97,16 @@ case object rna16sRefDB extends ReferenceDB(
 
 Then you can use it in your `MG7Parameters` configuration as one of the `referenceDBs`.
 
+## License
+
+- The *code* which generates the database is licensed under the **[AGPL v3][AGPLv3]** license
+- The *database* itself is made available under the **[ODbL 1.0][ODbLv1]** license.
+- The database *contents* are available under their respective licenses. As far as we can tell all data included in *db.rna16s* could be considered **free** for any use; do note that sequences and annotations coming from SILVA, which has a restrictive license, are excluded from *db.rna16s*.
+
+See the [open data commons FAQ](http://opendatacommons.org/faq/licenses/#db-versus-contents) for more on this distinction between database and contents.
+
 [RNACentral]: https://rnacentral.org
 [RNACentral data sources]: https://rnacentral.org/expert-databases
 [MG7]: https://github.com/ohnosequences/mg7
+[AGPLv3]: https://www.gnu.org/licenses/agpl-3.0.en.html
+[ODbLv1]: http://opendatacommons.org/licenses/odbl/1.0/
