@@ -101,7 +101,7 @@ Then you can use it in your `MG7Parameters` configuration as one of the `referen
 
 - The *code* which generates the database is licensed under the **[AGPL v3][AGPLv3]** license
 - The *database* itself is made available under the **[ODbL 1.0][ODbLv1]** license.
-- The database *contents* are available under their respective licenses. As far as we can tell all data included in **db.rna16s** could be considered free for any use; do note that sequences and annotations coming from SILVA, which has a restrictive license, are excluded from db.rna16s.
+- The database *contents* are available under their respective licenses. As far as we can tell all data included in *db.rna16s* could be considered **free** for any use; do note that sequences and annotations coming from SILVA, which has a restrictive license, are excluded from *db.rna16s*.
 
 See the [open data commons FAQ](http://opendatacommons.org/faq/licenses/#db-versus-contents) for more on this distinction between database and contents.
 
