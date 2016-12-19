@@ -26,7 +26,7 @@ case class inconsistentAssignmentsFilter(
   val taxonomyGraph: TitanNCBITaxonomyGraph,
   val assignmentsTable: File,
   /* This threshold determines minimum ratio of the taxon's parent's count compared to the total count */
-  val minimumRatio: Double = 0.75 // 75%
+  val minimumRatio: Double = 0.75, // 75%
   /* This determines how many levels up we're going to take the ancestor to check the counts ratio */
   val ancestryLevel: Int = 2 // grandparent
 ) {

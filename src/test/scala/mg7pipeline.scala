@@ -83,7 +83,7 @@ case object mg7BlastResults extends Bundle() {
   lazy val blastResult: File = (blastChunks.parent / "blastResult.csv").createIfNotExists()
 
   def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
     transferManager.downloadDirectory(
       s3location.bucket, s3location.key,
