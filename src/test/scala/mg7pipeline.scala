@@ -7,11 +7,7 @@ import ohnosequences.loquat._, utils._
 import ohnosequences.statika._, aws._
 import ohnosequences.blast.api._
 
-import ohnosequences.awstools.ec2._, InstanceType._
-import ohnosequences.awstools.s3._
-import ohnosequences.awstools.autoscaling._
-import ohnosequences.awstools.regions.Region._
-
+import ohnosequences.awstools._, regions._, ec2._, s3._, autoscaling._
 import com.amazonaws.services.s3.transfer._
 import com.amazonaws.auth._, profile._
 
@@ -54,7 +50,7 @@ case object mg7 {
     val metadata: AnyArtifactMetadata = ohnosequences.db.generated.metadata.rna16s
     // TODO: we should probably have a restricted role for this:
     val iamRoleName: String = "era7-projects"
-    val logsBucketName: String = "era7-projects-loquats"
+    val logsS3Prefix: S3Folder = s3"era7-projects-loquats" /
 
     /* As input we use the FASTA accepted by dropRedundantAssignments */
     lazy val inputSamples: Map[ID, S3Resource] = Map(
