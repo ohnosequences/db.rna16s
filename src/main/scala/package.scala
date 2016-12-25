@@ -1,6 +1,5 @@
 package ohnosequences.db
 
-import ohnosequences.blast.api.BlastDBType
 import ohnosequences.awstools.s3._
 
 /*
@@ -11,10 +10,12 @@ import ohnosequences.awstools.s3._
 package object rna16s {
 
   val dbName = "ohnosequences.db.rna16s"
-  val dbType = BlastDBType.nucl
 
   private val metadata = generated.metadata.rna16s
 
   val s3prefix: S3Folder =
-    S3Folder("resources.ohnosequences.com", metadata.organization) / metadata.artifact / metadata.version /
+    s3"resources.ohnosequences.com" / 
+    metadata.organization /
+    metadata.artifact /
+    metadata.version /
 }

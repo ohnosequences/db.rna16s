@@ -13,8 +13,8 @@ bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
   "ohnosequences" %% "statika"   % "2.0.0",
-  "ohnosequences" %% "blast-api" % "0.8.0",
   // Test:
+  "ohnosequences" %% "blast-api"     % "0.8.0"                % Test,
   "ohnosequences" %% "fastarious"    % "0.8.0"                % Test,
   "ohnosequences" %% "ncbitaxonomy"  % "0.2.0"                % Test,
   "ohnosequences" %% "db-rnacentral" % "0.8.0"                % Test,

@@ -12,6 +12,7 @@ package ohnosequences.db.rna16s.test
 import ohnosequences.db._, csvUtils._, collectionUtils._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
+import ohnosequences.blast.api.BlastDBType
 import com.github.tototoshi.csv._
 import better.files._
 
@@ -129,6 +130,6 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
 
 case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
-  ohnosequences.db.rna16s.dbType,
+  BlastDBType.nucl,
   ohnosequences.db.rna16s.test.dropRedundantAssignments
 )

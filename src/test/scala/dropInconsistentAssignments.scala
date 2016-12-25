@@ -142,7 +142,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
-  ohnosequences.db.rna16s.dbType,
+  BlastDBType.nucl,
   ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
 
