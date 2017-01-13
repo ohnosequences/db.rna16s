@@ -35,7 +35,7 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
     // id1 -> fasta1
     // id2 -> fasta2
     // ...
-    val id2fasta: Map[ID, Fasta] = source.fasta.stream
+    val id2fasta: Map[ID, Fasta] = source.fasta.parsed
       .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
         acc.updated(
           fasta.getV(header).id,
@@ -130,6 +130,5 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
 
 case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
-  BlastDBType.nucl,
   ohnosequences.db.rna16s.test.dropRedundantAssignments
 )

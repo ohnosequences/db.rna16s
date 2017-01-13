@@ -8,7 +8,7 @@
 package ohnosequences.db.rna16s.test
 
 import ohnosequences.db._, csvUtils._, collectionUtils._
-import ohnosequences.db.rnacentral._, RNACentral5._
+import ohnosequences.db.rnacentral._, RNAcentral._
 import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
@@ -16,8 +16,8 @@ import com.github.tototoshi.csv._
 import better.files._
 
 case object pick16SCandidates extends FilterData(
-  RNACentral5.table,
-  RNACentral5.fasta,
+  RNAcentral.table,
+  RNAcentral.fasta,
   ohnosequences.db.rna16s.s3prefix
 )(
   deps = ncbiTaxonomyBundle
@@ -112,7 +112,7 @@ case object pick16SCandidates extends FilterData(
     val groupedRows: Iterator[(String, Seq[Row])] =
       source.table.tsvReader.iterator.contiguousGroupBy { _.select(id) }
 
-    val fastas: Iterator[FASTA.Value] = source.fasta.stream.toIterator
+    val fastas: Iterator[FASTA.Value] = source.fasta.parsed.toIterator
 
     (groupedRows zip fastas) foreach { case ((commonID, rows), fasta) =>
 

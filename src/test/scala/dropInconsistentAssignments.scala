@@ -119,7 +119,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 ) {
 
   /* Mapping of sequence IDs to corresponding FASTA sequences */
-  lazy val id2fasta: Map[ID, Fasta] = source.fasta.stream
+  lazy val id2fasta: Map[ID, Fasta] = source.fasta.parsed
     .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
       acc.updated(
         fasta.getV(header).id,
@@ -142,7 +142,6 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
-  BlastDBType.nucl,
   ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
 
