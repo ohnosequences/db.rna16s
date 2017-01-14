@@ -29,7 +29,7 @@ case object mg7 {
     blastOutRec  = defaults.blastnOutputRecord,
     blastOptions = defaults.blastnOptions.update(
       num_threads(2)              ::
-      word_size(150)              ::
+      word_size(42)               ::
       evalue(BigDecimal(1E-100))  ::
       max_target_seqs(10000)      ::
       perc_identity(99.0)         ::
