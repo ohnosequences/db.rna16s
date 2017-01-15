@@ -46,6 +46,7 @@ case object mg7 {
   }
 
   case object pipeline extends MG7Pipeline(parameters) {
+    override lazy val name = "db-rna16s"
 
     val metadata: AnyArtifactMetadata = ohnosequences.db.generated.metadata.rna16s
     // TODO: we should probably have a restricted role for this:
