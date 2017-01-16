@@ -126,7 +126,7 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 case object clusteringResults extends Bundle() {
 
   lazy val s3location: S3Object = clusterSequences.output.s3
-  lazy val clusters: File = File(s3location.key).createIfNotExists()
+  lazy val clusters: File = File(s3location.key)
 
   def instructions: AnyInstructions = LazyTry {
     val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
