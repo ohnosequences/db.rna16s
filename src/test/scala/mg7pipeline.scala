@@ -23,7 +23,7 @@ case object mg7 {
   )
 
   case object parameters extends MG7Parameters(
-    splitChunkSize = 100,
+    splitChunkSize = 10,
     splitInputFormat = FastaInput,
     blastCommand = blastn,
     blastOutRec  = defaults.blastnOutputRecord,
@@ -65,7 +65,7 @@ case object mg7 {
     val splitConfig  = SplitConfig(1)
     val blastConfig  = BlastConfig(100)
     // these steps are not needed:
-    val assignConfig = AssignConfig(10)
+    val assignConfig = AssignConfig(20)
     val mergeConfig  = MergeConfig(1)
     val countConfig  = CountConfig(1)
   }
