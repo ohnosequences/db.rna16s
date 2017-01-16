@@ -65,4 +65,3 @@ Here is the sequence of bundles you have to launch to repeat the whole DB genera
       ```scala
       ohnosequences.db.rna16s.test.releaseData(your_user.AWSUser.profile)
       ```
-      It returns you the instance ID. You have to terminate it  **manually**.
