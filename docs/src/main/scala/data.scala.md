@@ -16,8 +16,8 @@ case object data {
 
 
 
+[main/scala/data.scala]: data.scala.md
 [main/scala/package.scala]: package.scala.md
-[main/scala/release.scala]: release.scala.md
 [test/scala/clusterSequences.scala]: ../../test/scala/clusterSequences.scala.md
 [test/scala/compats.scala]: ../../test/scala/compats.scala.md
 [test/scala/dropInconsistentAssignments.scala]: ../../test/scala/dropInconsistentAssignments.scala.md

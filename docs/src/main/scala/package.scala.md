@@ -2,7 +2,6 @@
 ```scala
 package ohnosequences.db
 
-import ohnosequences.blast.api.BlastDBType
 import ohnosequences.awstools.s3._
 ```
 
@@ -16,12 +15,14 @@ This contains the specification of our 16S BLAST database. All sequences are obt
 package object rna16s {
 
   val dbName = "ohnosequences.db.rna16s"
-  val dbType = BlastDBType.nucl
 
   private val metadata = generated.metadata.rna16s
 
   val s3prefix: S3Folder =
-    S3Folder("resources.ohnosequences.com", metadata.organization) / metadata.artifact / metadata.version /
+    s3"resources.ohnosequences.com" /
+    metadata.organization /
+    metadata.artifact /
+    metadata.version /
 }
 
 ```
@@ -29,8 +30,8 @@ package object rna16s {
 
 
 
+[main/scala/data.scala]: data.scala.md
 [main/scala/package.scala]: package.scala.md
-[main/scala/release.scala]: release.scala.md
 [test/scala/clusterSequences.scala]: ../../test/scala/clusterSequences.scala.md
 [test/scala/compats.scala]: ../../test/scala/compats.scala.md
 [test/scala/dropInconsistentAssignments.scala]: ../../test/scala/dropInconsistentAssignments.scala.md

@@ -58,7 +58,7 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
     def upload(): Unit = {
 
-      val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+      val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
       transferManager.upload(
         this.s3.bucket, this.s3.key,
@@ -138,10 +138,10 @@ This bundle just downloads the results of the `clusterSequences` bundle work
 case object clusteringResults extends Bundle() {
 
   lazy val s3location: S3Object = clusterSequences.output.s3
-  lazy val clusters: File = File(s3location.key).createIfNotExists()
+  lazy val clusters: File = File(s3location.key)
 
   def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
     transferManager.download(
       s3location.bucket, s3location.key,
@@ -199,8 +199,8 @@ class ClusteringTest extends org.scalatest.FunSuite {
 
 
 
+[main/scala/data.scala]: ../../main/scala/data.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
-[main/scala/release.scala]: ../../main/scala/release.scala.md
 [test/scala/clusterSequences.scala]: clusterSequences.scala.md
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md

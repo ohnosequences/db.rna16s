@@ -3,7 +3,7 @@
 package ohnosequences.db.rna16s.test
 
 import ohnosequences.statika._, aws._
-import ohnosequences.awstools._, regions.Region._, ec2._, InstanceType._, autoscaling._, s3._
+import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
 
 case object compats {
 
@@ -34,8 +34,8 @@ case object compats {
 
 
 
+[main/scala/data.scala]: ../../main/scala/data.scala.md
 [main/scala/package.scala]: ../../main/scala/package.scala.md
-[main/scala/release.scala]: ../../main/scala/release.scala.md
 [test/scala/clusterSequences.scala]: clusterSequences.scala.md
 [test/scala/compats.scala]: compats.scala.md
 [test/scala/dropInconsistentAssignments.scala]: dropInconsistentAssignments.scala.md
