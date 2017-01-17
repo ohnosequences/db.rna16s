@@ -7,11 +7,7 @@ import ohnosequences.loquat._, utils._
 import ohnosequences.statika._, aws._
 import ohnosequences.blast.api._
 
-import ohnosequences.awstools.ec2._, InstanceType._
-import ohnosequences.awstools.s3._
-import ohnosequences.awstools.autoscaling._
-import ohnosequences.awstools.regions.Region._
-
+import ohnosequences.awstools._, regions._, ec2._, s3._, autoscaling._
 import com.amazonaws.services.s3.transfer._
 import com.amazonaws.auth._, profile._
 
@@ -27,13 +23,13 @@ case object mg7 {
   )
 
   case object parameters extends MG7Parameters(
-    splitChunkSize = 100,
+    splitChunkSize = 10,
     splitInputFormat = FastaInput,
     blastCommand = blastn,
     blastOutRec  = defaults.blastnOutputRecord,
     blastOptions = defaults.blastnOptions.update(
       num_threads(2)              ::
-      word_size(150)              ::
+      word_size(42)               ::
       evalue(BigDecimal(1E-100))  ::
       max_target_seqs(10000)      ::
       perc_identity(99.0)         ::
@@ -50,11 +46,12 @@ case object mg7 {
   }
 
   case object pipeline extends MG7Pipeline(parameters) {
+    override lazy val name = "db-rna16s"
 
     val metadata: AnyArtifactMetadata = ohnosequences.db.generated.metadata.rna16s
     // TODO: we should probably have a restricted role for this:
     val iamRoleName: String = "era7-projects"
-    val logsBucketName: String = "era7-projects-loquats"
+    val logsS3Prefix: S3Folder = s3"era7-projects-loquats" /
 
     /* As input we use the FASTA accepted by dropRedundantAssignments */
     lazy val inputSamples: Map[ID, S3Resource] = Map(
@@ -68,7 +65,7 @@ case object mg7 {
     val splitConfig  = SplitConfig(1)
     val blastConfig  = BlastConfig(100)
     // these steps are not needed:
-    val assignConfig = AssignConfig(10)
+    val assignConfig = AssignConfig(20)
     val mergeConfig  = MergeConfig(1)
     val countConfig  = CountConfig(1)
   }
@@ -83,7 +80,7 @@ case object mg7BlastResults extends Bundle() {
   lazy val blastResult: File = (blastChunks.parent / "blastResult.csv").createIfNotExists()
 
   def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
     transferManager.downloadDirectory(
       s3location.bucket, s3location.key,

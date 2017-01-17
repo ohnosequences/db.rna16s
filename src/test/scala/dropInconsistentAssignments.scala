@@ -26,7 +26,7 @@ case class inconsistentAssignmentsFilter(
   val taxonomyGraph: TitanNCBITaxonomyGraph,
   val assignmentsTable: File,
   /* This threshold determines minimum ratio of the taxon's parent's count compared to the total count */
-  val minimumRatio: Double = 0.75 // 75%
+  val minimumRatio: Double = 0.75, // 75%
   /* This determines how many levels up we're going to take the ancestor to check the counts ratio */
   val ancestryLevel: Int = 2 // grandparent
 ) {
@@ -119,7 +119,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 ) {
 
   /* Mapping of sequence IDs to corresponding FASTA sequences */
-  lazy val id2fasta: Map[ID, Fasta] = source.fasta.stream
+  lazy val id2fasta: Map[ID, Fasta] = source.fasta.parsed
     .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
       acc.updated(
         fasta.getV(header).id,
@@ -142,7 +142,6 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
-  ohnosequences.db.rna16s.dbType,
   ohnosequences.db.rna16s.test.dropInconsistentAssignments
 )
 

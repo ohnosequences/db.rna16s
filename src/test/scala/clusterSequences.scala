@@ -54,7 +54,7 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
     def upload(): Unit = {
 
-      val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+      val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
       transferManager.upload(
         this.s3.bucket, this.s3.key,
@@ -126,10 +126,10 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 case object clusteringResults extends Bundle() {
 
   lazy val s3location: S3Object = clusterSequences.output.s3
-  lazy val clusters: File = File(s3location.key).createIfNotExists()
+  lazy val clusters: File = File(s3location.key)
 
   def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new InstanceProfileCredentialsProvider())
+    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
 
     transferManager.download(
       s3location.bucket, s3location.key,

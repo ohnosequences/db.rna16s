@@ -12,17 +12,16 @@ resolvers := Seq(
 bucketSuffix  := "era7.com"
 
 libraryDependencies ++= Seq(
-  "ohnosequences" %% "db-rnacentral" % "0.7.0",
-  "ohnosequences" %% "fastarious"    % "0.6.0",
-  "ohnosequences" %% "blast-api"     % "0.7.0",
-  "ohnosequences" %% "ncbitaxonomy"  % "0.1.0",
+  // We only need statika compile-dependency for the artifact metadata in the S3 data references
+  "ohnosequences" %% "statika"   % "2.0.0",
   // Test:
-  "era7bio"       %% "defaults" % "0.2.0"                      % Test,
-  "ohnosequences" %% "mg7"      % "1.0.0-M5-pr78-143-g50f6e1e" % Test
+  "ohnosequences" %% "blast-api"     % "0.8.0"                % Test,
+  "ohnosequences" %% "fastarious"    % "0.8.0"                % Test,
+  "ohnosequences" %% "ncbitaxonomy"  % "0.2.0"                % Test,
+  "ohnosequences" %% "db-rnacentral" % "0.9.0"                % Test,
+  "era7bio"       %% "defaults"      % "0.3.0-RC2"            % Test,
+  "ohnosequences" %% "mg7"           % "1.0.0-M5-22-gef9d9ee" % Test
 )
-
-// FIXME: update era7bio/defaults after loquat M9 release and remove this line:
-dependencyOverrides += "ohnosequences" %% "loquat" % "2.0.0-M8-11-g820cfe6" % Test
 
 dependencyOverrides ++= Set(
   "org.apache.httpcomponents" % "httpclient" % "4.5.1",

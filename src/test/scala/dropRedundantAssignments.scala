@@ -12,6 +12,7 @@ package ohnosequences.db.rna16s.test
 import ohnosequences.db._, csvUtils._, collectionUtils._
 import ohnosequences.fastarious.fasta._
 import ohnosequences.statika._
+import ohnosequences.blast.api.BlastDBType
 import com.github.tototoshi.csv._
 import better.files._
 
@@ -34,7 +35,7 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
     // id1 -> fasta1
     // id2 -> fasta2
     // ...
-    val id2fasta: Map[ID, Fasta] = source.fasta.stream
+    val id2fasta: Map[ID, Fasta] = source.fasta.parsed
       .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
         acc.updated(
           fasta.getV(header).id,
@@ -129,6 +130,5 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
 
 case object dropRedundantAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
   ohnosequences.db.rna16s.dbName,
-  ohnosequences.db.rna16s.dbType,
   ohnosequences.db.rna16s.test.dropRedundantAssignments
 )

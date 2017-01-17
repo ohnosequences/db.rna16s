@@ -10,13 +10,14 @@ case object releaseData {
 
   def apply(credentials: AWSCredentialsProvider): Unit = {
 
-    val s3client = S3.create(credentials)
-    val transferManager = new TransferManager(s3client.s3)
+    val s3 = S3Client(credentials = credentials)
+    val transferManager = s3.createTransferManager
 
     /* This code generates a list of pairs for all objects in the source folder to the objects in the new folder (because transferManager.copy doesn't work for folders) */
     val blastdbSource = dropInconsistentAssignmentsAndGenerate.s3
-    val blastdbMap = s3client
-      .listObjects(blastdbSource.bucket, blastdbSource.key)
+    val blastdbMap = s3
+      .listObjects(blastdbSource)
+      .getOrElse(sys.error(s"Couldn't list objects in ${blastdbSource}"))
       .flatMap { obj =>
         obj.key.split('/').lastOption.map { name =>
           obj -> (db.rna16s.data.blastDBS3 / name)
