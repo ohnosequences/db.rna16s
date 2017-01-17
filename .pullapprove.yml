@@ -13,6 +13,7 @@ reviewers:
     required: 1
     members:
       - eparejatobes
+      - laughedelic
     conditions:
       branches:
         - master
@@ -28,6 +29,7 @@ reviewers:
     required: 1
     members:
       - eparejatobes
+      - laughedelic
     conditions:
       labels:
         - needs-review
