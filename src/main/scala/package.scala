@@ -14,7 +14,7 @@ package object rna16s {
   private val metadata = generated.metadata.rna16s
 
   val s3prefix: S3Folder =
-    s3"resources.ohnosequences.com" / 
+    s3"resources.ohnosequences.com" /
     metadata.organization /
     metadata.artifact /
     metadata.version /
