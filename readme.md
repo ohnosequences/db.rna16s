@@ -1,6 +1,6 @@
 # db.rna16s
 
-[![](https://travis-ci.org/ohnosequences/db.rna16s.svg?branch=master)](https://travis-ci.org/ohnosequences/db.rna16s)
+[![](https://travis-ci.org/ohnosequences/db.rna16s.svg)](https://travis-ci.org/ohnosequences/db.rna16s)
 [![](https://img.shields.io/codacy/62caae6ae58f48dca6633f2f88ed8898.svg)](https://www.codacy.com/app/ohnosequences/db-rna16s)
 [![](http://github-release-version.herokuapp.com/github/ohnosequences/db.rna16s/release.svg)](https://github.com/ohnosequences/db.rna16s/releases/latest)
 [![](https://img.shields.io/badge/license-AGPLv3-blue.svg)](https://tldrlegal.com/license/gnu-affero-general-public-license-v3-%28agpl-3.0%29)
@@ -10,7 +10,7 @@ A comprehensive, compact, and automatically curated microbial 16S database, wher
 
 ## Data sources
 
-All data comes from the latest [RNACentral][RNACentral] release, the most comprehensive RNA sequence resource: **all** RNA sequences from *ENA*, *GreenGenes*, *RDP*, *RefSeq* or *SILVA*, among others, are included (see [here][RNACentral data sources] for the full list).
+All data comes from the latest [RNACentral] release, the most comprehensive RNA sequence resource: **all** RNA sequences from *ENA*, *GreenGenes*, *RDP*, *RefSeq* or *SILVA*, among others, are included (see [RNACentral data sources] for the full list).
 
 ## Database generation and curation
 
@@ -30,7 +30,7 @@ The output of each step is in S3, at `s3://resources.ohnosequences.com/ohnoseque
 
 ``` shell
 <step>/
-├── blastdb/                      # BLAST db files
+├── blastdb/                      # BLAST DB files
 │   └── ohnosequences.db.rna16s.fasta.*
 ├── output/
 │   ├── <step>.csv                # assignments
@@ -60,9 +60,27 @@ All csv files are *comma-separated* files with *Unix line endings* `\n`. Their s
     gnl|ohnosequences.db.rna16s|URS0123213, 1234;3424, 45123;43131
     ```
 
+### Release data
+
+Release data is located at
+
+```
+s3://resources.ohnosequences.com/ohnosequences/db-rna16s/<version>/release/
+```
+
+It has following structure:
+
+```
+release/
+├── blastdb/                      # BLAST DB files
+├── ohnosequences.db.rna16s.csv   # IDs mapping table
+└── ohnosequences.db.rna16s.fasta # sequences
+```
+
+
 ## Usage
 
-You can of course just download the data from S3; if you want to use it from Scala code, or with [MG7][MG7], there are some helpers available:
+You can of course just download the data from S3; if you want to use it from Scala code, or with [MG7], there are some helpers available:
 
 ### Scala
 
@@ -82,7 +100,7 @@ You can then use any S3 API to get these files and do whatever you feel like wit
 
 ### MG7
 
-You can directly use `db.rna16s` as a reference database with [MG7][MG7]. For that, first define a reference database bundle object:
+You can directly use `db.rna16s` as a reference database with [MG7]. For that, first define a reference database bundle object:
 
 ``` scala
 import ohnosequences.mg7._
@@ -99,8 +117,8 @@ Then you can use it in your `MG7Parameters` configuration as one of the `referen
 
 ## License
 
-- The *code* which generates the database is licensed under the **[AGPL v3][AGPLv3]** license
-- The *database* itself is made available under the **[ODbL 1.0][ODbLv1]** license.
+- The *code* which generates the database is licensed under the **[AGPLv3]** license
+- The *database* itself is made available under the **[ODbLv1]** license.
 - The database *contents* are available under their respective licenses. As far as we can tell all data included in *db.rna16s* could be considered **free** for any use; do note that sequences and annotations coming from SILVA, which has a restrictive license, are excluded from *db.rna16s*.
 
 See the [open data commons FAQ](http://opendatacommons.org/faq/licenses/#db-versus-contents) for more on this distinction between database and contents.
