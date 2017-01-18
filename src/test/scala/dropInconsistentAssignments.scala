@@ -1,11 +1,11 @@
 /*
   # Drop inconsistent assignments
 
-  Here we want to drop *inconsistent* assignments from our database. The idea here is to determine it based on sequences equivalence classes (1) (the we got from the previous clustering step) and their assignments taxonomic similarity (2).
+  Here we want to drop *inconsistent* assignments from our database; an assignment is inconsistent if it's different from the majority of those in the same sequence-similarity equivalence class.
 
-  1. First we take the sequence clusters and for each of them (`C`) construct a common set of assignments (using the map we have from the previous steps): `Taxa(C)`.
+  1. First we take the sequence clusters `C` and for each of them construct a common set of assignments `Taxa(C)` (using the map we have from the previous steps): .
 
-  2. Then we consider each assignment `T` (from the old map) and decide wheter to drop it or to keep by comparing _its parent's_ cumulative count `Count(Parent(T))` with the total count (which is the size of `Taxa(C)`). If it's over some fixed threshold, we keep it, otherwise drop.
+  2. Then we consider each assignment `T` (from the old map) and decide wheter to drop it or keep it by comparing _its parent's_ cumulative count `Count(Parent(T))` with the total count (which is the size of `Taxa(C)`). If the difference is over some fixed threshold, we keep it, otherwise we drop it. To account for the tree topology, after this process we rescue those assignments which are descendants of a valid one (note that this process is idempotent).
 */
 package ohnosequences.db.rna16s.test
 
@@ -27,12 +27,12 @@ case class inconsistentAssignmentsFilter(
   val assignmentsTable: File,
   /* This threshold determines minimum ratio of the taxon's parent's count compared to the total count */
   val minimumRatio: Double = 0.75, // 75%
-  /* This determines how many levels up we're going to take the ancestor to check the counts ratio */
+  /* This determines how many levels up we're going to take the ancestor to check the counts ratio; a value of `2` here means that we take the *grandparent*. */
   val ancestryLevel: Int = 2 // grandparent
 ) {
   type Lineage = Seq[Taxon]
 
-  /* Mapping of sequence IDs to the list of their taxonomic assignments */
+  /* Mapping from sequence IDs to their taxonomic assignments set */
   lazy val referenceMap: Map[ID, Set[Taxon]] =
     CSVReader.open(assignmentsTable.toJava)(csvUtils.UnixCSVFormat).iterator
       .foldLeft(Map[ID, Set[Taxon]]()) { (acc, row) =>
@@ -44,13 +44,12 @@ case class inconsistentAssignmentsFilter(
 
   def referenceTaxaFor(id: ID): Set[Taxon] = referenceMap.get(id).getOrElse(Set())
 
-  /* This method for a given sequence of taxons (with repeats) returns their cumulative counts and lineages */
+  /* This method  returns the cumulative counts and lineages of a sequence of (not necessarily distinct) taxa */
   // TODO: this should be a piece of reusable code in MG7
   def getAccumulatedCounts(taxa: Seq[Taxon]): Map[Taxon, (Int, Lineage)] = {
     // NOTE: this mutable map is used in getLineage for memoization of the results that we get from the DB
     val cacheMap: scala.collection.mutable.Map[Taxon, Lineage] = scala.collection.mutable.Map()
 
-    /* This method looks up the lineage in the cache or queries the DB and updates the cache */
     def getLineage(id: Taxon): Lineage = cacheMap.get(id).getOrElse {
       val lineage = taxonomyGraph.getTaxon(id)
         .map{ _.ancestors }.getOrElse( Seq() )
@@ -67,7 +66,7 @@ case class inconsistentAssignmentsFilter(
     accumulatedMap
   }
 
-  /* This predicate determines whether to drop the taxon or to keep it */
+  /* This predicate determines whether an assignment will be kept (true) or dropped */
   def predicate(countsMap: Map[Taxon, (Int, Lineage)], totalCount: Int): Taxon => Boolean = { taxon =>
 
     countsMap.get(taxon)
@@ -98,7 +97,7 @@ case class inconsistentAssignmentsFilter(
         predicate(accumulatedCountsMap, totalCount)
       )
 
-      /* Among previously rejected we pick those that are descendants of the accepted taxa and keep them too */
+      /* Among previously rejected assignments, we rescue those that are descendants of the accepted taxa and keep them too */
       val (acceptedDescendants, rejectedRest) = rejectedTaxa.partition { taxon =>
         accumulatedCountsMap.get(taxon)
           .map { case (_, lineage) =>
