@@ -15,7 +15,9 @@ import better.files._
 /*
   # Sequences clustering
 
-  The idea of this procedure is to split all sequences on equivalence classes based on their BLAST-similarity. So we take the results of MG7-BLAST run on the DB itself and then process the hits constructing a reflecsive, symmetric and transitive relation.
+  This procedure groups ll sequences into equivalence classes based on sequence similarity, computed through pairwise BLAST alignments.
+
+  We run BLAST on each reference sequence, with all the reference sequences (but the one we are querying, of course) as database. Then, we compute the free equivalence relation (reflexive, symmetric and transitive) on it. Clusters are just equivalence classes.
 
   For example, we have following hits:
 
@@ -66,14 +68,17 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
   }
 
 
-  /* This is the key method for the clustring pocedure.
+  /*
+
+    This is the key method for the clustering procedure.
+
      If we already have some clusters
 
      * `{ b1 }`
      * `{ a3, a2 }`
      * `{ b3, b4 }`
 
-     and want to add a new set of equivalent elements `{b2, b1, b3}`, then we need to filter out all clusters that intersect with this set (`{ b1 }` and `{ b3, b4 }`), union them all in one new class and add to the rest of the clusters:
+     and want to add a new set of equivalent elements `{b2, b1, b3}`, then we need to filter out all clusters that intersect with this set (`{ b1 }` and `{ b3, b4 }`), join them all in one new class, and add to the rest of the clusters:
 
      * `{ b1, b2, b3, b4 }`
      * `{ a3, a3 }`
@@ -117,12 +122,10 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
       output.upload()
     } -&-
     say(s"Clustered sequences uploaded to [${output.s3}]")
-
   }
-
 }
 
-/* This bundle just downloads the results of the `clusterSequences` bundle work */
+/* This bundle just downloads the results of `clusterSequences` */
 case object clusteringResults extends Bundle() {
 
   lazy val s3location: S3Object = clusterSequences.output.s3
@@ -142,7 +145,11 @@ case object clusteringResults extends Bundle() {
 }
 
 
-/* ## A little test */
+/*
+  ## A small test
+
+  This is is a simple test for checking that clustering works as expected.
+*/
 case object ClusteringTestCtx {
 
   val hits: List[Set[ID]] = List(
