@@ -10,7 +10,7 @@ A comprehensive, compact, and automatically curated microbial 16S database, wher
 
 ## Data sources
 
-All data comes from the latest [RNACentral] release, the most comprehensive RNA sequence resource: **all** RNA sequences from *ENA*, *GreenGenes*, *RDP*, *RefSeq* or *SILVA*, among others, are included (see [RNACentral data sources] for the full list).
+All data comes from the latest [RNAcentral] release, the most comprehensive RNA sequence resource: **all** RNA sequences from *ENA*, *GreenGenes*, *RDP*, *RefSeq* are included (see [RNAcentral data sources] for the full list).
 
 ## Database generation and curation
 
@@ -123,8 +123,8 @@ Then you can use it in your `MG7Parameters` configuration as one of the `referen
 
 See the [open data commons FAQ](http://opendatacommons.org/faq/licenses/#db-versus-contents) for more on this distinction between database and contents.
 
-[RNACentral]: https://rnacentral.org
-[RNACentral data sources]: https://rnacentral.org/expert-databases
+[RNAcentral]: https://rnacentral.org
+[RNAcentral data sources]: https://rnacentral.org/expert-databases
 [MG7]: https://github.com/ohnosequences/mg7
 [AGPLv3]: https://www.gnu.org/licenses/agpl-3.0.en.html
 [ODbLv1]: http://opendatacommons.org/licenses/odbl/1.0/
