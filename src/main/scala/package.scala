@@ -2,11 +2,6 @@ package ohnosequences.db
 
 import ohnosequences.awstools.s3._
 
-/*
-  ## 16S RNA BLAST database
-
-  This contains the specification of our 16S BLAST database. All sequences are obtained from RNACentral, with sequences satisfying `predicate` being those included.
-*/
 package object rna16s {
 
   val dbName = "ohnosequences.db.rna16s"
