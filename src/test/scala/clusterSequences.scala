@@ -15,7 +15,7 @@ import better.files._
 /*
   # Sequences clustering
 
-  This procedure groups ll sequences into equivalence classes based on sequence similarity, computed through pairwise BLAST alignments.
+  This procedure groups all sequences into equivalence classes based on sequence similarity, computed through pairwise BLAST alignments.
 
   We run BLAST on each reference sequence, with all the reference sequences (but the one we are querying, of course) as database. Then, we compute the free equivalence relation (reflexive, symmetric and transitive) on it. Clusters are just equivalence classes.
 
@@ -35,7 +35,7 @@ import better.files._
   * `a3 → a2` therefore `a2 → a3` (symmetry)
   * also `a2 → a1`, so `a3 → a1` (transitivity)
 
-  So the clasters that we should get from this are
+  So the clusters that we should get from this are
 
   * `{ a1, a2, a3 }`
   * `{ b1, b2, b3 }`
@@ -69,7 +69,6 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
 
   /*
-
     This is the key method for the clustering procedure.
 
      If we already have some clusters

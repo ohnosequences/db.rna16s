@@ -44,7 +44,7 @@ case class inconsistentAssignmentsFilter(
 
   def referenceTaxaFor(id: ID): Set[Taxon] = referenceMap.get(id).getOrElse(Set())
 
-  /* This method  returns the cumulative counts and lineages of a sequence of (not necessarily distinct) taxa */
+  /* This method returns the cumulative counts and lineages of a sequence of (not necessarily distinct) taxa */
   // TODO: this should be a piece of reusable code in MG7
   def getAccumulatedCounts(taxa: Seq[Taxon]): Map[Taxon, (Int, Lineage)] = {
     // NOTE: this mutable map is used in getLineage for memoization of the results that we get from the DB
