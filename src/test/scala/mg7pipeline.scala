@@ -13,6 +13,14 @@ import com.amazonaws.auth._, profile._
 
 import better.files._
 
+/*
+  # BLAST reference sequences comparison
+
+  This computes the relation which serves as input for the clustering step. We require
+
+  1. close to complete query coverage
+  2. close to 100% identity
+*/
 case object mg7 {
 
   /* As the reference database we use the one generated from dropRedundantAssignments */
