@@ -14,7 +14,18 @@ import com.amazonaws.services.s3.transfer._
 import com.amazonaws.auth._, profile._
 
 import better.files._
+```
 
+
+# BLAST reference sequences comparison
+
+This computes the relation which serves as input for the clustering step. We require
+
+1. close to complete query coverage
+2. close to 100% identity
+
+
+```scala
 case object mg7 {
 ```
 
