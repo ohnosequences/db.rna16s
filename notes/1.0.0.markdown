@@ -1,0 +1,3 @@
+[db.rna16s](https://github.com/ohnosequences/db.rna16s) is a comprehensive, compact, and automatically curated microbial 16S database, where each sequence is assigned to a set of NCBI taxonomy IDs.
+
+This is the first stable release of the code and the database. It is identical to the [1.0.0-RC1](https://github.com/ohnosequences/db.rna16s/releases/tag/v1.0.0-RC1) release candidate. See previous [release notes](https://github.com/ohnosequences/db.rna16s/releases) for the changelog and [Readme](https://github.com/ohnosequences/db.rna16s/blob/master/readme.md) for general information.
