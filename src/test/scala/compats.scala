@@ -9,7 +9,7 @@ case object compats {
   val  defaultAMI: DefaultAMI = AmazonLinuxAMI(Ireland, HVM, InstanceStore)
 
   class DefaultCompatible[B <: AnyBundle](bundle: B, javaHeap: Int) extends Compatible(
-    amznAMIEnv(defaultAMI, javaHeap),
+    amznAMIEnv(defaultAMI, javaHeap = javaHeap),
     bundle,
     ohnosequences.db.generated.metadata.rna16s
   )

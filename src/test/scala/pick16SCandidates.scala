@@ -8,9 +8,9 @@
 package ohnosequences.db.rna16s.test
 
 import ohnosequences.db._, csvUtils._, collectionUtils._
-import ohnosequences.db.rnacentral._, RNAcentral._
+import ohnosequences.db.rnacentral.{ RNAcentral7 => RNAcentral, _ }, RNAcentralField._
 import ohnosequences.ncbitaxonomy._, titan._
-import ohnosequences.fastarious.fasta._
+import ohnosequences.fastarious._, fasta._
 import ohnosequences.statika._
 import com.github.tototoshi.csv._
 import better.files._
@@ -98,29 +98,29 @@ case object pick16SCandidates extends FilterData(
   }
 
   /* This predicate determines whether the *sequence* value is OK, and will be kept. */
-  def sequencePredicate(fastaSeq: FastaSequence): Boolean = {
-    val seq = fastaSeq.value
+  def sequencePredicate(fastaSeq: Sequence): Boolean = {
+    val letters = fastaSeq.letters
 
-    ( seq.length >= minimum16SLength )              &&
-    ( !(seq containsSlice "NNNNNNNN") )             &&
-    ( (seq.count(_ == 'N') / seq.length) <= 0.01 )
+    ( letters.length >= minimum16SLength )              &&
+    ( !(letters containsSlice "NNNNNNNN") )             &&
+    ( (letters.count(_ == 'N') / letters.length) <= 0.01 )
   }
 
   // bundle to generate the DB (see the runBundles file in tests)
   def filterData(): Unit = {
 
     val groupedRows: Iterator[(String, Seq[Row])] =
-      source.table.tsvReader.iterator.contiguousGroupBy { _.select(id) }
+      source.table.tsvReader.iterator.map(RNAcentral.row).contiguousGroupBy { _.select(id) }
 
-    val fastas: Iterator[FASTA.Value] = source.fasta.parsed.toIterator
+    val fastas: Iterator[FASTA] = source.fasta.parsed.toIterator
 
     (groupedRows zip fastas) foreach { case ((commonID, rows), fasta) =>
 
-      if (commonID != fasta.getV(header).id)
+      if (commonID != fasta.header.id)
         sys.error(s"ID [${commonID}] is not found in the FASTA. Check RNACentral filtering.")
 
       val (acceptedRows, rejectedRows) =
-        if ( sequencePredicate(fasta.get(sequence).value) ) {
+        if ( sequencePredicate(fasta.sequence) ) {
           /* if the sequence is OK, we partition the rows based on the predicate */
           rows.partition(rowPredicate)
         } else {
@@ -133,7 +133,7 @@ case object pick16SCandidates extends FilterData(
         extendedID,
         acceptedRows.map{ _.select(tax_id) }.distinct,
         rejectedRows.map{ _.select(tax_id) }.distinct,
-        fasta.update( header := FastaHeader(Seq(extendedID, fasta.getV(header).description).mkString(" ") ) )
+        fasta.copy(header = Header(Seq(extendedID, fasta.header.description).mkString(" ")))
       )
     }
   }

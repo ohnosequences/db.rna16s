@@ -103,7 +103,7 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
     LazyTry {
 
-      val blastReader = csv.Reader(mg7.parameters.blastOutRec.keys)(mg7BlastResults.blastResult)
+      val blastReader = csv.Reader(mg7.parameters.blastOutRec.keys)(mg7BlastResults.blastResult.toJava)
 
       val correspondences: Iterator[Set[ID]] = blastReader.rows
         // grouping rows by the query sequence id

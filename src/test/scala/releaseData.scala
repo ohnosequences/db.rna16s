@@ -14,7 +14,7 @@ case object releaseData {
     val transferManager = s3.createTransferManager
 
     /* This code generates a list of pairs for all objects in the source folder to the objects in the new folder (because transferManager.copy doesn't work for folders) */
-    val blastdbSource = dropInconsistentAssignmentsAndGenerate.s3
+    val blastdbSource = dropInconsistentAssignmentsAndGenerate.s3destination
     val blastdbMap = s3
       .listObjects(blastdbSource)
       .getOrElse(sys.error(s"Couldn't list objects in ${blastdbSource}"))

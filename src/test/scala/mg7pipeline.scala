@@ -26,7 +26,7 @@ case object mg7 {
   /* As the reference database we use the one generated from dropRedundantAssignments */
   case object rna16sRefDB extends ReferenceDB(
     ohnosequences.db.rna16s.dbName,
-    dropRedundantAssignmentsAndGenerate.s3,
+    dropRedundantAssignmentsAndGenerate.s3destination,
     dropRedundantAssignments.output.table.s3
   )
 
@@ -98,6 +98,6 @@ case object mg7BlastResults extends Bundle() {
     transferManager.shutdownNow()
   } -&- LazyTry {
 
-    loquats.mergeDataProcessing().mergeChunks(blastChunks, blastResult)
+    loquats.mergeDataProcessing().mergeChunks(blastChunks.toJava, blastResult.toJava)
   }
 }
