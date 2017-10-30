@@ -136,5 +136,7 @@ case object pick16SCandidates extends FilterData(
         fasta.copy(header = Header(Seq(extendedID, fasta.header.description).mkString(" ")))
       )
     }
+
+    taxonomyGraph.raw.titanGraph.shutdown()
   }
 }
