@@ -21,7 +21,8 @@ libraryDependencies ++= Seq(
 
 dependencyOverrides ++= Seq(
   // TODO: remove after updating bio4j-dist
-  "ohnosequences" %% "aws-scala-tools" % "0.20.0"
+  "ohnosequences" %% "aws-scala-tools" % "0.20.0",
+  "ohnosequences" %% "loquat" % "2.0.0-RC4-26-g760c7a4"
 )
 
 generateStatikaMetadataIn(Compile)
