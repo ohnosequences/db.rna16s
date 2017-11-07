@@ -20,7 +20,9 @@ import com.amazonaws.services.s3.transfer._
 import ohnosequences.blast.api._, outputFields._
 import com.github.tototoshi.csv._
 import better.files._
+import java.nio.file.Files
 import com.bio4j.titan.model.ncbiTaxonomy.TitanNCBITaxonomyGraph
+import scala.collection.JavaConverters._
 
 case class inconsistentAssignmentsFilter(
   val taxonomyGraph: TitanNCBITaxonomyGraph,
@@ -118,7 +120,9 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 ) {
 
   /* Mapping of sequence IDs to corresponding FASTA sequences */
-  lazy val id2fasta: Map[ID, FASTA] = source.fasta.parsed
+  lazy val id2fasta: Map[ID, FASTA] = Files.lines(source.fasta.file.toJava.toPath)
+    .iterator.asScala.buffered
+    .parseFastaSkipCrap
     .foldLeft(Map[ID, FASTA]()) { (acc, fasta) =>
       acc.updated(
         fasta.header.id,
