@@ -6,8 +6,6 @@ import ohnosequences.cosas._, types._, klists._
 import ohnosequences.statika._
 import ohnosequences.blast.api._
 import ohnosequences.awstools._, s3._
-import com.amazonaws.services.s3.transfer._
-import com.amazonaws.auth._
 import better.files._
 
 /*
@@ -85,14 +83,9 @@ case object mg7BlastResults extends Bundle() {
   lazy val blastResult: File = (blastChunks.parent / "blastResult.csv").createIfNotExists()
 
   def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
-
-    transferManager.downloadDirectory(
-      s3location.bucket, s3location.key,
-      File(".").toJava
-    ).waitForCompletion
-
-    transferManager.shutdownNow()
+    val s3client = s3.defaultClient
+    s3client.download(s3location, File(".").toJava).get
+    s3client.shutdown()
   } -&- LazyTry {
 
     loquats.mergeDataProcessing().mergeChunks(blastChunks.toJava, blastResult.toJava)
