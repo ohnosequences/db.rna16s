@@ -7,14 +7,10 @@
 */
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.db._, csvUtils._, collectionUtils._
+import ohnosequences.db._, collectionUtils._
 import ohnosequences.db.rnacentral.{ RNAcentral7 => RNAcentral, _ }, RNAcentralField._
 import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious._, fasta._
-import ohnosequences.statika._
-import com.github.tototoshi.csv._
-import better.files._
-import scala.collection.JavaConverters._
 
 case object pick16SCandidates extends FilterData(
   RNAcentral.table,

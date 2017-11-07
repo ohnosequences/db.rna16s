@@ -9,20 +9,13 @@
 */
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.db._, csvUtils._, collectionUtils._
+import ohnosequences.db._
 import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
-import ohnosequences.statika._
 import ohnosequences.mg7._
-import ohnosequences.awstools.s3._
-import com.amazonaws.auth._
-import com.amazonaws.services.s3.transfer._
-import ohnosequences.blast.api._, outputFields._
 import com.github.tototoshi.csv._
 import better.files._
-import java.nio.file.Files
 import com.bio4j.titan.model.ncbiTaxonomy.TitanNCBITaxonomyGraph
-import scala.collection.JavaConverters._
 
 case class inconsistentAssignmentsFilter(
   val taxonomyGraph: TitanNCBITaxonomyGraph,

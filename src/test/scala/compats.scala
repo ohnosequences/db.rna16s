@@ -1,7 +1,7 @@
 package ohnosequences.db.rna16s.test
 
 import ohnosequences.statika._, aws._
-import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
+import ohnosequences.awstools._, regions._, ec2._
 
 case object compats {
 

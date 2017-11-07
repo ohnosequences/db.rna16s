@@ -1,16 +1,13 @@
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.mg7._, loquats._
-import ohnosequences.datasets._, illumina._
+import ohnosequences.mg7._
+import ohnosequences.datasets._
 import ohnosequences.cosas._, types._, klists._
-import ohnosequences.loquat._, utils._
-import ohnosequences.statika._, aws._
+import ohnosequences.statika._
 import ohnosequences.blast.api._
-
-import ohnosequences.awstools._, regions._, ec2._, s3._, autoscaling._
+import ohnosequences.awstools._, s3._
 import com.amazonaws.services.s3.transfer._
-import com.amazonaws.auth._, profile._
-
+import com.amazonaws.auth._
 import better.files._
 
 /*

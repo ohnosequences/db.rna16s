@@ -1,7 +1,6 @@
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.db._, csvUtils._, collectionUtils._
-import ohnosequences.fastarious.fasta._
+import ohnosequences.db._, collectionUtils._
 import ohnosequences.statika._
 import ohnosequences.mg7._
 import ohnosequences.awstools.s3._
