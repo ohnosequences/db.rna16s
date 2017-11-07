@@ -1,6 +1,5 @@
 package ohnosequences.db.rna16s.test
 
-import com.amazonaws.services.s3._, transfer._
 import com.amazonaws.auth._
 import ohnosequences.awstools.s3._
 import ohnosequences.db
@@ -9,43 +8,30 @@ import ohnosequences.db
 case object releaseData {
 
   def apply(credentials: AWSCredentialsProvider): Unit = {
+    val transferManager = S3Client(credentials = credentials).createTransferManager
 
-    val s3 = S3Client(credentials = credentials)
-    val transferManager = s3.createTransferManager
+    print(s"Copying fasta... ")
+    transferManager.copy(
+      dropInconsistentAssignments.output.fasta.s3,
+      db.rna16s.data.fastaS3
+    ).get
+    println("Done!")
 
-    /* This code generates a list of pairs for all objects in the source folder to the objects in the new folder (because transferManager.copy doesn't work for folders) */
-    val blastdbSource = dropInconsistentAssignmentsAndGenerate.s3destination
-    val blastdbMap = s3
-      .listObjects(blastdbSource)
-      .getOrElse(sys.error(s"Couldn't list objects in ${blastdbSource}"))
-      .flatMap { obj =>
-        obj.key.split('/').lastOption.map { name =>
-          obj -> (db.rna16s.data.blastDBS3 / name)
-        }
-      }
+    print(s"Copying assignments table... ")
+    transferManager.copy(
+      dropInconsistentAssignments.output.table.s3,
+      db.rna16s.data.id2taxasS3
+    ).get
+    println("Done!")
 
-    copyData(transferManager)(
-      (dropInconsistentAssignments.output.fasta.s3 -> db.rna16s.data.fastaS3) ::
-      (dropInconsistentAssignments.output.table.s3 -> db.rna16s.data.id2taxasS3) ::
-      blastdbMap
-    )
+    print(s"Copying blastdb... ")
+    transferManager.copy(
+      dropInconsistentAssignmentsAndGenerate.s3destination,
+      db.rna16s.data.blastDBS3
+    ).get
+    println("Done!")
 
-    transferManager.shutdownNow()
-  }
-
-
-  def copyData(transferManager: TransferManager)(pairs: Seq[(AnyS3Address, AnyS3Address)]): Unit = {
-    pairs.foreach { case (source, target) =>
-      println(s"Copying ${source}")
-      println(s"     to ${target}")
-
-      transferManager.copy(
-        source.bucket, source.key,
-        target.bucket, target.key
-      ).waitForCompletion
-
-      println("Done!")
-    }
+    transferManager.shutdownNow(true)
   }
 
 }
