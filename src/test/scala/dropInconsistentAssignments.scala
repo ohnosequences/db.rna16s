@@ -28,14 +28,18 @@ case class inconsistentAssignmentsFilter(
   type Lineage = Seq[Taxon]
 
   /* Mapping from sequence IDs to their taxonomic assignments set */
-  lazy val referenceMap: Map[ID, Set[Taxon]] =
-    CSVReader.open(assignmentsTable.toJava)(csvUtils.UnixCSVFormat).iterator
+  lazy val referenceMap: Map[ID, Set[Taxon]] = {
+    val reader = CSVReader.open(assignmentsTable.toJava)(csvUtils.UnixCSVFormat)
+    val refMap = reader.iterator
       .foldLeft(Map[ID, Set[Taxon]]()) { (acc, row) =>
         acc.updated(
           row(0),
           row(1).split(';').map(_.trim).toSet
         )
       }
+    reader.close()
+    refMap
+  }
 
   def referenceTaxaFor(id: ID): Set[Taxon] = referenceMap.get(id).getOrElse(Set())
 
@@ -121,17 +125,22 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
       )
     }
 
-  lazy val filter = inconsistentAssignmentsFilter(
-    ncbiTaxonomyBundle.graph,
-    source.table.file
-  )
+  def filterData(): Unit = {
+    val filter = inconsistentAssignmentsFilter(
+      ncbiTaxonomyBundle.graph,
+      source.table.file
+    )
 
-  def filterData(): Unit = clusteringResults.clusters.lines
-    .flatMap { line => filter.partitionAssignments( line.split(',') ) }
-    .foreach { case (id, accepted, rejected) =>
+    clusteringResults.clusters.lines
+      .flatMap { line =>
+        filter.partitionAssignments( line.split(',') )
+      }
+      .foreach { case (id, accepted, rejected) =>
+        writeOutput(id, accepted.toSeq, rejected.toSeq, id2fasta(id))
+      }
 
-      writeOutput(id, accepted.toSeq, rejected.toSeq, id2fasta(id))
-    }
+    filter.taxonomyGraph.raw.titanGraph.shutdown()
+  }
 }
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(
