@@ -36,7 +36,7 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
     // id1 -> fasta1
     // id2 -> fasta2
     // ...
-    val id2fasta: Map[ID, FASTA] = java.nio.file.Files.lines(source.fasta.file.toJava.toPath).iterator.asScala.buffered.parseFastaSkipCrap
+    val id2fasta: Map[ID, FASTA] = source.fasta.parsed
       .foldLeft(Map[ID, FASTA]()) { (acc, fasta) =>
         acc.updated(
           fasta.header.id,

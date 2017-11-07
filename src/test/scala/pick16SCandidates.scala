@@ -14,6 +14,7 @@ import ohnosequences.fastarious._, fasta._
 import ohnosequences.statika._
 import com.github.tototoshi.csv._
 import better.files._
+import scala.collection.JavaConverters._
 
 case object pick16SCandidates extends FilterData(
   RNAcentral.table,
@@ -112,7 +113,7 @@ case object pick16SCandidates extends FilterData(
     val groupedRows: Iterator[(String, Seq[Row])] =
       source.table.tsvReader.iterator.map(RNAcentral.row).contiguousGroupBy { _.select(id) }
 
-    val fastas: Iterator[FASTA] = source.fasta.parsed.toIterator
+    val fastas: Iterator[FASTA] = source.fasta.parsed
 
     (groupedRows zip fastas) foreach { case ((commonID, rows), fasta) =>
 

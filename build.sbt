@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
   "ohnosequences" %% "aws-scala-tools" % "0.20.0"
 ) ++ Seq( // Test:
   "org.scalatest" %% "scalatest"     % "3.0.4",
-  "ohnosequences" %% "db-rnacentral" % "0.10.0-4-g3e1bfda",
+  "ohnosequences" %% "db-rnacentral" % "0.10.0-6-g6f68310",
   "ohnosequences" %% "mg7"           % "1.0.0-RC1-28-gea105a1",
   "era7bio"       %% "defaults"      % "0.3.0-RC3"
 ).map { _ % Test }

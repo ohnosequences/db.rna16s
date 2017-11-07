@@ -120,9 +120,7 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 ) {
 
   /* Mapping of sequence IDs to corresponding FASTA sequences */
-  lazy val id2fasta: Map[ID, FASTA] = Files.lines(source.fasta.file.toJava.toPath)
-    .iterator.asScala.buffered
-    .parseFastaSkipCrap
+  lazy val id2fasta: Map[ID, FASTA] = source.fasta.parsed
     .foldLeft(Map[ID, FASTA]()) { (acc, fasta) =>
       acc.updated(
         fasta.header.id,
