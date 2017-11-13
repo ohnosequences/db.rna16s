@@ -14,7 +14,7 @@ All data comes from the latest [RNAcentral] release, the most comprehensive RNA 
 
 ## Database generation and curation
 
-We can divide this into three steps:
+We can divide this into four steps:
 
 1. **Pick 16S candidate sequences**: take all sequences which contain the full sequence of a 16S gene
 2. **Drop redundant assignments and sequences**: if a sequence `S` has an assignment to taxon `A`, and a sequence `s` which is a subsequence of `S` has the same assignment, we drop this assignment from `s`; sequences with no assignments left are dropped
