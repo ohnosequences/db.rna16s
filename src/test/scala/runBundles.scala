@@ -9,7 +9,7 @@ import scala.collection.JavaConverters._
 case object rna16s {
 
   // TODO: move all these things somewhere to make them reusable (era7bio/projects?)
-  def getStatikaStatus(inst: Instance): String = inst.ec2.describeTags(
+  def getStatikaStatus(inst: Instance): Option[String] = inst.ec2.describeTags(
     new DescribeTagsRequest(List(
       new Filter("resource-type", List("instance").asJava),
       new Filter("resource-id", List(inst.id).asJava),
@@ -18,24 +18,23 @@ case object rna16s {
   ).getTags.asScala
     .headOption
     .map { _.getValue }
-    .getOrElse("...")
 
   def waitForCompletion(instance: Instance): Either[Instance, Instance] = {
 
     @annotation.tailrec
-    def checkStatus_rec(previous: String): Either[Instance, Instance] = {
+    def checkStatus_rec(previous: Option[String]): Either[Instance, Instance] = {
       val current = getStatikaStatus(instance)
-      if (current != previous) println(s"${instance.id}: ${current}")
+      if (current != previous) println(s"${instance.id}: ${current.getOrElse("...")}")
       current match {
-        case "failure" => Left(instance)
-        case "success" => Right(instance)
+        case Some("failure") => Left(instance)
+        case Some("success") => Right(instance)
         case _ => {
           Thread sleep 3000
           checkStatus_rec(current)
         }
       }
     }
-    checkStatus_rec("")
+    checkStatus_rec(None)
   }
 
   // use `sbt test:console`:
@@ -96,6 +95,9 @@ case object rna16s {
         terminateOnSuccess
       )
 
+    // TODO: mg7.pipeline.split.launchLocally
+    // TODO: mg7.pipeline.blast.launchLocally
+
     def clusterSequences(): Either[String, String] =
       launchAndWait(ohnosequences.db.rna16s.test.compats.clusterSequences,
         r3.large,
@@ -109,15 +111,6 @@ case object rna16s {
         user,
         terminateOnSuccess
       )
-
-    def launchAll(): Either[String, String] = {
-      for {
-        step1 <- pick16SCandidates().right
-        step2 <- dropRedundantAssignmentsAndGenerate().right
-        step3 <- clusterSequences().right
-        step4 <- dropInconsistentAssignmentsAndGenerate().right
-      } yield step4
-    }
   }
 
 }
