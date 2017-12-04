@@ -1,16 +1,11 @@
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.mg7._, loquats._
-import ohnosequences.datasets._, illumina._
+import ohnosequences.mg7._
+import ohnosequences.datasets._
 import ohnosequences.cosas._, types._, klists._
-import ohnosequences.loquat._, utils._
-import ohnosequences.statika._, aws._
+import ohnosequences.statika._
 import ohnosequences.blast.api._
-
-import ohnosequences.awstools._, regions._, ec2._, s3._, autoscaling._
-import com.amazonaws.services.s3.transfer._
-import com.amazonaws.auth._, profile._
-
+import ohnosequences.awstools._, s3._
 import better.files._
 
 /*
@@ -26,7 +21,7 @@ case object mg7 {
   /* As the reference database we use the one generated from dropRedundantAssignments */
   case object rna16sRefDB extends ReferenceDB(
     ohnosequences.db.rna16s.dbName,
-    dropRedundantAssignmentsAndGenerate.s3,
+    dropRedundantAssignmentsAndGenerate.s3destination,
     dropRedundantAssignments.output.table.s3
   )
 
@@ -88,16 +83,11 @@ case object mg7BlastResults extends Bundle() {
   lazy val blastResult: File = (blastChunks.parent / "blastResult.csv").createIfNotExists()
 
   def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
-
-    transferManager.downloadDirectory(
-      s3location.bucket, s3location.key,
-      File(".").toJava
-    ).waitForCompletion
-
-    transferManager.shutdownNow()
+    val s3client = s3.defaultClient
+    s3client.download(s3location, File(".").toJava).get
+    s3client.shutdown()
   } -&- LazyTry {
 
-    loquats.mergeDataProcessing().mergeChunks(blastChunks, blastResult)
+    loquats.mergeDataProcessing().mergeChunks(blastChunks.toJava, blastResult.toJava)
   }
 }

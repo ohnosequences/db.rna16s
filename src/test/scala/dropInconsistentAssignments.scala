@@ -9,15 +9,10 @@
 */
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.db._, csvUtils._, collectionUtils._
+import ohnosequences.db._
 import ohnosequences.ncbitaxonomy._, titan._
 import ohnosequences.fastarious.fasta._
-import ohnosequences.statika._
 import ohnosequences.mg7._
-import ohnosequences.awstools.s3._
-import com.amazonaws.auth._
-import com.amazonaws.services.s3.transfer._
-import ohnosequences.blast.api._, outputFields._
 import com.github.tototoshi.csv._
 import better.files._
 import com.bio4j.titan.model.ncbiTaxonomy.TitanNCBITaxonomyGraph
@@ -33,14 +28,18 @@ case class inconsistentAssignmentsFilter(
   type Lineage = Seq[Taxon]
 
   /* Mapping from sequence IDs to their taxonomic assignments set */
-  lazy val referenceMap: Map[ID, Set[Taxon]] =
-    CSVReader.open(assignmentsTable.toJava)(csvUtils.UnixCSVFormat).iterator
+  lazy val referenceMap: Map[ID, Set[Taxon]] = {
+    val reader = CSVReader.open(assignmentsTable.toJava)(csvUtils.UnixCSVFormat)
+    val refMap = reader.iterator
       .foldLeft(Map[ID, Set[Taxon]]()) { (acc, row) =>
         acc.updated(
           row(0),
           row(1).split(';').map(_.trim).toSet
         )
       }
+    reader.close()
+    refMap
+  }
 
   def referenceTaxaFor(id: ID): Set[Taxon] = referenceMap.get(id).getOrElse(Set())
 
@@ -118,25 +117,30 @@ case object dropInconsistentAssignments extends FilterDataFrom(dropRedundantAssi
 ) {
 
   /* Mapping of sequence IDs to corresponding FASTA sequences */
-  lazy val id2fasta: Map[ID, Fasta] = source.fasta.parsed
-    .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
+  lazy val id2fasta: Map[ID, FASTA] = source.fasta.parsed
+    .foldLeft(Map[ID, FASTA]()) { (acc, fasta) =>
       acc.updated(
-        fasta.getV(header).id,
+        fasta.header.id,
         fasta
       )
     }
 
-  lazy val filter = inconsistentAssignmentsFilter(
-    ncbiTaxonomyBundle.graph,
-    source.table.file
-  )
+  def filterData(): Unit = {
+    val filter = inconsistentAssignmentsFilter(
+      ncbiTaxonomyBundle.graph,
+      source.table.file
+    )
 
-  def filterData(): Unit = clusteringResults.clusters.lines
-    .flatMap { line => filter.partitionAssignments( line.split(',') ) }
-    .foreach { case (id, accepted, rejected) =>
+    clusteringResults.clusters.lines
+      .flatMap { line =>
+        filter.partitionAssignments( line.split(',') )
+      }
+      .foreach { case (id, accepted, rejected) =>
+        writeOutput(id, accepted.toSeq, rejected.toSeq, id2fasta(id))
+      }
 
-      writeOutput(id, accepted.toSeq, rejected.toSeq, id2fasta(id))
-    }
+    filter.taxonomyGraph.raw.titanGraph.shutdown()
+  }
 }
 
 case object dropInconsistentAssignmentsAndGenerate extends FilterAndGenerateBlastDB(

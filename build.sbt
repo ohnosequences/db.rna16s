@@ -1,31 +1,28 @@
 name          := "db.rna16s"
 organization  := "ohnosequences"
 description   := "A comprehensive, compact, and automatically curated 16S database"
-
-scalaVersion := "2.11.8"
-
-resolvers := Seq(
-  "Era7 private maven releases"  at s3("private.releases.era7.com").toHttps(s3region.value.toString),
-  "Era7 private maven snapshots" at s3("private.snapshots.era7.com").toHttps(s3region.value.toString)
-) ++ resolvers.value
-
 bucketSuffix  := "era7.com"
+
+crossScalaVersions := Seq("2.11.11", "2.12.3")
+scalaVersion := crossScalaVersions.value.max
+
+resolvers += "Era7 private maven releases" at s3("private.releases.era7.com").toHttps(s3region.value.toString)
 
 libraryDependencies ++= Seq(
   // We only need statika compile-dependency for the artifact metadata in the S3 data references
-  "ohnosequences" %% "statika"   % "2.0.0",
-  // Test:
-  "ohnosequences" %% "blast-api"     % "0.8.0"                % Test,
-  "ohnosequences" %% "fastarious"    % "0.8.0"                % Test,
-  "ohnosequences" %% "ncbitaxonomy"  % "0.2.0"                % Test,
-  "ohnosequences" %% "db-rnacentral" % "0.9.0"                % Test,
-  "era7bio"       %% "defaults"      % "0.3.0-RC2"            % Test,
-  "ohnosequences" %% "mg7"           % "1.0.0-M5-22-gef9d9ee" % Test
-)
+  "ohnosequences" %% "statika" % "3.0.0",
+  "ohnosequences" %% "aws-scala-tools" % "0.20.0"
+) ++ Seq( // Test:
+  "org.scalatest" %% "scalatest"     % "3.0.4",
+  "ohnosequences" %% "db-rnacentral" % "0.10.1",
+  "ohnosequences" %% "mg7"           % "1.0.0-RC1-28-gea105a1",
+  "era7bio"       %% "defaults"      % "0.3.0-RC3"
+).map { _ % Test }
 
-dependencyOverrides ++= Set(
-  "org.apache.httpcomponents" % "httpclient" % "4.5.1",
-  "org.slf4j"                 % "slf4j-api"  % "1.7.7"
+dependencyOverrides ++= Seq(
+  // TODO: remove after updating bio4j-dist
+  "ohnosequences" %% "aws-scala-tools" % "0.20.0",
+  "ohnosequences" %% "loquat" % "2.0.0-RC4-26-g760c7a4"
 )
 
 generateStatikaMetadataIn(Compile)

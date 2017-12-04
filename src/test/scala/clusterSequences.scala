@@ -1,12 +1,9 @@
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.db._, csvUtils._, collectionUtils._
-import ohnosequences.fastarious.fasta._
+import ohnosequences.db._, collectionUtils._
 import ohnosequences.statika._
 import ohnosequences.mg7._
-import ohnosequences.awstools.s3._
-import com.amazonaws.auth._
-import com.amazonaws.services.s3.transfer._
+import ohnosequences.awstools._, s3._
 import ohnosequences.blast.api._, outputFields._
 import com.github.tototoshi.csv._
 import better.files._
@@ -44,26 +41,20 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
   lazy val name: String = "clusters"
 
-  final lazy val s3: S3Folder = ohnosequences.db.rna16s.s3prefix / name /
+  final lazy val s3destination: S3Folder = ohnosequences.db.rna16s.s3prefix / name /
   final lazy val outputName: String = name + ".csv"
 
 
   case object output {
     lazy val file: File   = File(outputName).createIfNotExists()
-    lazy val s3: S3Object = bundle.s3 / outputName
+    lazy val s3destination: S3Object = bundle.s3destination / outputName
 
     lazy val csv = CSVWriter.open(this.file.toJava, append = true)(csvUtils.UnixCSVFormat)
 
     def upload(): Unit = {
-
-      val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
-
-      transferManager.upload(
-        this.s3.bucket, this.s3.key,
-        this.file.toJava
-      ).waitForCompletion
-
-      transferManager.shutdownNow()
+      val s3client = s3.defaultClient
+      s3client.upload(this.file.toJava, this.s3destination).get
+      s3client.shutdown()
     }
   }
 
@@ -103,7 +94,7 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
 
     LazyTry {
 
-      val blastReader = csv.Reader(mg7.parameters.blastOutRec.keys)(mg7BlastResults.blastResult)
+      val blastReader = csv.Reader(mg7.parameters.blastOutRec.keys)(mg7BlastResults.blastResult.toJava)
 
       val correspondences: Iterator[Set[ID]] = blastReader.rows
         // grouping rows by the query sequence id
@@ -120,25 +111,20 @@ case object clusterSequences extends Bundle(mg7BlastResults) { bundle =>
       println("Uploading the results...")
       output.upload()
     } -&-
-    say(s"Clustered sequences uploaded to [${output.s3}]")
+    say(s"Clustered sequences uploaded to [${output.s3destination}]")
   }
 }
 
 /* This bundle just downloads the results of `clusterSequences` */
 case object clusteringResults extends Bundle() {
 
-  lazy val s3location: S3Object = clusterSequences.output.s3
-  lazy val clusters: File = File(s3location.key)
+  lazy val s3destination: S3Object = clusterSequences.output.s3destination
+  lazy val clusters: File = File(s3destination.key)
 
   def instructions: AnyInstructions = LazyTry {
-    val transferManager = new TransferManager(new DefaultAWSCredentialsProviderChain())
-
-    transferManager.download(
-      s3location.bucket, s3location.key,
-      clusters.toJava
-    ).waitForCompletion
-
-    transferManager.shutdownNow()
+    val s3client = s3.defaultClient
+    s3client.download(s3destination, clusters.toJava).get
+    s3client.shutdown()
   } -&-
   say(s"Clusters downloaded to ${clusters}")
 }
