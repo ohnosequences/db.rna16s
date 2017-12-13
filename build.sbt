@@ -6,13 +6,17 @@ bucketSuffix  := "era7.com"
 crossScalaVersions  := Seq("2.11.11", "2.12.4")
 scalaVersion        := crossScalaVersions.value.max
 
+// scaladoc
+scalacOptions in (Compile, doc) ++= Seq("-groups")
+autoAPIMappings := true
+
 resolvers := Seq(
   "Era7 private maven releases"  at s3("private.releases.era7.com").toHttps(s3region.value.toString),
   "Era7 private maven snapshots" at s3("private.snapshots.era7.com").toHttps(s3region.value.toString)
 ) ++ resolvers.value
 
 libraryDependencies ++= Seq(
-  "ohnosequences" %% "api-rnacentral"   % "0.1.0" ,
+  "ohnosequences" %% "api-rnacentral"   % "0.2.0" ,
   "ohnosequences" %% "aws-scala-tools"  % "0.20.0",
   "ohnosequences" %% "fastarious"       % "0.12.0",
   "ohnosequences" %% "statika"          % "3.0.0"
@@ -25,13 +29,13 @@ val testDependencies = Seq(
   // "ohnosequences" %% "fastarious"    % "0.8.0",
   // "ohnosequences" %% "ncbitaxonomy"  % "0.2.0",
   // "era7bio"       %% "defaults"      % "0.3.0-RC3",
-  // "ohnosequences" %% "mg7"           % "1.0.0-RC1-28-gea105a1"
+  "ohnosequences" %% "mg7"           % "1.0.0-RC1-28-gea105a1"
 )
 .map(_ % Test)
 
 dependencyOverrides ++= Seq(
-  "org.apache.httpcomponents" % "httpclient" % "4.5.1",
-  "org.slf4j"                 % "slf4j-api"  % "1.7.7",
+  // "org.apache.httpcomponents" % "httpclient" % "4.5.1",
+  // "org.slf4j"                 % "slf4j-api"  % "1.7.7",
   // TODO: remove after updating bio4j-dist
   "ohnosequences" %% "aws-scala-tools" % "0.20.0",
   "ohnosequences" %% "loquat" % "2.0.0-RC4-26-g760c7a4"
