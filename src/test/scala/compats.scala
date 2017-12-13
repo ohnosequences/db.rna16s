@@ -1,7 +1,7 @@
 package ohnosequences.db.rna16s.test
 
 import ohnosequences.statika._, aws._
-import ohnosequences.awstools._, regions._, ec2._, autoscaling._, s3._
+import ohnosequences.awstools._, regions._, ec2._
 
 case object compats {
 
@@ -9,7 +9,7 @@ case object compats {
   val  defaultAMI: DefaultAMI = AmazonLinuxAMI(Ireland, HVM, InstanceStore)
 
   class DefaultCompatible[B <: AnyBundle](bundle: B, javaHeap: Int) extends Compatible(
-    amznAMIEnv(defaultAMI, javaHeap),
+    amznAMIEnv(defaultAMI, javaHeap = javaHeap),
     bundle,
     ohnosequences.db.generated.metadata.rna16s
   )

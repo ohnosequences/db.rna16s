@@ -1,7 +1,6 @@
 name          := "db.rna16s"
 organization  := "ohnosequences"
 description   := "A comprehensive, compact, and automatically curated 16S database"
-
 bucketSuffix  := "era7.com"
 
 crossScalaVersions  := Seq("2.11.11", "2.12.4")
@@ -20,18 +19,22 @@ libraryDependencies ++= Seq(
 ) ++ testDependencies
 
 val testDependencies = Seq(
-  // Test:
-  "ohnosequences" %% "db-rnacentral"  % "0.11.1"              % Test
-  // "ohnosequences" %% "blast-api"     % "0.8.0"                % Test,
-  // "ohnosequences" %% "fastarious"    % "0.8.0"                % Test,
-  // "ohnosequences" %% "ncbitaxonomy"  % "0.2.0"                % Test,
-  // "era7bio"       %% "defaults"      % "0.3.0-RC2"            % Test,
-  // "ohnosequences" %% "mg7"           % "1.0.0-M5-22-gef9d9ee" % Test
+  "org.scalatest" %% "scalatest"      % "3.0.4",
+  "ohnosequences" %% "db-rnacentral"  % "0.11.1",        
+  // "ohnosequences" %% "blast-api"     % "0.8.0",
+  // "ohnosequences" %% "fastarious"    % "0.8.0",
+  // "ohnosequences" %% "ncbitaxonomy"  % "0.2.0",
+  // "era7bio"       %% "defaults"      % "0.3.0-RC3",
+  // "ohnosequences" %% "mg7"           % "1.0.0-RC1-28-gea105a1"
 )
+.map(_ % Test)
 
 dependencyOverrides ++= Seq(
   "org.apache.httpcomponents" % "httpclient" % "4.5.1",
-  "org.slf4j"                 % "slf4j-api"  % "1.7.7"
+  "org.slf4j"                 % "slf4j-api"  % "1.7.7",
+  // TODO: remove after updating bio4j-dist
+  "ohnosequences" %% "aws-scala-tools" % "0.20.0",
+  "ohnosequences" %% "loquat" % "2.0.0-RC4-26-g760c7a4"
 )
 
 generateStatikaMetadataIn(Compile)

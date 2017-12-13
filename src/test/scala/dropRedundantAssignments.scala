@@ -9,12 +9,8 @@
 */
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.db._, csvUtils._, collectionUtils._
+import ohnosequences.db._, collectionUtils._
 import ohnosequences.fastarious.fasta._
-import ohnosequences.statika._
-import ohnosequences.blast.api.BlastDBType
-import com.github.tototoshi.csv._
-import better.files._
 
 case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)() {
 
@@ -35,10 +31,10 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
     // id1 -> fasta1
     // id2 -> fasta2
     // ...
-    val id2fasta: Map[ID, Fasta] = source.fasta.parsed
-      .foldLeft(Map[ID, Fasta]()) { (acc, fasta) =>
+    val id2fasta: Map[ID, FASTA] = source.fasta.parsed
+      .foldLeft(Map[ID, FASTA]()) { (acc, fasta) =>
         acc.updated(
-          fasta.getV(header).id,
+          fasta.header.id,
           fasta
         )
       }
@@ -69,15 +65,15 @@ case object dropRedundantAssignments extends FilterDataFrom(pick16SCandidates)()
     // taxa2 -> Left(id1), Right(id2), Left(id3), ...
     val taxa2partitionedIDs: Map[Taxon, Seq[Eith[ID]]] = taxa2ids.map { case (taxa, ids) =>
 
-      val fastas: Seq[Fasta] = ids.map(id2fasta.apply)
+      val fastas: Seq[FASTA] = ids.map(id2fasta.apply)
 
-      val (contained: Seq[Fasta], notContained: Seq[Fasta]) =
-        partitionContained(fastas){ _.getV(sequence).value }
+      val (contained: Seq[FASTA], notContained: Seq[FASTA]) =
+        partitionContained(fastas){ _.sequence.letters }
 
       // here we add Left/Right tag to the corresponding IDs and put them all together:
       taxa -> {
-           contained.map { f =>  Left(f.getV(header).id): Eith[ID] } ++
-        notContained.map { f => Right(f.getV(header).id): Eith[ID] }
+           contained.map { f =>  Left(f.header.id): Eith[ID] } ++
+        notContained.map { f => Right(f.header.id): Eith[ID] }
       }
     }
 
