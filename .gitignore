@@ -4,6 +4,7 @@ target/
 boot/
 lib_managed/
 src_managed/
+project/target/
 project/boot/
 project/plugins/project/
 
@@ -15,6 +16,7 @@ data/in/
 data/out/
 
 .tags*
+.vscode*
 .sublime*
 .atom*
 .ensime*

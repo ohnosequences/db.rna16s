@@ -2,7 +2,7 @@ package ohnosequences.db.rna16s
 
 import ohnosequences.awstools.s3._
 
-/*
+/**
   # S3 data paths
 
   These are the S3 locations of this release files:
