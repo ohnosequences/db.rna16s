@@ -1,6 +1,6 @@
 // generic conf; don't change this file
 // pull particular versions from buildconf
-scalaVersion := "2.12.3"
+scalaVersion := "2.12.4"
 
 dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value
 
