@@ -11,11 +11,11 @@ scalacOptions ++= Seq(
   "-Xlint",
   "-Xfatal-warnings",
   "-Xlog-reflective-calls",
-  "-Ywarn-unused",
+  // "-Ywarn-unused",
   "-Ywarn-adapted-args",
   "-opt-warnings:_",
   "-unchecked",
-  "-Xstrict-inference",
+  // "-Xstrict-inference",
   "-Ywarn-unused-import",
   "-Yno-adapted-args",
   "-Ydelambdafy:method"
