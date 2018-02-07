@@ -1,4 +1,4 @@
-package ohnosequences.db.rna16s.rewrite
+package ohnosequences.db.rna16s
 
 import ohnosequences.api.rnacentral.Entry
 import ohnosequences.fastarious._, fasta._
@@ -14,5 +14,5 @@ case object fastaFormat {
       FASTA(
         Header(s"${entry.rnaSequence.rnaID} ${joinDescriptions(entry)}"),
         Sequence(entry.rnaSequence.sequence)
-      )
+    )
 }
