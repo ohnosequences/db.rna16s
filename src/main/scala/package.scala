@@ -7,9 +7,6 @@ package object rna16s {
   val version: String =
     "7.0"
 
-  val asPath: String => String =
-    _.replace('.', '/')
-
   val s3Prefix: S3Folder =
     s3"resources.ohnosequences.com" /
       "db" /
