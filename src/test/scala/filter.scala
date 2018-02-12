@@ -1,10 +1,9 @@
 package ohnosequences.db.rna16s.test
 
 import ohnosequences.test._
-import ohnosequences.db.rna16s._
 import ohnosequences.api.rnacentral._
 
-class RandomTest extends org.scalatest.FunSuite {
+class DataGeneration extends org.scalatest.FunSuite {
 
   test("process all entries", ReleaseOnlyTest) {
 

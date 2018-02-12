@@ -1,4 +1,4 @@
-package ohnosequences.db.rna16s
+package ohnosequences.db.rna16s.test
 
 import ohnosequences.api.rnacentral._
 
