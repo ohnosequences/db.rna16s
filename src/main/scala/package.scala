@@ -4,15 +4,6 @@ import ohnosequences.awstools.s3._
 
 package object rna16s {
 
-  type +[A, B] =
-    Either[A, B]
-
-  implicit final class PredicateOps[X](val p: X => Boolean) {
-
-    def &&(other: X => Boolean): X => Boolean =
-      x => p(x) && other(x)
-  }
-
   val version: String =
     "7.0"
 

@@ -5,6 +5,15 @@ import ohnosequences.api.rnacentral._
 
 package object test {
 
+  type +[A, B] =
+    Either[A, B]
+
+  implicit final class PredicateOps[X](val p: X => Boolean) {
+
+    def &&(other: X => Boolean): X => Boolean =
+      x => p(x) && other(x)
+  }
+
   val data: RNACentralData =
     RNACentralData(
       speciesSpecificFasta =
