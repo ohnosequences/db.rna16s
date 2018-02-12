@@ -10,9 +10,15 @@ package object rna16s {
   val asPath: String => String =
     _.replace('.', '/')
 
-  val s3prefix: S3Folder =
+  val s3Prefix: S3Folder =
     s3"resources.ohnosequences.com" /
       "db" /
       "rna16s" /
       version /
+
+  val sequences: S3Object =
+    s3Prefix / "rna16s.fa"
+
+  val fullDB: S3Object =
+    s3Prefix / "rna16s.csv"
 }
