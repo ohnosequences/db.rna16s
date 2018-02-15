@@ -92,32 +92,14 @@ case object rna16sIdentification {
     lazy val hasLength16s: Entry => Boolean =
       entry => length16s(entry.rnaSequence.sequence.length)
 
-    /** Keep the [[Entry]] if the sequence
-
-        - has an acceptable percentage of `N`s [[ratioOfNs]]
-        - has no long `N...N` subsequences [[containsSliceOfNs]]
-      */
+    /** Keep the [[Entry]] if the sequence has no `N`s. */
     lazy val qualityOK: Entry => Dropped + Entry =
       entry =>
-        if (ratioOfNs(entry.rnaSequence.sequence) <= 0.01 &&
-            !containsSliceOfNs(5)(entry.rnaSequence.sequence))
-          Right(entry)
-        else
-          Left(Dropped.LowQualitySequence(entry))
+        if (!hasNs(entry.rnaSequence.sequence)) Right(entry)
+        else Left(Dropped.LowQualitySequence(entry))
 
-    lazy val containsSliceOfNs: Int => String => Boolean =
-      number => {
-
-        val Ns =
-          Seq.fill(number)('N').mkString
-
-        { seq =>
-          seq.map(_.toUpper) containsSlice Ns
-        }
-      }
-
-    lazy val ratioOfNs: String => Float =
-      seq => if (seq.isEmpty) 0 else seq.count(_.toUpper == 'N') / seq.length
+    lazy val hasNs: String => Boolean =
+      _.exists(_.toUpper == 'N')
   }
 
   case object annotation {
