@@ -1,25 +1,19 @@
-# Use container-based infrastructure
-sudo: false
 language: scala
-jdk: oraclejdk8
 scala:
-  - 2.11.11
-  - 2.12.3
+  - 2.12.4
+jdk:
+  - oraclejdk8
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION compile
+  - sbt ++$TRAVIS_SCALA_VERSION compile clean test
+  # Tricks to avoid unnecessary cache updates
+  - find $HOME/.sbt -name "*.lock" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 notifications:
   email: false
-  webhooks:
-    urls: https://webhooks.gitter.im/e/994060df4cea3906054e
-    on_success: change
-    on_failure: always
-    on_start: never
+# Use container-based infrastructure
+sudo: false
 # These directories are cached to S3 at the end of the build
 cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
-before_cache:
-  # Tricks to avoid unnecessary cache updates
-  - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
-  - find $HOME/.sbt -name "*.lock" -delete

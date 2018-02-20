@@ -4,13 +4,18 @@ import ohnosequences.awstools.s3._
 
 package object rna16s {
 
-  val dbName = "ohnosequences.db.rna16s"
+  val version: String =
+    "7.0"
 
-  private val metadata = generated.metadata.rna16s
-
-  val s3prefix: S3Folder =
+  val s3Prefix: S3Folder =
     s3"resources.ohnosequences.com" /
-    metadata.organization /
-    metadata.artifact /
-    metadata.version /
+      "db" /
+      "rna16s" /
+      version /
+
+  val sequences: S3Object =
+    s3Prefix / "rna16s.fa"
+
+  val fullDB: S3Object =
+    s3Prefix / "rna16s.csv"
 }
