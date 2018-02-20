@@ -92,14 +92,17 @@ case object rna16sIdentification {
     lazy val hasLength16s: Entry => Boolean =
       entry => length16s(entry.rnaSequence.sequence.length)
 
-    /** Keep the [[Entry]] if the sequence has no `N`s. */
+    /** Keep the [[Entry]] if the sequence is formed only by 'A's, 'T's, 'C's and 'G's. */
     lazy val qualityOK: Entry => Dropped + Entry =
       entry =>
-        if (!hasNs(entry.rnaSequence.sequence)) Right(entry)
+        if (!hasAmbiguousCharacters(entry.rnaSequence.sequence)) Right(entry)
         else Left(Dropped.LowQualitySequence(entry))
 
-    lazy val hasNs: String => Boolean =
-      _.exists(_.toUpper == 'N')
+    /** Check whether a sequence has characters not in `{'A', 'T', 'U', 'C', 'G'}` */
+    lazy val hasAmbiguousCharacters: String => Boolean =
+      _.exists { char =>
+        !"ATCGU".contains(char.toUpper)
+      }
   }
 
   case object annotation {
