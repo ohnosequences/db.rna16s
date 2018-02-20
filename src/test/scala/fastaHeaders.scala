@@ -17,6 +17,7 @@ case object fastaFormat {
     entry =>
       FASTA(
         Header(s"${entry.rnaSequence.rnaID} ${joinDescriptions(entry)}"),
-        Sequence(entry.rnaSequence.sequence)
+        // All upper case, U -> T
+        Sequence(entry.rnaSequence.sequence.toUpperCase.replace('U', 'T'))
     )
 }
