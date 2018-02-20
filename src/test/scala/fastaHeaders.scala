@@ -17,6 +17,7 @@ case object fastaFormat {
     entry =>
       FASTA(
         Header(s"${entry.rnaSequence.rnaID} ${joinDescriptions(entry)}"),
-        Sequence(entry.rnaSequence.sequence)
+        // Every 'u' or 'U' character is written as 'T'.
+        Sequence(entry.rnaSequence.sequence.replaceAll("(?i)u", "T"))
     )
 }
