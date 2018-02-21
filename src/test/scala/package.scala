@@ -14,11 +14,16 @@ package object test {
       x => p(x) && other(x)
   }
 
+  val speciesSpecificFasta =
+    new File("/opt/data/rnacentral_species_specific_ids.fasta")
+
+  val idMapping =
+    new File("/opt/data/id_mapping.tsv")
+
   val data: RNACentralData =
     RNACentralData(
-      speciesSpecificFasta =
-        new File("/opt/data/rnacentral_species_specific_ids.fasta"),
-      idMapping = new File("/opt/data/id_mapping.tsv")
+      speciesSpecificFasta,
+      idMapping
     )
 
   def allEntries: Iterator[Entry] =
