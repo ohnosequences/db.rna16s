@@ -1,0 +1,16 @@
+`db.rna16s-v2.0.0` is a Scala package containing pointers to the sources and final storage of the RNA 16S database: a curated subset of [RNACentral][rnacentral].
+
+The code base here is minimal, and the only interesting bits for a user are:
+
+* The `ohnosequences.db.rna16s.sequences` value, which points to the S3 object where the actual database is stored. In this version, the database sequences are stored at `s3://resources.ohnosequences.com/db/rna16s/7.0/rna16s.fa`.
+
+* The (release only) test in `ohnosequences.db.rna16s.test.DataGeneration`, which downloads the input data from [`db.rnacentral`][db.rnacentral], processes the database entries and generates a fasta file with the database itself, that is uploaded as an S3 object identified by `ohnosequences.db.rna16s.sequences`.
+* The object `ohnosequences.db.rna16s.test.rna16sIdentification`, which contains the actual filters that generate the database. See function `is16s` as a starting point to understand the filters applied:
+  * `annotation.hasRNAType16s`: drops sequences with a type different from `RNAType.rRNA`.
+  * `annotation.someDescriptionContains16s`: drops sequences not containing the string "16S" in their description.
+  * `sequence.has16sLength`: drops sequences whose length is not in the interval `[1300, 1700]`.
+  * `sequence.qualityOK`: drops sequences that contains letters different from 'A', 'T' (or 'U'), 'C' or 'G'.
+
+
+[rnacentral]: http://rnacentral.org/
+[db.rnacentral]: https://github.com/ohnosequences/db.rnacentral
