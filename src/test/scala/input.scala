@@ -1,7 +1,7 @@
 package ohnosequences.db.rna16s.test
 
 import java.io.File
-import ohnosequences.api.rnacentral._
+import ohnosequences.db.rnacentral._
 
 case object input {
 
