@@ -17,6 +17,8 @@ case object input {
       idMapping = idMapping
     )
 
-  def rnaCentralEntries: Iterator[Entry] =
-    iterators right (entries entriesFrom rnaCentralData)
+  def rnaCentralEntries: Iterator[Entry] = {
+    val (malformedRows, entriesIterator) = entries entriesFrom rnaCentralData
+    iterators right entriesIterator
+  }
 }
