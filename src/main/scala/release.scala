@@ -1,15 +1,11 @@
-package ohnosequences.db.rna16s.test
+package ohnosequences.db.rna16s
 
-import org.scalatest.FunSuite
-import ohnosequences.db
-import ohnosequences.test.ReleaseOnlyTest
-import ohnosequences.db.rnacentral.{Entry, iterators}
-import ohnosequences.awstools.s3, s3.S3Object
+import ohnosequences.db.rnacentral
+import ohnosequences.s3.S3Object
+import ohnosequences.files.directory
 import java.io.File
 
-class DataGeneration extends FunSuite {
-
-  val version = db.rnacentral.Version.latest
+case object release {
 
   /**
     * Processes all entries provided by the `entries` iterator and save the
@@ -17,69 +13,109 @@ class DataGeneration extends FunSuite {
     * Returns `Some(file)` if both the process and the file save succeeded,
     * `None` otherwise.
     */
-  def generateSequences(entries: Iterator[Entry], file: File): Option[File] =
+  private def generateSequences(
+      entries: Iterator[rnacentral.Entry],
+      file: File
+  ): Error + File =
     scala.util.Try {
-      iterators
+      rnacentral.iterators
         .right(entries map rna16sIdentification.is16s)
         .map(fastaFormat.entryToFASTA)
         .appendTo(file)
     } match {
-      case scala.util.Failure(e) => { println(e); None }
-      case scala.util.Success(s) => Some(file)
+      case scala.util.Failure(e) => Left(Error.FailedGeneration(e.toString))
+      case scala.util.Success(s) => Right(file)
     }
 
-  test("Sequences generation and upload", ReleaseOnlyTest) {
+  /**
+    * Perform the actual mirror of RNACentral, overwriting if necessary
+    *
+    * For [[data.input.idMappingTSVGZURL]], [[data.idMappingTSV]] is uploaded to
+    * S3. For [[data.input.speciesSpecificFASTAGZURL]],
+    * [[data.speciesSpecificFASTA]] is uploaded to S3.
+    *
+    * The process to mirror each of those files is:
+    *   1. Download the `.gz` file from [[data.input.releaseURL]]
+    *   2. Uncompress to obtain the file
+    *   4. Upload the file ([[data.input.idMappingTSV]] and
+    *   [[data.input.speciesSpecificFASTA]] resp.) to the folder [[data.prefix]].
+    *
+    * @return an Error + Set[S3Object], with a Right(set) with all the mirrored
+    * S3 objects if everything worked as expected or with a Left(error) if an
+    * error occurred. Several things could go wrong in this process; namely:
+    *   - The input files could not be downloaded
+    *   - The input files could not be uncompressed
+    *   - The upload process failed, either because you have no permissions to
+    *   upload the objects or because some error occured during the upload
+    *   itself.
+    */
+  private def generateDB(
+      version: Version,
+      localFolder: File
+  ): Error + S3Object = {
+    val rnacentralVersion = version.inputVersion
+    val inputFasta =
+      rnacentral.data.speciesSpecificFASTA(rnacentralVersion)
+    val inputIdMapping =
+      rnacentral.data.idMappingTSV(rnacentralVersion)
+    val s3Sequences = data.sequences(version)
 
-    output.sequences.delete
-
-    println("Downloading input files")
-
-    downloadOrFail(
-      s3Object = db.rnacentral.data.speciesSpecificFASTA(version),
-      file = input.fasta
-    )
-    println("  FASTA downloaded")
-
-    downloadOrFail(
-      s3Object = db.rnacentral.data.idMappingTSV(version),
-      file = input.idMapping
-    )
-    println("  TSV downloaded")
-
-    println("Generating sequences")
-
-    generateSequencesOrFail(
-      entries = input.rnaCentralEntries,
-      file = output.sequences
-    )
-
-    println("Uploading sequences")
-
-    uploadOrFail(
-      file = output.sequences,
-      s3Object = db.rna16s.sequences
-    )
+    directory
+      .createDirectory(localFolder)
+      .left
+      .map(Error.FileError)
+      .flatMap { _ =>
+        s3Helpers
+          .getCheckedFile(inputFasta, input.fasta)
+          .flatMap(_ =>
+            s3Helpers.getCheckedFile(inputIdMapping, input.idMapping))
+          .left
+          .map(err => Error.S3Error(err))
+          .flatMap(_ =>
+            generateSequences(input.rnaCentralEntries, output.sequences))
+          .flatMap(_ =>
+            s3Helpers.paranoidPutFile(output.sequences, s3Sequences) match {
+              case Left(err) => Left(Error.S3Error(err))
+              case Right(_)  => Right(s3Sequences)
+          })
+      }
   }
 
-  // ScalaTest utils
-  //////////////////////////////////////////////////////////////////////////////
-  def getOrFail[X](msg: String): Option[X] => X =
-    _.fold(fail(msg)) { x =>
-      x
+  /**
+    * Try to mirror a new version of RNACentral to S3.
+    *
+    * This method tries to download [[data.input.releaseURL]], uncompress it
+    * and upload the corresponding files to the objects defined in
+    * [[data.idMappingTSV]] and [[data.speciesSpecificFASTA]].
+    *
+    * It does so if and only if none of those two objects already exist in S3.
+    * If any of them exists, nothing is downloaded nor uploaded and an error is
+    * returned.
+    *
+    * @param version is the new version that wants to be released
+    * @param localFolder is the localFolder where the downloaded files will be
+    * stored.
+    *
+    * @return an Error + Set[S3Object], with a Right(set) with all the mirrored
+    * S3 objects if everything worked as expected or with a Left(error) if an
+    * error occurred. Several things could go wrong in this process; namely:
+    *   - The objects already exist in S3
+    *   - The input file could not be downloaded
+    *   - The input file could not be uncompressed
+    *   - The upload process failed, either because you have no permissions to
+    *   upload to the objects under [[data.prefix]] or because some error
+    *   occured during the upload itself.
+    */
+  def generateNewDB(
+      version: Version,
+      localFolder: File
+  ): Error + S3Object =
+    s3Helpers.objectExists(data.sequences(version)) match {
+      case Left(err) => Left(Error.S3Error(err))
+      case Right(doesItExist) =>
+        if (doesItExist)
+          Left(Error.S3ObjectExists(data.sequences(version)))
+        else
+          generateDB(version, localFolder)
     }
-
-  def generateSequencesOrFail(entries: Iterator[Entry], file: File): File =
-    getOrFail(s"Could not process entries")(
-      generateSequences(entries, file)
-    )
-
-  def downloadOrFail(s3Object: S3Object, file: File): File =
-    getOrFail(s"Could not download ${s3Object} to ${file}")(
-      s3Utils.downloadTo(s3Object, file)
-    )
-
-  def uploadOrFail(file: File, s3Object: S3Object): S3Object =
-    getOrFail(s"Could not upload ${file} to ${s3Object}")(
-      s3Utils.uploadTo(file, s3Object)
-    )
 }

@@ -2,7 +2,7 @@ package ohnosequences.db.rna16s
 
 import ohnosequences.db.rnacentral
 import ohnosequences.s3._
-
+import ohnosequences.files.digest.DigestFunction
 sealed abstract class Version(val name: String) {
   val compatibleInputVersions: Set[RNACentralVersion]
   val inputVersion: RNACentralVersion
@@ -33,4 +33,6 @@ case object data {
 
   val sequences: Version => S3Object =
     s3Prefix(_) / "rna16s.fa"
+
+  val hashingFunction: DigestFunction = DigestFunction.SHA512
 }
