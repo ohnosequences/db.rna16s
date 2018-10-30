@@ -1,6 +1,6 @@
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.api.rnacentral._
+import ohnosequences.db.rnacentral._
 
 case object rna16sIdentification {
 

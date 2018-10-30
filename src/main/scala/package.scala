@@ -5,7 +5,7 @@ import ohnosequences.awstools.s3._
 package object rna16s {
 
   val version: String =
-    "7.0"
+    "9.0"
 
   val s3Prefix: S3Folder =
     s3"resources.ohnosequences.com" /

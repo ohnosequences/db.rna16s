@@ -1,6 +1,6 @@
 package ohnosequences.db.rna16s.test
 
-import ohnosequences.api.rnacentral.Entry
+import ohnosequences.db.rnacentral.Entry
 import ohnosequences.fastarious._, fasta._
 
 /**

@@ -3,11 +3,13 @@ package ohnosequences.db.rna16s.test
 import org.scalatest.FunSuite
 import ohnosequences.db
 import ohnosequences.test.ReleaseOnlyTest
-import ohnosequences.api.rnacentral.{Entry, iterators}
+import ohnosequences.db.rnacentral.{Entry, iterators}
 import ohnosequences.awstools.s3, s3.S3Object
 import java.io.File
 
 class DataGeneration extends FunSuite {
+
+  val version = db.rnacentral.Version.latest
 
   /**
     * Processes all entries provided by the `entries` iterator and save the
@@ -33,13 +35,13 @@ class DataGeneration extends FunSuite {
     println("Downloading input files")
 
     downloadOrFail(
-      s3Object = db.rnacentral.data.speciesSpecificFASTA,
+      s3Object = db.rnacentral.data.speciesSpecificFASTA(version),
       file = input.fasta
     )
     println("  FASTA downloaded")
 
     downloadOrFail(
-      s3Object = db.rnacentral.data.idMappingTSV,
+      s3Object = db.rnacentral.data.idMappingTSV(version),
       file = input.idMapping
     )
     println("  TSV downloaded")

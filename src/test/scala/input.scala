@@ -1,7 +1,7 @@
 package ohnosequences.db.rna16s.test
 
 import java.io.File
-import ohnosequences.api.rnacentral._
+import ohnosequences.db.rnacentral._
 
 case object input {
 
@@ -17,6 +17,8 @@ case object input {
       idMapping = idMapping
     )
 
-  def rnaCentralEntries: Iterator[Entry] =
-    iterators right (entries entriesFrom rnaCentralData)
+  def rnaCentralEntries: Iterator[Entry] = {
+    val (malformedRows, entriesIterator) = entries entriesFrom rnaCentralData
+    iterators right entriesIterator
+  }
 }

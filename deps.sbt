@@ -1,10 +1,11 @@
-libraryDependencies ++= Seq(
-  "ohnosequences" %% "api-rnacentral"  % "0.2.0-14-g71466f5",
-  "ohnosequences" %% "aws-scala-tools" % "0.20.0",
-  "ohnosequences" %% "fastarious"      % "0.12.0",
-) ++ testDependencies
+libraryDependencies ++= mainDependencies ++ testDependencies
+
+val mainDependencies = Seq(
+  "ohnosequences" %% "aws-scala-tools" % "0.20.0"
+)
 
 val testDependencies = Seq(
-  "org.scalatest" %% "scalatest"     % "3.0.4",
-  "ohnosequences" %% "db-rnacentral" % "0.11.1"
+  "ohnosequences" %% "db-rnacentral" % "0.12.2",
+  "ohnosequences" %% "fastarious"    % "0.12.0",
+  "org.scalatest" %% "scalatest"     % "3.0.4"
 ).map(_ % Test)
