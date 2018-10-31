@@ -1,24 +1,22 @@
 package ohnosequences.db.rna16s
 
 import java.io.File
-import ohnosequences.db.rnacentral._
+import ohnosequences.db.rnacentral.{Entry, RNACentralData, entries, iterators}
 
 case object input {
 
-  lazy val fasta: File =
-    new File("/opt/data/rnacentral_species_specific_ids.fasta")
-
-  lazy val idMapping: File =
-    new File("/opt/data/id_mapping.tsv")
-
-  lazy val rnaCentralData: RNACentralData =
+  def rnaCentralData(version: Version, localFolder: File): RNACentralData =
     RNACentralData(
-      speciesSpecificFasta = fasta,
-      idMapping = idMapping
+      speciesSpecificFasta = data.local.fastaFile(version, localFolder),
+      idMapping = data.local.idMappingFile(version, localFolder)
     )
 
-  def rnaCentralEntries: Iterator[Entry] = {
-    val (malformedRows, entriesIterator) = entries entriesFrom rnaCentralData
+  def rnaCentralEntries(
+      version: Version,
+      localFolder: File
+  ): Iterator[Entry] = {
+    val (malformedRows, entriesIterator) =
+      entries.entriesFrom(rnaCentralData(version, localFolder))
     iterators right entriesIterator
   }
 }

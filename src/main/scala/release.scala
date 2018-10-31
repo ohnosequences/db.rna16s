@@ -1,6 +1,7 @@
 package ohnosequences.db.rna16s
 
 import ohnosequences.db.rnacentral
+import ohnosequences.db.rna16s.s3Helpers.{getCheckedFile, paranoidPutFile}
 import ohnosequences.s3.S3Object
 import ohnosequences.files.directory
 import java.io.File
@@ -54,31 +55,24 @@ case object release {
       localFolder: File
   ): Error + S3Object = {
     val rnacentralVersion = version.inputVersion
-    val inputFasta =
-      rnacentral.data.speciesSpecificFASTA(rnacentralVersion)
-    val inputIdMapping =
-      rnacentral.data.idMappingTSV(rnacentralVersion)
-    val s3Sequences = data.sequences(version)
 
-    directory
-      .createDirectory(localFolder)
-      .left
-      .map(Error.FileError)
-      .flatMap { _ =>
-        s3Helpers
-          .getCheckedFile(inputFasta, input.fasta)
-          .flatMap(_ =>
-            s3Helpers.getCheckedFile(inputIdMapping, input.idMapping))
-          .left
-          .map(err => Error.S3Error(err))
-          .flatMap(_ =>
-            generateSequences(input.rnaCentralEntries, output.sequences))
-          .flatMap(_ =>
-            s3Helpers.paranoidPutFile(output.sequences, s3Sequences) match {
-              case Left(err) => Left(Error.S3Error(err))
-              case Right(_)  => Right(s3Sequences)
-          })
-      }
+    val inputFasta     = rnacentral.data.speciesSpecificFASTA(rnacentralVersion)
+    val inputIdMapping = rnacentral.data.idMappingTSV(rnacentralVersion)
+    val s3Sequences    = data.sequences(version)
+
+    val mappingsFile           = data.local.idMappingFile(version, localFolder)
+    val fastaFile              = data.local.fastaFile(version, localFolder)
+    lazy val rnaCentralEntries = input.rnaCentralEntries(version, localFolder)
+
+    for {
+      _ <- directory.createDirectory(localFolder).left.map(Error.FileError)
+      _ <- getCheckedFile(inputFasta, fastaFile)
+      _ <- getCheckedFile(inputIdMapping, mappingsFile)
+      _ <- generateSequences(rnaCentralEntries, output.sequences)
+      _ <- paranoidPutFile(output.sequences, s3Sequences)
+    } yield {
+      s3Sequences
+    }
   }
 
   /**
@@ -110,12 +104,10 @@ case object release {
       version: Version,
       localFolder: File
   ): Error + S3Object =
-    s3Helpers.objectExists(data.sequences(version)) match {
-      case Left(err) => Left(Error.S3Error(err))
-      case Right(doesItExist) =>
-        if (doesItExist)
-          Left(Error.S3ObjectExists(data.sequences(version)))
-        else
-          generateDB(version, localFolder)
+    s3Helpers.objectExists(data.sequences(version)).flatMap { doesItExist =>
+      if (doesItExist)
+        Left(Error.S3ObjectExists(data.sequences(version)))
+      else
+        generateDB(version, localFolder)
     }
 }

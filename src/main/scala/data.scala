@@ -3,6 +3,8 @@ package ohnosequences.db.rna16s
 import ohnosequences.db.rnacentral
 import ohnosequences.s3._
 import ohnosequences.files.digest.DigestFunction
+import ohnosequences.files.File
+
 sealed abstract class Version(val name: String) {
   val compatibleInputVersions: Set[RNACentralVersion]
   val inputVersion: RNACentralVersion
@@ -22,6 +24,16 @@ object Version {
 }
 
 case object data {
+
+  case object local {
+
+    def idMappingFile(version: Version, localFolder: File): File =
+      new File(localFolder, "id_mapping.tsv")
+
+    def fastaFile(version: Version, localFolder: File): File =
+      new File(localFolder, "rnacentral_species_specific_ids.fasta")
+  }
+
   val s3Prefix: Version => S3Folder =
     version =>
       s3"resources.ohnosequences.com" /
