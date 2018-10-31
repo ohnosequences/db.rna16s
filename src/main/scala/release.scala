@@ -1,5 +1,4 @@
 package ohnosequences.db.rna16s
-
 import ohnosequences.db.rnacentral
 import ohnosequences.db.rna16s.s3Helpers.{getCheckedFile, paranoidPutFile}
 import ohnosequences.s3.S3Object
@@ -11,8 +10,8 @@ case object release {
   /**
     * Processes all entries provided by the `entries` iterator and save the
     * result in `file`.
-    * Returns `Some(file)` if both the process and the file save succeeded,
-    * `None` otherwise.
+    * Returns `Right(file)` if both the process and the file save succeeded,
+    * `Left(Error.FailedGeneration)` otherwise.
     */
   private def generateSequences(
       entries: Iterator[rnacentral.Entry],
@@ -29,23 +28,21 @@ case object release {
     }
 
   /**
-    * Perform the actual mirror of RNACentral, overwriting if necessary
+    * Read the data from `db.rnacentral`, filter the 16S sequences and upload
+    * the result to S3.
     *
-    * For [[data.input.idMappingTSVGZURL]], [[data.idMappingTSV]] is uploaded to
-    * S3. For [[data.input.speciesSpecificFASTAGZURL]],
-    * [[data.speciesSpecificFASTA]] is uploaded to S3.
+    * For the RNACentral version associated to the version parameter, both the
+    * ID Mappings and the sequences are downloaded, from which the 16S
+    * sequences are filtered using [[rna16sIdentification.is16s]]. The result
+    * of the filter is uploaded to the object returned by [[data.sequences]]
+    * applied over the version parameter.
     *
-    * The process to mirror each of those files is:
-    *   1. Download the `.gz` file from [[data.input.releaseURL]]
-    *   2. Uncompress to obtain the file
-    *   4. Upload the file ([[data.input.idMappingTSV]] and
-    *   [[data.input.speciesSpecificFASTA]] resp.) to the folder [[data.prefix]].
+    * @note This method does not check if an overwrite will happen. Use    * [[generateNewDB]] for that use case.
     *
-    * @return an Error + Set[S3Object], with a Right(set) with all the mirrored
-    * S3 objects if everything worked as expected or with a Left(error) if an
-    * error occurred. Several things could go wrong in this process; namely:
-    *   - The input files could not be downloaded
-    *   - The input files could not be uncompressed
+    * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the generated fastaa if everything worked as expected or with a Left(error) if an error occurred. Several things could go wrong in this process; namely:
+    *   - The local directory could not be created or accessed
+    *   - The input files from `db.rnacentral` could not be downloaded
+    *   - The [[generateSequences]] function failed with an exception
     *   - The upload process failed, either because you have no permissions to
     *   upload the objects or because some error occured during the upload
     *   itself.
@@ -76,29 +73,25 @@ case object release {
   }
 
   /**
-    * Try to mirror a new version of RNACentral to S3.
+    * Read the data from `db.rnacentral`, filter the 16S sequences and upload
+    * the result to S3 if and only if the upload does not override anything.
     *
-    * This method tries to download [[data.input.releaseURL]], uncompress it
-    * and upload the corresponding files to the objects defined in
-    * [[data.idMappingTSV]] and [[data.speciesSpecificFASTA]].
+    * For the RNACentral version associated to the version parameter, both the
+    * ID Mappings and the sequences are downloaded, from which the 16S
+    * sequences are filtered using [[rna16sIdentification.is16s]]. The result
+    * of the filter is uploaded to the object returned by [[data.sequences]]
+    * applied over the version parameter, if and only if the upload does not
+    * override anything.
     *
-    * It does so if and only if none of those two objects already exist in S3.
-    * If any of them exists, nothing is downloaded nor uploaded and an error is
-    * returned.
-    *
-    * @param version is the new version that wants to be released
-    * @param localFolder is the localFolder where the downloaded files will be
-    * stored.
-    *
-    * @return an Error + Set[S3Object], with a Right(set) with all the mirrored
-    * S3 objects if everything worked as expected or with a Left(error) if an
-    * error occurred. Several things could go wrong in this process; namely:
-    *   - The objects already exist in S3
-    *   - The input file could not be downloaded
-    *   - The input file could not be uncompressed
+    * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the generated fastaa if everything worked as expected or with a Left(error) if an error occurred. Several things could go wrong in this process; namely:
+    *   - The object [[data.sequences]] exists for the `version`, or the
+    *   request to check its existence finished with errors.
+    *   - The local directory could not be created or accessed
+    *   - The input files from `db.rnacentral` could not be downloaded
+    *   - The [[generateSequences]] function failed with an exception
     *   - The upload process failed, either because you have no permissions to
-    *   upload to the objects under [[data.prefix]] or because some error
-    *   occured during the upload itself.
+    *   upload the objects or because some error occured during the upload
+    *   itself.
     */
   def generateNewDB(
       version: Version,
