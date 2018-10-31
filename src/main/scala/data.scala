@@ -25,6 +25,9 @@ object Version {
 
 case object data {
 
+  /**
+   * Local files used when downloading input data from `db.rnacentral`
+   */
   case object local {
 
     def idMappingFile(version: Version, localFolder: File): File =
@@ -34,17 +37,35 @@ case object data {
       new File(localFolder, "rnacentral_species_specific_ids.fasta")
   }
 
-  val s3Prefix: Version => S3Folder =
-    version =>
+  /**
+    * Generator of S3 objects in a directory parametrized by a version.
+    *
+    * @param version is the version of the rna16S data whose paths we want to
+    * obtain.
+    *
+    * @return a function `String => S3Object` that, given the name of a file,
+    * return an S3 object in a fixed S3 directory, which is parametrized by the
+    * version passed.
+    */
+  def s3Prefix(version: Version): String => S3Object =
+    file =>
       s3"resources.ohnosequences.com" /
         "ohnosequences" /
         "db" /
         "rna16s" /
         "unstable" /
         version.toString /
+      file
 
+  /**
+    * Return the path of the S3 object containing the Rna16S sequences
+    * corresponding to the version passed.
+    */
   val sequences: Version => S3Object =
-    s3Prefix(_) / "rna16s.fa"
+    s3Prefix(_)("rna16s.fa")
 
+  /**
+    * The function used to hash the content of the file that is uploaded to S3
+    */
   val hashingFunction: DigestFunction = DigestFunction.SHA512
 }
