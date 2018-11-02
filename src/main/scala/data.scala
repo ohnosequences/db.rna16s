@@ -26,8 +26,8 @@ object Version {
 case object data {
 
   /**
-   * Local files used when downloading input data from `db.rnacentral`
-   */
+    * Local files used when downloading input data from `db.rnacentral`
+    */
   case object local {
 
     def idMappingFile(version: Version, localFolder: File): File =

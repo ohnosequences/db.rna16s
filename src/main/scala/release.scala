@@ -37,7 +37,8 @@ case object release {
     * of the filter is uploaded to the object returned by [[data.sequences]]
     * applied over the version parameter.
     *
-    * @note This method does not check if an overwrite will happen. Use    * [[generateNewDB]] for that use case.
+    * @note This method does not check if an overwrite will happen. Use
+    * [[generateNewDB]] for that use case.
     *
     * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the generated fastaa if everything worked as expected or with a Left(error) if an error occurred. Several things could go wrong in this process; namely:
     *   - The local directory could not be created or accessed
@@ -60,13 +61,14 @@ case object release {
     val mappingsFile           = data.local.idMappingFile(version, localFolder)
     val fastaFile              = data.local.fastaFile(version, localFolder)
     lazy val rnaCentralEntries = input.rnaCentralEntries(version, localFolder)
+    val outputFile             = output.sequences(version, localFolder)
 
     for {
       _ <- directory.createDirectory(localFolder).left.map(Error.FileError)
       _ <- getCheckedFile(inputFasta, fastaFile)
       _ <- getCheckedFile(inputIdMapping, mappingsFile)
-      _ <- generateSequences(rnaCentralEntries, output.sequences)
-      _ <- paranoidPutFile(output.sequences, s3Sequences)
+      _ <- generateSequences(rnaCentralEntries, outputFile)
+      _ <- paranoidPutFile(outputFile, s3Sequences)
     } yield {
       s3Sequences
     }
