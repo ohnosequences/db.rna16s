@@ -41,7 +41,7 @@ case object rna16sIdentification {
 
     /** Keep only entry and sequence annotations coming from [[includedDatabases]].
 
-    The full [[Entry]] will be dropped if it doesn't have at least one annotation of both types (entry and sequence) coming from [[includedDatabases]].
+    The full `Entry` will be dropped if it doesn't have at least one annotation of both types (entry and sequence) coming from [[includedDatabases]].
       */
     lazy val filterIncluded: Entry => Dropped + Entry =
       entry => {
@@ -74,7 +74,7 @@ case object rna16sIdentification {
 
   case object sequence {
 
-    /** Keep the [[Entry]] if it [[hasLength16s]]. */
+    /** Keep the `Entry` if it [[hasLength16s]]. */
     lazy val has16sLength: Entry => Dropped + Entry =
       entry =>
         if (hasLength16s(entry))
@@ -88,11 +88,11 @@ case object rna16sIdentification {
     lazy val length16s: Int => Boolean =
       len => len >= 1300 && len <= 1700
 
-    /** checks if an [[Entry]] length is within the accepted 16S length interval. @see [[length16s]]*/
+    /** checks if an `Entry` length is within the accepted 16S length interval. @see [[length16s]]*/
     lazy val hasLength16s: Entry => Boolean =
       entry => length16s(entry.rnaSequence.sequence.length)
 
-    /** Keep the [[Entry]] if the sequence is formed only by 'A's, 'T's, 'C's and 'G's. */
+    /** Keep the `Entry` if the sequence is formed only by 'A's, 'T's, 'C's and 'G's. */
     lazy val qualityOK: Entry => Dropped + Entry =
       entry =>
         if (!hasAmbiguousCharacters(entry.rnaSequence.sequence)) Right(entry)
@@ -115,7 +115,7 @@ case object rna16sIdentification {
         else
           Left(Dropped.isNotrRNA(entry))
 
-    /** The [[RNAType]] which a 16S sequence is required to have. */
+    /** The `RNAType` which a 16S sequence is required to have. */
     lazy val rnaType16s: RNAType =
       RNAType.rRNA
 

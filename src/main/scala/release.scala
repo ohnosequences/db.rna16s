@@ -90,7 +90,7 @@ case object release {
     *   request to check its existence finished with errors.
     *   - The local directory could not be created or accessed
     *   - The input files from `db.rnacentral` could not be downloaded
-    *   - The [[generateSequences]] function failed with an exception
+    *   - The generation of the sequences failed
     *   - The upload process failed, either because you have no permissions to
     *   upload the objects or because some error occured during the upload
     *   itself.
