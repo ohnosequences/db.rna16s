@@ -15,12 +15,19 @@ sealed abstract class Version(val name: String) {
 object Version {
 
   lazy val all: Set[Version] =
-    Set(v10_0)
+    Set(v9_0, v10_0)
 
   case object v10_0 extends Version("10.0") {
     val inputVersion            = rnacentral.Version._10_0
     val compatibleInputVersions = Set(inputVersion)
   }
+  type v10_0 = v10_0.type
+
+  case object v9_0 extends Version("9.0") {
+    val inputVersion            = rnacentral.Version._9_0
+    val compatibleInputVersions = Set(inputVersion)
+  }
+  type v9_0 = v9_0.type
 }
 
 case object data {
@@ -47,15 +54,26 @@ case object data {
     * return an S3 object in a fixed S3 directory, which is parametrized by the
     * version passed.
     */
-  def s3Prefix(version: Version): String => S3Object =
-    file =>
-      s3"resources.ohnosequences.com" /
-        "ohnosequences" /
-        "db" /
-        "rna16s" /
-        "unstable" /
-        version.toString /
-      file
+  def s3Prefix(version: Version): String => S3Object = {
+    val prefix = version match {
+      case version: Version.v9_0 =>
+        s3"resources.ohnosequences.com" /
+          "db" /
+          "rna16s" /
+          version.toString /
+
+      case version: Version.v10_0 =>
+        s3"resources.ohnosequences.com" /
+          "ohnosequences" /
+          "db" /
+          "rna16s" /
+          "unstable" /
+          version.toString /
+    }
+
+    file: String =>
+      prefix / file
+  }
 
   /**
     * Return the path of the S3 object containing the Rna16S sequences
