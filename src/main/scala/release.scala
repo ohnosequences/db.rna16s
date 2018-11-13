@@ -1,6 +1,9 @@
 package ohnosequences.db.rna16s
 import ohnosequences.db.rnacentral
-import ohnosequences.db.rna16s.s3Helpers.{getCheckedFile, paranoidPutFile}
+import ohnosequences.db.rna16s.s3Helpers.{
+  getCheckedFileIfDifferent,
+  paranoidPutFile
+}
 import ohnosequences.s3.S3Object
 import ohnosequences.files.directory
 import java.io.File
@@ -65,8 +68,8 @@ case object release {
 
     for {
       _ <- directory.createDirectory(localFolder).left.map(Error.FileError)
-      _ <- getCheckedFile(inputFasta, fastaFile)
-      _ <- getCheckedFile(inputIdMapping, mappingsFile)
+      _ <- getCheckedFileIfDifferent(inputFasta, fastaFile)
+      _ <- getCheckedFileIfDifferent(inputIdMapping, mappingsFile)
       _ <- generateSequences(rnaCentralEntries, outputFile)
       _ <- paranoidPutFile(outputFile, s3Sequences)
     } yield {
