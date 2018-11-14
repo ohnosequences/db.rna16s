@@ -22,7 +22,7 @@ s3://resources.ohnosequences.com/ohnosequences/db/rna16s/unstable/10.0/rna16s.fa
 
 The process to add a new version and release the data is as follows:
 
-1. Add a new `object` that extends `Version` in [`src/main/scala/data.scala`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/data.scala); e.g., `case object _11_0 extends Version("11.0")`, adding the input version and a set of other compatible versions —which may be empty— from [`db.rnacentral`][db.rnacentral].
+1. Add a new `object` that extends `Version` in [`src/main/scala/data.scala`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/data.scala); e.g., `case object _11_0 extends Version("11.0")`, adding the input version from [`db.rnacentral`][db.rnacentral].
 2. Release the data through the method [`release.generateNewDB`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/release.scala#L83-L115); e.g., through an `sbt console`:
 ```scala
 scala> import ohnosequences.db.rna16s._
