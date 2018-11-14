@@ -82,7 +82,7 @@ case object release {
 
   /**
     * Read the data from `db.rnacentral`, filter the 16S sequences and upload
-    * the result to S3 if and only if the upload does not override anything.
+    * the result to S3 if and only if the upload does not overwrite anything.
     *
     * For the RNACentral version associated to the version parameter, both the
     * ID Mappings and the sequences are downloaded, from which the 16S
