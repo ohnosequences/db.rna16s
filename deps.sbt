@@ -1,7 +1,7 @@
 libraryDependencies ++= mainDependencies ++ testDependencies
 
 val mainDependencies = Seq(
-  "ohnosequences" %% "db-rnacentral" % "0.13.0",
+  "ohnosequences" %% "db-rnacentral" % "0.13.1",
   "ohnosequences" %% "s3"            % "0.2.1",
   "ohnosequences" %% "files"         % "0.5.0"
 )
