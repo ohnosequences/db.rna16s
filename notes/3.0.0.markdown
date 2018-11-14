@@ -28,7 +28,7 @@ The process to add a new version and release the data is as follows:
 scala> import ohnosequences.db.rna16s._
 scala> release.generateNewDB(Version._11_0, new java.io.File("~/localDir"))
 ```
-3. Prepare a new release of the repository by writing release notes in the corresponding file in [`notes`](https://github.com/ohnosequences/db.rnacentral/tree/releases.0.13.0/notes); e.g. in `notes/3.1.0.markdown`
+3. Prepare a new release of the repository by writing release notes in the corresponding file in [`notes`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/notes); e.g. in `notes/3.1.0.markdown`
 4. Make the release of the repository, that checks that all declared versions of the data exist and are correct. This is done through the `sbt` `release` task; e.g., with `sbt release minor`.
 
 [rnacentral]: http://rnacentral.org/
