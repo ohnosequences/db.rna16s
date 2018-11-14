@@ -1,4 +1,4 @@
-`db.rna16s-v2.0.0` is a Scala package containing pointers to the sources and final storage of the RNA 16S database: a curated subset of [RNACentral][rnacentral].
+`db.rna16s-v3.0.0` is a Scala package containing pointers to the sources and final storage of the RNA 16S database: a curated subset of [RNACentral][rnacentral].
 
 ## Data Pointers
 
