@@ -44,7 +44,7 @@ case object release {
     * [[generateNewDB]] for that use case.
     *
     * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the
-    * generated fastaa if everything worked as expected or with a Left(error)
+    * generated fasta if everything worked as expected or with a Left(error)
     * if an error occurred. Several things could go wrong in this process;
     * namely:
     *   - The local directory could not be created or accessed
