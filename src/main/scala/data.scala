@@ -6,7 +6,7 @@ import ohnosequences.files.digest.DigestFunction
 import ohnosequences.files.File
 
 sealed abstract class Version(val name: String) {
-  val compatibleInputVersions: Set[RNACentralVersion]
+  val otherCompatibleInputVersions: Set[RNACentralVersion]
   val inputVersion: RNACentralVersion
 
   override final def toString: String = name
@@ -18,14 +18,14 @@ object Version {
     Set(v9_0, v10_0)
 
   case object v10_0 extends Version("10.0") {
-    val inputVersion            = rnacentral.Version._10_0
-    val compatibleInputVersions = Set(inputVersion)
+    val inputVersion                 = rnacentral.Version._10_0
+    val otherCompatibleInputVersions = Set.empty[RNACentralVersion]
   }
   type v10_0 = v10_0.type
 
   case object v9_0 extends Version("9.0") {
-    val inputVersion            = rnacentral.Version._9_0
-    val compatibleInputVersions = Set(inputVersion)
+    val inputVersion                 = rnacentral.Version._9_0
+    val otherCompatibleInputVersions = Set.empty[RNACentralVersion]
   }
   type v9_0 = v9_0.type
 }
