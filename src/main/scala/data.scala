@@ -51,7 +51,7 @@ case object data {
     * obtain.
     *
     * @return a function `String => S3Object` that, given the name of a file,
-    * return an S3 object in a fixed S3 directory, which is parametrized by the
+    * returns an S3 object in a fixed S3 directory, which is parametrized by the
     * version passed.
     */
   def s3Prefix(version: Version): String => S3Object =
