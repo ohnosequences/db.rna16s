@@ -37,10 +37,10 @@ case object data {
     */
   case object local {
 
-    def idMappingFile(version: Version, localFolder: File): File =
+    def idMappingFile(localFolder: File): File =
       new File(localFolder, "id_mapping.tsv")
 
-    def fastaFile(version: Version, localFolder: File): File =
+    def fastaFile(localFolder: File): File =
       new File(localFolder, "rnacentral_species_specific_ids.fasta")
   }
 

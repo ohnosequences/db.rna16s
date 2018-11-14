@@ -5,18 +5,15 @@ import ohnosequences.db.rnacentral.{Entry, RNACentralData, entries, iterators}
 
 case object input {
 
-  def rnaCentralData(version: Version, localFolder: File): RNACentralData =
+  def rnaCentralData(localFolder: File): RNACentralData =
     RNACentralData(
-      speciesSpecificFasta = data.local.fastaFile(version, localFolder),
-      idMapping = data.local.idMappingFile(version, localFolder)
+      speciesSpecificFasta = data.local.fastaFile(localFolder),
+      idMapping = data.local.idMappingFile(localFolder)
     )
 
-  def rnaCentralEntries(
-      version: Version,
-      localFolder: File
-  ): Iterator[Entry] = {
+  def rnaCentralEntries(localFolder: File): Iterator[Entry] = {
     val (malformedRows, entriesIterator) =
-      entries.entriesFrom(rnaCentralData(version, localFolder))
+      entries.entriesFrom(rnaCentralData(localFolder))
     iterators right entriesIterator
   }
 }

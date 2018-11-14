@@ -61,10 +61,10 @@ case object release {
     val inputIdMapping = rnacentral.data.idMappingTSV(rnacentralVersion)
     val s3Sequences    = data.sequences(version)
 
-    val mappingsFile           = data.local.idMappingFile(version, localFolder)
-    val fastaFile              = data.local.fastaFile(version, localFolder)
-    lazy val rnaCentralEntries = input.rnaCentralEntries(version, localFolder)
-    val outputFile             = output.sequences(version, localFolder)
+    val mappingsFile           = data.local.idMappingFile(localFolder)
+    val fastaFile              = data.local.fastaFile(localFolder)
+    lazy val rnaCentralEntries = input.rnaCentralEntries(localFolder)
+    val outputFile             = output.sequences(localFolder)
 
     for {
       _ <- directory.createDirectory(localFolder).left.map(Error.FileError)

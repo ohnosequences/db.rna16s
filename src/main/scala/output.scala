@@ -4,6 +4,6 @@ import java.io.File
 
 case object output {
 
-  def sequences(version: Version, localFolder: File): File =
-    new File(localFolder, s"${version.toString}/db.rna16.fa")
+  def sequences(localFolder: File): File =
+    new File(localFolder, s"db.rna16.fa")
 }
