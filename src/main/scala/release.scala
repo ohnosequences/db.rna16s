@@ -89,7 +89,7 @@ case object release {
     * sequences are filtered using [[rna16sIdentification.is16s]]. The result
     * of the filter is uploaded to the object returned by [[data.sequences]]
     * applied over the version parameter, if and only if the upload does not
-    * override anything.
+    * overwrite anything.
     *
     * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the
     * generated fasta if everything worked as expected or with a Left(error) if
