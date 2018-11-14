@@ -43,7 +43,10 @@ case object release {
     * @note This method does not check if an overwrite will happen. Use
     * [[generateNewDB]] for that use case.
     *
-    * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the generated fastaa if everything worked as expected or with a Left(error) if an error occurred. Several things could go wrong in this process; namely:
+    * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the
+    * generated fastaa if everything worked as expected or with a Left(error)
+    * if an error occurred. Several things could go wrong in this process;
+    * namely:
     *   - The local directory could not be created or accessed
     *   - The input files from `db.rnacentral` could not be downloaded
     *   - The [[generateSequences]] function failed with an exception
@@ -88,7 +91,9 @@ case object release {
     * applied over the version parameter, if and only if the upload does not
     * override anything.
     *
-    * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the generated fastaa if everything worked as expected or with a Left(error) if an error occurred. Several things could go wrong in this process; namely:
+    * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the
+    * generated fasta if everything worked as expected or with a Left(error) if
+    * an error occurred. Several things could go wrong in this process; namely:
     *   - The object [[data.sequences]] exists for the `version`, or the
     *   request to check its existence finished with errors.
     *   - The local directory could not be created or accessed
