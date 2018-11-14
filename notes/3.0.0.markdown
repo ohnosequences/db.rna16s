@@ -2,7 +2,7 @@
 
 ## Data Pointers
 
-The [`ohnosequences.db.rna16s.data.sequences`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/data.scala#L67-L72) function is a version-parametrized pointer to the S3 object where the actual database is stored. This release supports the following databases:
+The [`ohnosequences.db.rna16s.data.sequences`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/data.scala#L64-L69) function is a version-parametrized pointer to the S3 object where the actual database is stored. This release supports the following databases:
 
 ```
 s3://resources.ohnosequences.com/ohnosequences/db/rna16s/unstable/9.0/rna16s.fa
@@ -11,9 +11,9 @@ s3://resources.ohnosequences.com/ohnosequences/db/rna16s/unstable/10.0/rna16s.fa
 
 ## Release Code
 
-* The release function in [`ohnosequences.db.rna16s.release.generateNewDB`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/release.scala#L83-L115), which downloads the input data from [`db.rnacentral`][db.rnacentral], processes the database entries and generates a FASTA file with the database itself, that is uploaded as an S3 object identified by [`ohnosequences.db.rna16s.data.sequences`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/data.scala#L67-L72).
+* The release function in [`ohnosequences.db.rna16s.release.generateNewDB`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/release.scala#L83-L115), which downloads the input data from [`db.rnacentral`][db.rnacentral], processes the database entries and generates a FASTA file with the database itself, that is uploaded as an S3 object identified by [`ohnosequences.db.rna16s.data.sequences`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/data.scala#L64-L69).
 * The object [`ohnosequences.db.rna16s.rna16sIdentification`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/rna16sIdentification.scala), which contains the actual filters that generate the database. See function [`is16s`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/rna16sIdentification.scala#L7-L23) as a starting point to understand the filters applied:
-  * [`annotation.hasRNAType16s`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/rna16sIdentification.scala#L110-116): drops sequences with a type different from `RNAType.rRNA`.
+  * [`annotation.hasRNAType16s`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/rna16sIdentification.scala#L110-L116): drops sequences with a type different from `RNAType.rRNA`.
   * [`annotation.someDescriptionContains16s`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/rna16sIdentification.scala#L122-L130): drops sequences not containing the string "16S" in their description.
   * [`sequence.has16sLength`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/rna16sIdentification.scala#L77-L85): drops sequences whose length is not in the interval `[1300, 1700]`.
   * [`sequence.qualityOK`](https://github.com/ohnosequences/db.rna16s/blob/v3.0.0/src/main/scala/rna16sIdentification.scala#L95-L99): drops sequences that contains letters different from 'A', 'T' (or 'U'), 'C' or 'G'.
