@@ -1,21 +1,13 @@
 package ohnosequences.db
 
-import ohnosequences.awstools.s3._
-
 package object rna16s {
 
-  val version: String =
-    "9.0"
+  type RNACentralVersion = ohnosequences.db.rnacentral.Version
+  type +[A, B]           = Either[A, B]
 
-  val s3Prefix: S3Folder =
-    s3"resources.ohnosequences.com" /
-      "db" /
-      "rna16s" /
-      version /
+  implicit final class PredicateOps[X](val p: X => Boolean) extends AnyVal {
 
-  val sequences: S3Object =
-    s3Prefix / "rna16s.fa"
-
-  val fullDB: S3Object =
-    s3Prefix / "rna16s.csv"
+    def &&(other: X => Boolean): X => Boolean =
+      x => p(x) && other(x)
+  }
 }
