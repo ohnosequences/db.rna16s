@@ -44,7 +44,7 @@ case object release {
     * [[generateNewDB]] for that use case.
     *
     * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the
-    * generated fastaa if everything worked as expected or with a Left(error)
+    * generated fasta if everything worked as expected or with a Left(error)
     * if an error occurred. Several things could go wrong in this process;
     * namely:
     *   - The local directory could not be created or accessed
@@ -82,14 +82,14 @@ case object release {
 
   /**
     * Read the data from `db.rnacentral`, filter the 16S sequences and upload
-    * the result to S3 if and only if the upload does not override anything.
+    * the result to S3 if and only if the upload does not overwrite anything.
     *
     * For the RNACentral version associated to the version parameter, both the
     * ID Mappings and the sequences are downloaded, from which the 16S
     * sequences are filtered using [[rna16sIdentification.is16s]]. The result
     * of the filter is uploaded to the object returned by [[data.sequences]]
     * applied over the version parameter, if and only if the upload does not
-    * override anything.
+    * overwrite anything.
     *
     * @return an Error + S3Object, with a Right(s3Obj) with the S3 path of the
     * generated fasta if everything worked as expected or with a Left(error) if
