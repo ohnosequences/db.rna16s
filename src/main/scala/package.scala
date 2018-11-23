@@ -1,9 +1,13 @@
 package ohnosequences.db
 
+import ohnosequences.db.rnacentral, rnacentral.RNAID
+
 package object rna16s {
 
-  type RNACentralVersion = ohnosequences.db.rnacentral.Version
+  type RNACentralVersion = rnacentral.Version
   type +[A, B]           = Either[A, B]
+  type TaxID             = Int
+  type Mappings          = Map[RNAID, Set[TaxID]]
 
   implicit final class PredicateOps[X](val p: X => Boolean) extends AnyVal {
 
