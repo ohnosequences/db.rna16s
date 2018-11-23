@@ -4,7 +4,7 @@ import ohnosequences.db.rnacentral
 import ohnosequences.s3.S3Object
 import ohnosequences.files.{directory, write}
 import java.io.File
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
 import helpers._
 
 case object release {
@@ -31,14 +31,15 @@ case object release {
     * (Error.FileError) or due to a failed generation of the sequences file
     * (Error.FailedGeneration)
     */
-  private def generateSequencesAndMappings(
+  /* private */
+  def generateSequencesAndMappings(
       entries: Iterator[rnacentral.Entry],
       sequencesFile: File,
       mappingsFile: File
   ): Error + (File, File) = {
     type TaxID = Int
 
-    val mappings = MutableMap[rnacentral.RNAID, Set[TaxID]]()
+    val mappings = MutableMap[rnacentral.RNAID, MutableSet[TaxID]]()
 
     scala.util.Try {
       // Write the sequences file
@@ -54,9 +55,9 @@ case object release {
             val taxID = annotation.ncbiTaxonomyID
 
             if (mappings.isDefinedAt(rnaID))
-              mappings(rnaID) += taxID
+              mappings(rnaID).add(taxID)
             else
-              mappings(rnaID) = Set[TaxID](taxID)
+              mappings(rnaID) = MutableSet[TaxID](taxID)
           }
 
           io.entryToFASTA(entry)
@@ -67,7 +68,7 @@ case object release {
       case scala.util.Success(s) =>
         // Write the mappings file
         val mappingsWrite =
-          write.linesToFile(mappingsFile)(io.serializeMappings(mappings.toMap))
+          write.linesToFile(mappingsFile)(io.serializeMappings(mappings))
 
         mappingsWrite.left.map(Error.FileError).right.map { _ =>
           (sequencesFile, mappingsFile)
@@ -99,7 +100,8 @@ case object release {
     *   upload the objects or because some error occured during the upload
     *   itself.
     */
-  private def generateDB(
+  /* private */
+  def generateDB(
       version: Version,
       localFolder: File
   ): Error + Set[S3Object] = {
