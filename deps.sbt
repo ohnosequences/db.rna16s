@@ -5,6 +5,5 @@ val mainDependencies = Seq(
 )
 
 val testDependencies = Seq(
-  "ohnosequences" %% "fastarious" % "0.12.0",
   "org.scalatest" %% "scalatest"  % "3.0.5"
 ).map(_ % Test)
