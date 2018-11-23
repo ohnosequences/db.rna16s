@@ -1,7 +1,7 @@
 package ohnosequences.db.rna16s.test
 
 import ohnosequences.db.rna16s.{data => rna16sData, Version, output, Error}
-import ohnosequences.db.rna16s.s3Helpers.getCheckedFileIfDifferent
+import ohnosequences.db.rna16s.helpers.getCheckedFileIfDifferent
 import ohnosequences.files.directory
 import java.io.File
 

@@ -69,6 +69,19 @@ case object data {
     s3Prefix(_)("rna16s.fa")
 
   /**
+    * Return the path of the S3 object containing the mappings of RNAIDs
+    * to taxon IDs sequences, corresponding to the version passed.
+    */
+  val mappings: Version => S3Object =
+    s3Prefix(_)("mappings.fa")
+
+  /**
+    * Return all the objects that are stored for a version of the database
+    */
+  val everything: Version => Set[S3Object] =
+    version => Set(sequences(version), mappings(version))
+
+  /**
     * The function used to hash the content of the file that is uploaded to S3
     */
   val hashingFunction: DigestFunction = DigestFunction.SHA512

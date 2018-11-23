@@ -21,19 +21,21 @@ case object io {
         Sequence(entry.rnaSequence.sequence.toUpperCase.replace('U', 'T'))
     )
 
-  deserializeMappings(lines: Lines): Mappings =
+  def deserializeMappings(lines: Lines): Mappings =
     lines.map { line =>
       val values = line.split("†")
 
-      val rnaID  = values(0)
-      val taxIDs = values(1).split(",").toSet
+      val rnaID = values(0)
+      val taxIDs = values(1).split(",").toSet.map { s: String =>
+        s.toInt
+      }
 
       (rnaID, taxIDs)
     }.toMap
 
-  serializeMappings(mappings: Mappings): Lines =
+  def serializeMappings(mappings: Mappings): Lines =
     mappings.toIterator.map {
       case (rnaID, taxIDs) =>
         rnaID.toString ++ "†" ++ taxIDs.mkString(",")
-    })
+    }
 }

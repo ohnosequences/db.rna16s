@@ -1,13 +1,11 @@
 package ohnosequences.db.rna16s
+
 import ohnosequences.db.rnacentral
-import ohnosequences.db.rna16s.s3Helpers.{
-  getCheckedFileIfDifferent,
-  paranoidPutFile
-}
 import ohnosequences.s3.S3Object
 import ohnosequences.files.{directory, write}
 import java.io.File
 import scala.collection.mutable.{Map => MutableMap}
+import helpers._
 
 case object release {
 
@@ -18,35 +16,35 @@ case object release {
     *   RNAID¹†TaxID¹,TaxID², TaxID³,...
     *   RNAID²†TaxID'¹,TaxID'², TaxID'³,...
     *   ...
-    * The mappings file gives for an RNA identifier the taxon ids that are 
+    * The mappings file gives for an RNA identifier the taxon ids that are
     * associated with it.
-    * 
+    *
     * @param entries an iterator over RNACentral entries
     * @param sequencesFile the file where the sequences database is going to
     * be stored
     * @param mappingsFile the file where we want to write the mapping ç
     * RNAID -> [TaxID]
-    * 
+    *
     * @return `Right(files)` if both the processes and the file saves succeed,
     * where files is a tuple (sequencesFiles, mappingsFile).
     * `Left(error)` otherwise, where error can be due to a write failure
     * (Error.FileError) or due to a failed generation of the sequences file
-    * (Error.FailedGeneration) 
+    * (Error.FailedGeneration)
     */
   private def generateSequencesAndMappings(
-    entries: Iterator[rnacentral.Entry],
-    sequencesFile: File,
-    mappingsFile: File
-  ): Error + (File, File) =
+      entries: Iterator[rnacentral.Entry],
+      sequencesFile: File,
+      mappingsFile: File
+  ): Error + (File, File) = {
+    type TaxID = Int
+
+    val mappings = MutableMap[rnacentral.RNAID, Set[TaxID]]()
+
     scala.util.Try {
-      type TaxID = Int
-
-      val mappings = MutableMap[rnacentral.RNAID, Set[TaxID]]()
-
       // Write the sequences file
       rnacentral.iterators
         .right(entries map rna16sIdentification.is16s)
-        /* 
+        /*
          This extracts the mapping RNAID -> [TaxIDs]
          and converts the entry to a FASTA entry
          */
@@ -64,17 +62,18 @@ case object release {
           io.entryToFASTA(entry)
         }
         .appendTo(sequencesFile)
-
-      // Write the mappings file
-      val writeResult =
-        write.linesToFile(mappingsFile)(deserializeMappings(mappings.toMap))
     } match {
       case scala.util.Failure(e) => Left(Error.FailedGeneration(e.toString))
       case scala.util.Success(s) =>
-        writeResult
-          .left.map(Error.FileError)
-          .right.map { _ => (sequencesFile, mappingsFile) }
+        // Write the mappings file
+        val mappingsWrite =
+          write.linesToFile(mappingsFile)(io.serializeMappings(mappings.toMap))
+
+        mappingsWrite.left.map(Error.FileError).right.map { _ =>
+          (sequencesFile, mappingsFile)
+        }
     }
+  }
 
   /**
     * Read the data from `db.rnacentral`, filter the 16S sequences and upload
@@ -103,26 +102,31 @@ case object release {
   private def generateDB(
       version: Version,
       localFolder: File
-  ): Error + S3Object = {
+  ): Error + Set[S3Object] = {
     val rnacentralVersion = version.inputVersion
 
     val inputFasta     = rnacentral.data.speciesSpecificFASTA(rnacentralVersion)
     val inputIdMapping = rnacentral.data.idMappingTSV(rnacentralVersion)
     val s3Sequences    = data.sequences(version)
+    val s3Mappings     = data.mappings(version)
 
-    val mappingsFile           = data.local.idMappingFile(localFolder)
+    val idMappingsFile         = data.local.idMappingFile(localFolder)
     val fastaFile              = data.local.fastaFile(localFolder)
     lazy val rnaCentralEntries = input.rnaCentralEntries(localFolder)
-    val outputFile             = output.sequences(localFolder)
+    val sequencesFile          = output.sequences(localFolder)
+    val mappingsFile           = output.mappings(localFolder)
 
     for {
       _ <- directory.createDirectory(localFolder).left.map(Error.FileError)
       _ <- getCheckedFileIfDifferent(inputFasta, fastaFile)
-      _ <- getCheckedFileIfDifferent(inputIdMapping, mappingsFile)
-      _ <- generateSequencesAndMappings(rnaCentralEntries, outputFile)
-      _ <- paranoidPutFile(outputFile, s3Sequences)
+      _ <- getCheckedFileIfDifferent(inputIdMapping, idMappingsFile)
+      _ <- generateSequencesAndMappings(rnaCentralEntries,
+                                        sequencesFile,
+                                        mappingsFile)
+      _ <- paranoidPutFile(sequencesFile, s3Sequences)
+      _ <- paranoidPutFile(mappingsFile, s3Mappings)
     } yield {
-      s3Sequences
+      Set(s3Sequences, s3Mappings)
     }
   }
 
@@ -152,11 +156,10 @@ case object release {
   def generateNewDB(
       version: Version,
       localFolder: File
-  ): Error + S3Object =
-    s3Helpers.objectExists(data.sequences(version)).flatMap { doesItExist =>
-      if (doesItExist)
-        Left(Error.S3ObjectExists(data.sequences(version)))
-      else
-        generateDB(version, localFolder)
+  ): Error + Set[S3Object] =
+    findVersionInS3(version).fold(
+      generateDB(version, localFolder)
+    ) { obj =>
+      Left(Error.S3ObjectExists(obj))
     }
 }
