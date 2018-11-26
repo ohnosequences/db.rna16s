@@ -12,8 +12,7 @@ import java.io.File
   *   object of type [[Error.S3Error]].
   * - Method to check whether all the files for a version exist in S3
   */
-/*private[rna16s]*/
-case object helpers {
+private[rna16s] case object helpers {
 
   lazy val s3Client = AmazonS3ClientBuilder.standard().build()
   val partSize5MiB  = 5 * 1024 * 1024

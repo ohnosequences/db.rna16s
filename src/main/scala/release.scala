@@ -1,78 +1,104 @@
 package ohnosequences.db.rna16s
 
 import ohnosequences.db.rnacentral
+import rnacentral.{Database, DatabaseEntry, IDMapping, RNACentralData, RNAType}
 import ohnosequences.s3.S3Object
 import ohnosequences.files.{directory, write}
 import java.io.File
-import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
+import scala.collection.mutable.{Map => MutableMap}
+import scala.util.{Failure, Success, Try}
 import helpers._
 
 case object release {
 
-  /**
-    * Processes all entries provided by the `entries` iterator and extract on
-    * the one hand, a fasta file which has an RNAID + DNA sequence, and on the
-    * other hand, a mappings file whose output is somewhat like:
+  /** Processes all entries provided by the `entries` iterator and extract on
+    * a fasta file which has an RNAID + DNA sequence
+    *
+    * The mappings file gives for an RNA identifier the taxon ids that are
+    * associated with it.
+    *
+    * @param entries an iterator over RNACentral entries
+    * @param file where the sequences database is going to
+    * be stored
+    *
+    * Returns `Right(file)` if both the process and the file save succeeded,
+    * `Left(Error.FailedGeneration)` otherwise.
+    */
+  private def generateSequences(
+      entries: Iterator[rnacentral.Entry],
+      file: File
+  ): Error + File =
+    Try {
+      rnacentral.iterators
+        .right(entries map rna16sIdentification.is16s)
+        .map(io.entryToFASTA)
+        .appendTo(file)
+    } match {
+      case Failure(e) => Left(Error.FailedGeneration(e.toString))
+      case Success(s) => Right(file)
+    }
+
+  /** Write a mappings file whose output is somewhat like:
     *   RNAID¹†TaxID¹,TaxID², TaxID³,...
     *   RNAID²†TaxID'¹,TaxID'², TaxID'³,...
     *   ...
     * The mappings file gives for an RNA identifier the taxon ids that are
     * associated with it.
     *
-    * @param entries an iterator over RNACentral entries
-    * @param sequencesFile the file where the sequences database is going to
-    * be stored
-    * @param mappingsFile the file where we want to write the mapping ç
+    * @param rnaCentralData the `RNACentralData` for which we want to extract
+    * the mappings
+    * @param file the file where we want to write the mapping
     * RNAID -> [TaxID]
     *
-    * @return `Right(files)` if both the processes and the file saves succeed,
-    * where files is a tuple (sequencesFiles, mappingsFile).
-    * `Left(error)` otherwise, where error can be due to a write failure
-    * (Error.FileError) or due to a failed generation of the sequences file
-    * (Error.FailedGeneration)
+    * @return `Right(files)` if the reading of the corresponding `.tsv` file and
+    * the writing of the result file are correct, `Left(error)` otherwise
     */
-  /* private */
-  def generateSequencesAndMappings(
-      entries: Iterator[rnacentral.Entry],
-      sequencesFile: File,
-      mappingsFile: File
-  ): Error + (File, File) = {
-    type TaxID = Int
+  /*private*/
+  def generateMappings(rnaCentralData: RNACentralData,
+                       file: File): Error + File = {
+    val rnaType16s = RNAType.rRNA
 
-    val mappings = MutableMap[rnacentral.RNAID, MutableSet[TaxID]]()
+    val databases = rna16sIdentification.database.includedDatabases
 
-    scala.util.Try {
-      // Write the sequences file
+    val databaseEntryFrom: (String, String) => Option[DatabaseEntry] = {
+      case (dbName, id) =>
+        (Database from dbName) map { DatabaseEntry(_, id) }
+    }
+
+    val mappings = MutableMap[RNAID, Set[TaxID]]()
+
+    // Filter those rows of mappings file coming from an
+    // accepted database and whose data has RNA16s type
+    Try {
       rnacentral.iterators
-        .right(entries map rna16sIdentification.is16s)
-        /*
-         This extracts the mapping RNAID -> [TaxIDs]
-         and converts the entry to a FASTA entry
-         */
-        .map { entry =>
-          entry.sequenceAnnotations.foreach { annotation =>
-            val rnaID = annotation.rnaID
-            val taxID = annotation.ncbiTaxonomyID
-
-            if (mappings.isDefinedAt(rnaID))
-              mappings(rnaID).add(taxID)
+        .right(
+          IDMapping.rows(rnaCentralData)
+        )
+        .collect {
+          case (id, dbName, dbID, taxID, rnaType, geneName)
+              if (
+                databaseEntryFrom(dbName, dbID).fold(false) { db =>
+                  databases contains db.database
+                }
+                  &&
+                    RNAType.from(rnaType).fold(false) { _ == rnaType16s }
+              ) =>
+            (id, taxID)
+        }
+        .foreach {
+          case (id, taxID) =>
+            if (mappings.isDefinedAt(id))
+              mappings(id) += taxID
             else
-              mappings(rnaID) = MutableSet[TaxID](taxID)
-          }
-
-          io.entryToFASTA(entry)
+              mappings(id) = Set(taxID)
         }
-        .appendTo(sequencesFile)
     } match {
-      case scala.util.Failure(e) => Left(Error.FailedGeneration(e.toString))
-      case scala.util.Success(s) =>
-        // Write the mappings file
-        val mappingsWrite =
-          write.linesToFile(mappingsFile)(io.serializeMappings(mappings))
-
-        mappingsWrite.left.map(Error.FileError).right.map { _ =>
-          (sequencesFile, mappingsFile)
-        }
+      case Failure(e) => Left(Error.FailedGeneration(e.toString))
+      case Success(s) =>
+        write
+          .linesToFile(file)(io.serializeMappings(mappings.toMap))
+          .left
+          .map(Error.FileError)
     }
   }
 
@@ -100,8 +126,7 @@ case object release {
     *   upload the objects or because some error occured during the upload
     *   itself.
     */
-  /* private */
-  def generateDB(
+  private def generateDB(
       version: Version,
       localFolder: File
   ): Error + Set[S3Object] = {
@@ -114,6 +139,7 @@ case object release {
 
     val idMappingsFile         = data.local.idMappingFile(localFolder)
     val fastaFile              = data.local.fastaFile(localFolder)
+    val rnaCentralData         = RNACentralData(idMappingsFile, fastaFile)
     lazy val rnaCentralEntries = input.rnaCentralEntries(localFolder)
     val sequencesFile          = output.sequences(localFolder)
     val mappingsFile           = output.mappings(localFolder)
@@ -122,9 +148,8 @@ case object release {
       _ <- directory.createDirectory(localFolder).left.map(Error.FileError)
       _ <- getCheckedFileIfDifferent(inputFasta, fastaFile)
       _ <- getCheckedFileIfDifferent(inputIdMapping, idMappingsFile)
-      _ <- generateSequencesAndMappings(rnaCentralEntries,
-                                        sequencesFile,
-                                        mappingsFile)
+      _ <- generateSequences(rnaCentralEntries, sequencesFile)
+      _ <- generateMappings(rnaCentralData, mappingsFile)
       _ <- paranoidPutFile(sequencesFile, s3Sequences)
       _ <- paranoidPutFile(mappingsFile, s3Mappings)
     } yield {

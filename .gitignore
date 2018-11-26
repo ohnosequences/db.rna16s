@@ -16,3 +16,6 @@ project/target/
 .ensime*
 .idea*
 .vscode*
+
+# data folder
+data/

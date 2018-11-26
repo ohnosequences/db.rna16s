@@ -73,7 +73,7 @@ case object data {
     * to taxon IDs sequences, corresponding to the version passed.
     */
   val mappings: Version => S3Object =
-    s3Prefix(_)("mappings.fa")
+    s3Prefix(_)("mappings")
 
   /**
     * Return all the objects that are stored for a version of the database

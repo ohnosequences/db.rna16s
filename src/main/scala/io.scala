@@ -3,7 +3,6 @@ package ohnosequences.db.rna16s
 import ohnosequences.db.rnacentral.Entry
 import ohnosequences.fastarious._, fasta._
 import ohnosequences.files.Lines
-import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
 
 case object io {
 
@@ -34,7 +33,7 @@ case object io {
       (rnaID, taxIDs)
     }.toMap
 
-  def serializeMappings(mappings: MutableMap[RNAID, MutableSet[TaxID]]): Lines =
+  def serializeMappings(mappings: Mappings): Lines =
     mappings.toIterator.map {
       case (rnaID, taxIDs) =>
         rnaID.toString ++ "†" ++ taxIDs.mkString(",")
