@@ -19,6 +19,7 @@ To read a mappings file, namely `mappings` we have added an `IO` module and it s
 
 ```
 import ohnosequences.files.read
+import ohnosequences.db.rna16s.io.deserializeMappings
 
 read.withLines(mappings) { lines =>
   deserializeMappings(lines: Lines)
