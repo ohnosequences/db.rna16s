@@ -53,9 +53,8 @@ case object release {
     * @return `Right(files)` if the reading of the corresponding `.tsv` file and
     * the writing of the result file are correct, `Left(error)` otherwise
     */
-  /*private*/
-  def generateMappings(rnaCentralData: RNACentralData,
-                       file: File): Error + File = {
+  private def generateMappings(rnaCentralData: RNACentralData,
+                               file: File): Error + File = {
     val rnaType16s = RNAType.rRNA
 
     val databases = rna16sIdentification.database.includedDatabases
