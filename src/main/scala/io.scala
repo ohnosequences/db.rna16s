@@ -21,6 +21,9 @@ case object io {
         Sequence(entry.rnaSequence.sequence.toUpperCase.replace('U', 'T'))
     )
 
+  /** Recieves an Iterator over the lines of a file, and reads them into
+    * a [[Mappings]] structure RNAID -> [TaxID]
+    */
   def deserializeMappings(lines: Lines): Mappings =
     lines.map { line =>
       val values = line.split("†")
@@ -33,6 +36,9 @@ case object io {
       (rnaID, taxIDs)
     }.toMap
 
+  /** Recieves a [[Mappings]] structure and produces a serialized 
+    * writable output 
+    */
   def serializeMappings(mappings: Mappings): Lines =
     mappings.toIterator.map {
       case (rnaID, taxIDs) =>

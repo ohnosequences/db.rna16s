@@ -1,0 +1,50 @@
+Fourth release of the code
+
+## Data Pointers
+ 
+This release supports the following databases:
+
+```
+s3://resources.ohnosequences.com/ohnosequences/db/rna16s/unstable/9.0/{rna16s.fa, mappings}
+s3://resources.ohnosequences.com/ohnosequences/db/rna16s/unstable/10.0/{rna16s.fa, mappings}
+```
+
+Each database is now composed of a pair of files: 
+* `rna16s.fa`: stores the sequences with their `RNAID`s.
+* `mappings`: stores for each `RNAID` a row of shape `RNAID¹†TaxID¹,TaxID², TaxID³,...`, where we have a list of associated taxon IDs for a given `RNAID`.
+
+It is guaranteed that for each `RNAID` in the `rna16s.fa` file, there is an associated entry in the mappings file.
+
+To read a mappings file, namely `mappings` we have added an `IO` module and it suffices to do:
+
+```
+import ohnosequences.files.read
+
+read.withLines(mappings) { lines =>
+  deserializeMappings(lines: Lines)
+}.map { mappings =>
+  // do stuff with the mappings
+}
+```
+
+
+## Release Code
+
+* The release function in [`ohnosequences.db.rna16s.release.generateNewDB`](https://github.com/ohnosequences/db.rna16s/blob/v4.0.0/src/main/scala/release.scala#L182), which downloads the input data from [`db.rnacentral`][db.rnacentral], processes the database entries, generates a FASTA file with the database itself and a mappings file with the corresponding `id_mapping.tsv`. The FASTA and the mappings file are uploaded as an S3 object identified by [`ohnosequences.db.rna16s.data.sequences`](https://github.com/ohnosequences/db.rna16s/blob/v4.0.0/src/main/scala/data.scala#L68) and [`ohnosequences.db.rna16s.data.mappings`](https://github.com/ohnosequences/db.rna16s/blob/v4.0.0/src/main/scala/data.scala#L75).
+* The object [`ohnosequences.db.rna16s.rna16sIdentification`](https://github.com/ohnosequences/db.rna16s/blob/v4.0.0/src/main/scala/rna16sIdentification.scala), which contains the actual filters that generate the database.
+
+## Release Process
+
+The process to add a new version and release the data is as follows:
+
+1. Add a new `object` that extends `Version` in [`src/main/scala/data.scala`](https://github.com/ohnosequences/db.rna16s/blob/v4.0.0/src/main/scala/data.scala); e.g., `case object _11_0 extends Version("11.0")`, adding the input version from [`db.rnacentral`][db.rnacentral].
+2. Release the data through the method [`release.generateNewDB`](https://github.com/ohnosequences/db.rna16s/blob/v4.0.0/src/main/scala/release.scala#L182); e.g., through an `sbt console`:
+```scala
+scala> import ohnosequences.db.rna16s._
+scala> release.generateNewDB(Version._11_0, new java.io.File("~/localDir"))
+```
+3. Prepare a new release of the repository by writing release notes in the corresponding file in [`notes`](https://github.com/ohnosequences/db.rna16s/blob/v4.0.0/notes); e.g. in `notes/4.0.0.markdown`
+4. Make the release of the repository, that checks that all declared versions of the data exist and are correct. This is done through the `sbt` `release` task; e.g., with `sbt release minor`.
+
+[rnacentral]: http://rnacentral.org/
+[db.rnacentral]: https://github.com/ohnosequences/db.rnacentral
