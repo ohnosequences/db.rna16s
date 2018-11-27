@@ -15,22 +15,24 @@ For each supported version of [db.rnacentral][db.rnacentral], a single FASTA is 
 
 All the data in `db.rna16s` is versioned following the RNACentral releases number scheme.
 
-Each of these versions is encoded as an object that extends the sealed class [`Version`](src/main/scala/data.scala#L15-L31).
+Each of these versions is encoded as an object that extends the sealed class [`Version`](src/main/scala/data.scala#L8).
 
-The `Set` [`Version.all`](src/main/scala/data.scala#L17) contains all the releases supported and maintained through `db.rna16s`.
+The `Set` [`Version.all`](src/main/scala/data.scala#L16) contains all the releases supported and maintained through `db.rna16s`.
 
 ## Files
 
-The module [`db.rna16s.data`](src/main/scala/data.scala#L33-L78) contains the pointers to the S3 objects where the actual data is stored. The path of the S3 object corresponding to the FASTA file can be accessed evaluating the following function over a `Version` object:
+The module [`db.rna16s.data`](src/main/scala/data.scala#L68-L81) contains the pointers to the S3 objects where the actual data is stored. The paths of the S3 objects corresponding to the FASTA file and mappings file, respectively, can be accessed evaluating the following methods over a `Version` object:
 
 ```scala
 sequences : Version => S3Object
+mappings  : Version => S3Object
 ```
 
-The path to the S3 object returned by that function look something like the following:
+The path to the S3 object returned by those functions look something like the following:
 
 ```
 s3://resources.ohnosequences.com/ohnosequences/db/rna16s/<version>/rna16s.fa
+s3://resources.ohnosequences.com/ohnosequences/db/rna16s/<version>/mappings
 ```
 
 ## License

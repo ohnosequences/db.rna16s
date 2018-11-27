@@ -1,18 +1,26 @@
 package ohnosequences.db.rna16s
+
 import ohnosequences.db.rnacentral
-import ohnosequences.db.rna16s.s3Helpers.{
-  getCheckedFileIfDifferent,
-  paranoidPutFile
-}
+import rnacentral.{Database, DatabaseEntry, IDMapping, RNACentralData, RNAType}
 import ohnosequences.s3.S3Object
-import ohnosequences.files.directory
+import ohnosequences.files.{directory, write}
 import java.io.File
+import scala.collection.mutable.{Map => MutableMap}
+import scala.util.{Failure, Success, Try}
+import helpers._
 
 case object release {
 
-  /**
-    * Processes all entries provided by the `entries` iterator and save the
-    * result in `file`.
+  /** Processes all entries provided by the `entries` iterator and extract on
+    * a fasta file which has an RNAID + DNA sequence
+    *
+    * The mappings file gives for an RNA identifier the taxon ids that are
+    * associated with it.
+    *
+    * @param entries an iterator over RNACentral entries
+    * @param file where the sequences database is going to
+    * be stored
+    *
     * Returns `Right(file)` if both the process and the file save succeeded,
     * `Left(Error.FailedGeneration)` otherwise.
     */
@@ -20,15 +28,78 @@ case object release {
       entries: Iterator[rnacentral.Entry],
       file: File
   ): Error + File =
-    scala.util.Try {
+    Try {
       rnacentral.iterators
         .right(entries map rna16sIdentification.is16s)
-        .map(fastaFormat.entryToFASTA)
+        .map(io.entryToFASTA)
         .appendTo(file)
     } match {
-      case scala.util.Failure(e) => Left(Error.FailedGeneration(e.toString))
-      case scala.util.Success(s) => Right(file)
+      case Failure(e) => Left(Error.FailedGeneration(e.toString))
+      case Success(s) => Right(file)
     }
+
+  /** Write a mappings file whose output is somewhat like:
+    *   RNAID¹†TaxID¹,TaxID², TaxID³,...
+    *   RNAID²†TaxID'¹,TaxID'², TaxID'³,...
+    *   ...
+    * The mappings file gives for an RNA identifier the taxon ids that are
+    * associated with it.
+    *
+    * @param rnaCentralData the `RNACentralData` for which we want to extract
+    * the mappings
+    * @param file the file where we want to write the mapping
+    * RNAID -> [TaxID]
+    *
+    * @return `Right(files)` if the reading of the corresponding `.tsv` file and
+    * the writing of the result file are correct, `Left(error)` otherwise
+    */
+  private def generateMappings(rnaCentralData: RNACentralData,
+                               file: File): Error + File = {
+    val rnaType16s = RNAType.rRNA
+
+    val databases = rna16sIdentification.database.includedDatabases
+
+    val databaseEntryFrom: (String, String) => Option[DatabaseEntry] = {
+      case (dbName, id) =>
+        (Database from dbName) map { DatabaseEntry(_, id) }
+    }
+
+    val mappings = MutableMap[RNAID, Set[TaxID]]()
+
+    // Filter those rows of mappings file coming from an
+    // accepted database and whose data has RNA16s type
+    Try {
+      rnacentral.iterators
+        .right(
+          IDMapping.rows(rnaCentralData)
+        )
+        .collect {
+          case (id, dbName, dbID, taxID, rnaType, geneName)
+              if (
+                databaseEntryFrom(dbName, dbID).fold(false) { db =>
+                  databases contains db.database
+                }
+                  &&
+                    RNAType.from(rnaType).fold(false) { _ == rnaType16s }
+              ) =>
+            (id, taxID)
+        }
+        .foreach {
+          case (id, taxID) =>
+            if (mappings.isDefinedAt(id))
+              mappings(id) += taxID
+            else
+              mappings(id) = Set(taxID)
+        }
+    } match {
+      case Failure(e) => Left(Error.FailedGeneration(e.toString))
+      case Success(s) =>
+        write
+          .linesToFile(file)(io.serializeMappings(mappings.toMap))
+          .left
+          .map(Error.FileError)
+    }
+  }
 
   /**
     * Read the data from `db.rnacentral`, filter the 16S sequences and upload
@@ -57,26 +128,31 @@ case object release {
   private def generateDB(
       version: Version,
       localFolder: File
-  ): Error + S3Object = {
+  ): Error + Set[S3Object] = {
     val rnacentralVersion = version.inputVersion
 
     val inputFasta     = rnacentral.data.speciesSpecificFASTA(rnacentralVersion)
     val inputIdMapping = rnacentral.data.idMappingTSV(rnacentralVersion)
     val s3Sequences    = data.sequences(version)
+    val s3Mappings     = data.mappings(version)
 
-    val mappingsFile           = data.local.idMappingFile(localFolder)
+    val idMappingsFile         = data.local.idMappingFile(localFolder)
     val fastaFile              = data.local.fastaFile(localFolder)
+    val rnaCentralData         = RNACentralData(idMappingsFile, fastaFile)
     lazy val rnaCentralEntries = input.rnaCentralEntries(localFolder)
-    val outputFile             = output.sequences(localFolder)
+    val sequencesFile          = output.sequences(localFolder)
+    val mappingsFile           = output.mappings(localFolder)
 
     for {
       _ <- directory.createDirectory(localFolder).left.map(Error.FileError)
       _ <- getCheckedFileIfDifferent(inputFasta, fastaFile)
-      _ <- getCheckedFileIfDifferent(inputIdMapping, mappingsFile)
-      _ <- generateSequences(rnaCentralEntries, outputFile)
-      _ <- paranoidPutFile(outputFile, s3Sequences)
+      _ <- getCheckedFileIfDifferent(inputIdMapping, idMappingsFile)
+      _ <- generateSequences(rnaCentralEntries, sequencesFile)
+      _ <- generateMappings(rnaCentralData, mappingsFile)
+      _ <- paranoidPutFile(sequencesFile, s3Sequences)
+      _ <- paranoidPutFile(mappingsFile, s3Mappings)
     } yield {
-      s3Sequences
+      Set(s3Sequences, s3Mappings)
     }
   }
 
@@ -106,11 +182,10 @@ case object release {
   def generateNewDB(
       version: Version,
       localFolder: File
-  ): Error + S3Object =
-    s3Helpers.objectExists(data.sequences(version)).flatMap { doesItExist =>
-      if (doesItExist)
-        Left(Error.S3ObjectExists(data.sequences(version)))
-      else
-        generateDB(version, localFolder)
+  ): Error + Set[S3Object] =
+    findVersionInS3(version).fold(
+      generateDB(version, localFolder)
+    ) { obj =>
+      Left(Error.S3ObjectExists(obj))
     }
 }

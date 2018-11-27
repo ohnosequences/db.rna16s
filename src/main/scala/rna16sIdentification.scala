@@ -13,13 +13,9 @@ case object rna16sIdentification {
   lazy val is16s: Entry => Dropped + Entry =
     database
       .filterIncluded(_)
-      .right
       .flatMap(annotation.hasRNAType16s)
-      .right
       .flatMap(annotation.someDescriptionContains16s)
-      .right
       .flatMap(sequence.has16sLength)
-      .right
       .flatMap(sequence.qualityOK)
 
   /** Database filters */
