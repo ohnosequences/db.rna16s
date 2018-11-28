@@ -36,8 +36,8 @@ case object io {
       (rnaID, taxIDs)
     }.toMap
 
-  /** Receives a [[Mappings]] structure and produces a serialized 
-    * writable output 
+  /** Receives a [[Mappings]] structure and produces a serialized
+    * writable output
     */
   def serializeMappings(mappings: Mappings): Lines =
     mappings.toIterator.map {
